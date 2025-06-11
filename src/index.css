@@ -1,0 +1,164 @@
+* {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+:root {
+  --color-bg: #1f1f38;
+  --color-bg-variant: #2c2c6c;
+  --color-primary: #4db5ff;
+  --color-primary-variant: rgba(77, 181, 255, 0.4);
+  --color-light: rgba(255, 255, 255, 0.6);
+}
+
+/* FORM */
+.register {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* color: #ffffff; */
+  /* background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("https://images.unsplash.com/photo-1510936111840-65e151ad71bb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=890&q=80"); */
+  /* background-color: var(--color-bg);
+  background-size: cover;
+  background-blend-mode: darken; */
+  font-family: "Josefin Sans", sans-serif;
+}
+.loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+/* Overlay background */
+.custom-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* dark transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Popup box */
+.custom-popup {
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.custom-popup h2 {
+  margin-bottom: 15px;
+  color: #2e7d32; /* green tone for success */
+}
+
+.custom-popup p {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.custom-popup button {
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.custom-popup button:hover {
+  background-color: #1b5e20;
+}
+
+/* Optional: fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.registerTitle {
+  font-size: 50px;
+}
+
+.registerForm {
+  margin: auto;
+  /* margin: 0px; */
+  /* margin-top: -50px; */
+  display: flex;
+  flex-direction: column;
+}
+
+.registerForm>label {
+  margin: 10px 0;
+  color: rgb(0, 0, 0);
+}
+
+.registerInput {
+  padding: 10px;
+  background-color: white;
+  border: none;
+  border-radius: 10px;
+}
+
+.registerInputTime {
+  padding: 0px;
+  background-color: white;
+  border: none;
+  border-radius: 10px;
+}
+
+.registerInput:focus {
+  outline: none;
+}
+
+.registerButton {
+  margin-top: 20px;
+  cursor: pointer;
+  background-color: #000000;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.registerButton:hover {
+  background-color: #313131;
+}
+
+@media screen and (max-width: 480px) {
+  .register {
+    background-position: right;
+  }
+
+  .registerInput {
+    font-size: 15px;
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .registerButton {
+    font-size: 16px;
+    padding: 20px;
+    border-radius: 12px;
+  }
+}
