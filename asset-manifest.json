@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/https//xeeshansami.github.io/therapyhomeClient/static/css/main.dde23f3b.css",
+    "main.js": "/https//xeeshansami.github.io/therapyhomeClient/static/js/main.dbd08fce.js",
+    "static/js/213.892af230.chunk.js": "/https//xeeshansami.github.io/therapyhomeClient/static/js/213.892af230.chunk.js",
+    "static/js/455.2cd3a5fa.chunk.js": "/https//xeeshansami.github.io/therapyhomeClient/static/js/455.2cd3a5fa.chunk.js",
+    "static/media/bg_mode.png": "/https//xeeshansami.github.io/therapyhomeClient/static/media/bg_mode.9e486c8438a933f2fbe3.png",
+    "static/media/background2.jpg": "/https//xeeshansami.github.io/therapyhomeClient/static/media/background2.46ad2bac59f78a94e7cc.jpg",
+    "static/media/background_web.png": "/https//xeeshansami.github.io/therapyhomeClient/static/media/background_web.1d2980412043993cef24.png",
+    "static/media/subjects.svg": "/https//xeeshansami.github.io/therapyhomeClient/static/media/subjects.ef81f0bbea2b9a3231edcf49d00d7ad5.svg",
+    "static/media/stamp.png": "/https//xeeshansami.github.io/therapyhomeClient/static/media/stamp.db7fb155d6842db069be.png",
+    "static/media/assignment.svg": "/https//xeeshansami.github.io/therapyhomeClient/static/media/assignment.4def021ac61723cb0479c69bf8efa1ab.svg",
+    "static/media/classroom.png": "/https//xeeshansami.github.io/therapyhomeClient/static/media/classroom.f472ff2cd754d14669f3.png",
+    "static/media/time.svg": "/https//xeeshansami.github.io/therapyhomeClient/static/media/time.0e9d36f6356c032a523d5cc2fb081da2.svg",
+    "static/media/logo.png": "/https//xeeshansami.github.io/therapyhomeClient/static/media/logo.1dc1e7c26a94b2f9d73e.png",
+    "static/media/designlogin.jpg": "/https//xeeshansami.github.io/therapyhomeClient/static/media/designlogin.3cac939f195a9e698ba4.jpg",
+    "index.html": "/https//xeeshansami.github.io/therapyhomeClient/index.html",
+    "main.dde23f3b.css.map": "/https//xeeshansami.github.io/therapyhomeClient/static/css/main.dde23f3b.css.map",
+    "main.dbd08fce.js.map": "/https//xeeshansami.github.io/therapyhomeClient/static/js/main.dbd08fce.js.map",
+    "213.892af230.chunk.js.map": "/https//xeeshansami.github.io/therapyhomeClient/static/js/213.892af230.chunk.js.map",
+    "455.2cd3a5fa.chunk.js.map": "/https//xeeshansami.github.io/therapyhomeClient/static/js/455.2cd3a5fa.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.dde23f3b.css",
+    "static/js/main.dbd08fce.js"
+  ]
+}
