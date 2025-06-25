@@ -33,8 +33,8 @@ const AddConsultancy = () => {
     });
 
     useEffect(() => {
-        const {  consultancy } = feeDetails;
-        const total =Number(consultancy || 0);
+        const { consultancy } = feeDetails;
+        const total = Number(consultancy || 0);
 
         setFeeDetails(prev => ({
             ...prev,
@@ -118,6 +118,8 @@ const AddConsultancy = () => {
             parentsContact: '', // Field name used in validation and payload
             parentsCNIC: '',    // Field name used in validation and payload
             profession: '',
+            gender: '',// Set initial to empty string for placeholder to work
+            maritalStatus:'',
             address: ''
         },
         reference: { // This section was in initial formData but not used in inputs/payload
@@ -195,6 +197,8 @@ const AddConsultancy = () => {
             parentsCNIC: parent.parentsCNIC,
             parentProfession: parent.profession,
             parentAddress: parent.address,
+            parentsGender:parent.gender,
+            parentsMaritalStatus:parent.maritalStatus,
             // referenceType: formData.reference.type, // If reference fields are used
             // referenceDetails: formData.reference.details,
 
@@ -306,7 +310,7 @@ const AddConsultancy = () => {
             alert('Please complete all student details (Name, Age, DOB, Gender).');
             return false;
         }
-        if (isEmpty(parent.name) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address)) {
+        if (isEmpty(parent.name) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address)|| isEmpty(parent.gender)|| isEmpty(parent.maritalStatus)) {
             alert('Please complete all parent/guardian details.');
             return false;
         }
@@ -385,18 +389,35 @@ const AddConsultancy = () => {
                 {/* Student Details */}
                 <Section title="Student Details">
                     <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('student', 'name')} value={formData.student.name} />
+
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={12} sm={4}>
+                        {/* Adjusted grid columns for better spacing. Age and DOB are smaller, Gender is larger. */}
+                        <FormControl fullWidth>
+                            <InputLabel id="gender-select-label">Gender</InputLabel>
+                            <Select
+                                labelId="gender-select-label"
+                                value={formData.student.gender}
+                                label="Gender"
+                                InputLabelProps={{ shrink: true }}
+                                onChange={handleChange('student', 'gender')}
+                            >
+                                <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
+                                <MenuItem value="Male">Male</MenuItem>
+                                <MenuItem value="Female">Female</MenuItem>
+                                <MenuItem value="Other">Other</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <Grid  >
                             <TextField
                                 fullWidth
                                 label="Age"
-                                type="text" // Changed to text to use custom replace logic
+                                type="text"
                                 value={formData.student.age}
                                 onChange={handleChange('student', 'age')}
-                                inputProps={{ maxLength: 2 }} // Visual length limit
+                                inputProps={{ maxLength: 2 }}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid item xs={12} sm={2}>
                             <TextField
                                 fullWidth
                                 label="Date of Birth"
@@ -406,22 +427,7 @@ const AddConsultancy = () => {
                                 value={formData.student.dob}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
-                            <FormControl fullWidth>
-                                <InputLabel id="gender-select-label">Gender</InputLabel>
-                                <Select
-                                    labelId="gender-select-label"
-                                    value={formData.student.gender}
-                                    label="Gender"
-                                    onChange={handleChange('student', 'gender')}
-                                >
-                                    <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
-                                    <MenuItem value="Male">Male</MenuItem>
-                                    <MenuItem value="Female">Female</MenuItem>
-                                    <MenuItem value="Other">Other</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
+
                     </Grid>
                 </Section>
 
@@ -517,6 +523,37 @@ const AddConsultancy = () => {
                 <Section title="Parent/Guardian Details">
                     <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'name')} value={formData.parent.name} />
                     <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <FormControl fullWidth>
+                            <InputLabel id="gender-select-label">Gender</InputLabel>
+                            <Select
+                                labelId="gender-select-label"
+                                value={formData.parent.gender}
+                                label="Gender"
+                                InputLabelProps={{ shrink: true }}
+                                onChange={handleChange('parent', 'gender')}
+                            >
+                                <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
+                                <MenuItem value="Male">Male</MenuItem>
+                                <MenuItem value="Female">Female</MenuItem>
+                                <MenuItem value="Other">Other</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <FormControl fullWidth>
+                            <InputLabel id="maritalStatus-select-label">Marital Status</InputLabel>
+                            <Select
+                                labelId="maritalStatus-select-label"
+                                value={formData.parent.maritalStatus}
+                                label="Marital Status"
+                                InputLabelProps={{ shrink: true }}
+                                onChange={handleChange('parent', 'maritalStatus')}
+                            >
+                                <MenuItem value="Male">Single</MenuItem>
+                                <MenuItem value="Married">Married</MenuItem>
+                                <MenuItem value="Widow">Widow</MenuItem>
+                                <MenuItem value="Divorced">Divorced</MenuItem>
+                                <MenuItem value="Other">Other</MenuItem>
+                            </Select>
+                        </FormControl>
                         <Grid item xs={12} sm={6} md={4}>
                             <TextField fullWidth required label="Contact" onChange={handleChange('parent', 'parentsContact')}
                                 value={formData.parent.parentsContact}
@@ -534,6 +571,7 @@ const AddConsultancy = () => {
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
                             <TextField fullWidth label="Profession" onChange={handleChange('parent', 'profession')} value={formData.parent.profession} />
+
                         </Grid>
                     </Grid>
                     <TextField fullWidth multiline rows={3} label="Complete Address" sx={{ mb: 2 }} onChange={handleChange('parent', 'address')} value={formData.parent.address} />
