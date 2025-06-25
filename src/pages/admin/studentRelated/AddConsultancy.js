@@ -28,18 +28,13 @@ const AddConsultancy = () => {
 
 
     const [feeDetails, setFeeDetails] = useState({
-        admissionFee: 5000,
-        securityDeposit: 5000,
         consultancy: 1000,
-        totalAmount: 11000,
+        totalAmount: 1000,
     });
 
     useEffect(() => {
-        const { admissionFee, securityDeposit, consultancy } = feeDetails;
-        const total =
-            Number(admissionFee || 0) +
-            Number(securityDeposit || 0) +
-            Number(consultancy || 0);
+        const {  consultancy } = feeDetails;
+        const total =Number(consultancy || 0);
 
         setFeeDetails(prev => ({
             ...prev,
@@ -173,7 +168,7 @@ const AddConsultancy = () => {
             age: student.age,
             rollNum: generatedRollNum, // Include the generated roll number
             feePaymentDate: new Date(),
-            paidFee:true,
+            paidFee: true,
             diagnosis: medicalHistory.diagnosis,
             diagnosisDetails: medicalHistory.diagnosis ? medicalHistory.diagnosisDetails : '', // Send undefined if not applicable
             therapies: medicalHistory.therapies, // This is the boolean from checkbox
@@ -190,7 +185,6 @@ const AddConsultancy = () => {
             // For now, let's assume 'specific' text field covers details for 'additional' if checked.
             specificLearningDisabilitiesSupport: therapiesSeeking.additional, // Example mapping
             specificTherapiesDetails: therapiesSeeking.specific, // Was 'specific'
-            studentEmail:"info@gmail.com",
             attendsSchoolElsewhere: school.attends,
             schoolElsewhereDetails: school.attends ? school.details : '',
             "sclassName": "6841d62692080ba4520a3a66",
@@ -205,17 +199,17 @@ const AddConsultancy = () => {
             // referenceDetails: formData.reference.details,
 
             // Fee details
-            admissionFee: feeDetails.admissionFee,
-            securityDeposit: feeDetails.securityDeposit,
+            // admissionFee: feeDetails.admissionFee,
+            // securityDeposit: feeDetails.securityDeposit,
             consultancyFeeAmount: feeDetails.consultancy, // Align with merged schema
-            totalFee: feeDetails.totalAmount, // Align with merged schema (totalFee or netTotalFee)
+            totalFee: feeDetails.consultancy, // Align with merged schema (totalFee or netTotalFee)
 
-            therapyPlan: selectedTherapyObject ? { // Ensure selectedTherapyObject exists
-                label: selectedTherapyObject.label,
-                perSessionCost: selectedTherapyObject.perSession,
-                perMonthCost: selectedTherapyObject.perMonth,
-                notes: selectedTherapyObject.note,
-            } : '',
+            // therapyPlan: selectedTherapyObject ? { // Ensure selectedTherapyObject exists
+            //     label: selectedTherapyObject.label,
+            //     perSessionCost: selectedTherapyObject.perSession,
+            //     perMonthCost: selectedTherapyObject.perMonth,
+            //     notes: selectedTherapyObject.note,
+            // } : '',
 
             // Include therapy-specific question answers if needed by backend
             speechQuestions,
@@ -244,8 +238,7 @@ const AddConsultancy = () => {
                 setShowPopup(true);
             }
         } catch (error) {
-            debugger
-            setMessage("Server Error: " + (error.response?.data?.message +" Server" || error.message +" Exception" || "Network error."));
+            setMessage("Server Error: " + (error.response?.data?.message + " Server" || error.message + " Exception" || "Network error."));
             setIsSuccess(false);
             setShowPopup(true);
         } finally {
@@ -355,10 +348,6 @@ const AddConsultancy = () => {
         }
         if (school.attends && isEmpty(school.details)) {
             alert('Please provide school details if "Child attend school" is checked.');
-            return false;
-        }
-        if (isEmpty(selectedTherapy)) {
-            alert('Please select a therapy plan from the dropdown.');
             return false;
         }
         if (!acceptedTerms) {
@@ -555,44 +544,21 @@ const AddConsultancy = () => {
                         onChange={handleChange('reference', 'details')} value={formData.reference.details} />
                 </Section>
 
-                <Section title="Therapy Plan Fee Structure">
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                        <InputLabel id="therapy-select-label">Select Therapy Plan *</InputLabel>
-                        <Select
-                            labelId="therapy-select-label"
-                            id="therapy-select"
-                            value={selectedTherapy}
-                            label="Select Therapy Plan *"
-                            onChange={(e) => setSelectedTherapy(e.target.value)}
-                        >
-                            {therapyFees.map((option, index) => (
-                                <MenuItem key={index} value={option.label}>
-                                    {option.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    {selectedTherapy && therapyFees.find(fee => fee.label === selectedTherapy) && (
-                        <>
-                            <Box sx={{ p: 2, border: '1px solid #eee', borderRadius: 1, mb: 2, backgroundColor: '#f9f9f9' }}>
-                                {therapyFees
-                                    .filter(fee => fee.label === selectedTherapy)
-                                    .map((fee, index) => (
-                                        <div key={index}>
-                                            <Typography variant="subtitle1"><strong>Per Session:</strong> PKR {fee.perSession}/-</Typography>
-                                            <Typography variant="subtitle1"><strong>Per Month:</strong> PKR {fee.perMonth}/-</Typography>
-                                            {fee.note && <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: 0.5 }}>{fee.note}</Typography>}
-                                        </div>
-                                    ))}
-                            </Box>
-                            <Grid container spacing={2} sx={{ mb: 2 }}>
-                                <Grid item xs={12} sm={4}><TextField fullWidth label="Admission Fees" type="number" value={feeDetails.admissionFee} onChange={(e) => setFeeDetails({ ...feeDetails, admissionFee: e.target.value })} /></Grid>
-                                <Grid item xs={12} sm={4}><TextField fullWidth label="Security Deposit" type="number" value={feeDetails.securityDeposit} onChange={(e) => setFeeDetails({ ...feeDetails, securityDeposit: e.target.value })} /></Grid>
-                                <Grid item xs={12} sm={4}><TextField fullWidth label="Consultancy Charges" type="number" value={feeDetails.consultancy} onChange={(e) => setFeeDetails({ ...feeDetails, consultancy: e.target.value })} /></Grid>
-                            </Grid>
-                            <TextField fullWidth label="Total One-Time Charges" type="number" value={feeDetails.totalAmount} InputProps={{ readOnly: true }} variant="filled" />
-                        </>
-                    )}
+                <Section title="Consultancy Fee">
+                    <Grid container spacing={2}>
+                        {/* This is the new fixed fee input box */}
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                fullWidth
+                                label="Fixed Fee"
+                                value={feeDetails.consultancy}
+                                variant="filled" // Using "filled" variant makes it look non-interactive
+                                InputProps={{
+                                    readOnly: true, // This makes the field read-only
+                                }}
+                            />
+                        </Grid>
+                    </Grid>
                 </Section>
 
                 <FormControlLabel

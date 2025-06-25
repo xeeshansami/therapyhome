@@ -12,6 +12,7 @@ const AddNotice = () => {
     const { status, response } = useSelector(state => state.user);
     const { currentUser } = useSelector(state => state.user);
 
+    
     const [title, setTitle] = useState('');
     const [details, setDetails] = useState('');
     const [date, setDate] = useState('');

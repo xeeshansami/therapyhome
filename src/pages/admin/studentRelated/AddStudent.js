@@ -166,7 +166,6 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('name', name);
         formDataToSubmit.append('fatherName', fatherName);
         formDataToSubmit.append('rollNum', rollNum); // Use the state variable 'rollNum'
-        formDataToSubmit.append('studentEmail', studentEmail);
         formDataToSubmit.append('parentsContact', parentsContact);
         formDataToSubmit.append('address', address);
         formDataToSubmit.append('fee', fee);
