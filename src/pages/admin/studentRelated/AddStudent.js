@@ -45,7 +45,6 @@ const AddStudent = ({ situation }) => {
     const [rollNumLoading, setRollNumLoading] = useState(false);
     const [rollNumError, setRollNumError] = useState('');
     const [setBtnName, setButtonName] = useState('');
-    const [studentEmail, setStudentEmail] = useState('');
     // const [studentConsultancy, setStudentConsultancy] = useState(''); // This state was set but not used elsewhere in the form submission or display logic
     const [parentsContact, setPNum] = useState('');
     const [address, setAddress] = useState('');
@@ -249,7 +248,6 @@ const AddStudent = ({ situation }) => {
         setName(student.name || '');
         setFatherName(student.parentName || student.fatherName || ''); // Prefer parentName if available
         setRollNum(student.rollNum || ''); // Populate rollNum, will be read-only
-        setStudentEmail(student.studentEmail || '');
         // setStudentConsultancy(student.isConsultantStudent || false); // State not used elsewhere
         setPNum(student.parentsContact || student.parentsContact || '');
         setAddress(student.parentAddress || student.address || '');
@@ -411,7 +409,6 @@ const AddStudent = ({ situation }) => {
                                         </Select>
                                     </FormControl>
                                 )}
-                                <TextField fullWidth className="registerInput" label="Student Email (Optional)" variant="outlined" type="email" value={studentEmail} onChange={(event) => setStudentEmail(event.target.value)} sx={{ mb: 2 }} />
                                 <TextField fullWidth required className="registerInput" label="Parent Contact" variant="outlined" type="tel" value={parentsContact} onChange={(event) => setPNum(event.target.value)} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} placeholder="03XXXXXXXXX" />
                                 <TextField fullWidth required className="registerInput" label="Address" variant="outlined" multiline rows={3} value={address} onChange={(event) => setAddress(event.target.value)} sx={{ mb: 2 }} />
                                 <TextField
