@@ -22,7 +22,7 @@ const AddStudent = ({ situation }) => {
     const [days, setSelectedDays] = useState([]);
     const [feeStructure, setFeeStructureDays] = useState([]); // Note: feeStrucutre (array) vs feeStructure (state variable)
     const [selectedTime, setSelectedTime] = useState({ hour: '', minute: '', period: 'AM' });
-
+    const [selectedTherapy, setSelectedTherapy] = useState('');
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const feeStructureOptions = ['Daily', 'Weekly', 'Monthly']; // Renamed from feeStrucutre for clarity
 
@@ -113,7 +113,24 @@ const AddStudent = ({ situation }) => {
         }
     };
 
-
+    const therapyFees = [
+        {
+            label: "Single Therapy (8 sessions or less)",
+            perSession: 1500,
+            perMonth: 12000,
+        },
+        {
+            label: "Two or More Therapies (16 sessions or more)",
+            perSession: 1200,
+            perMonth: 19200,
+        },
+        {
+            label: "Three Therapies (24 sessions or more)",
+            perSession: 1125,
+            perMonth: 27000,
+            note: "(Includes other programs like IEP or F&L. 1000 per session charge)"
+        }
+    ];
     const submitHandler = async (event) => {
         event.preventDefault();
         // console.log(selectedFile) // For debugging file selection
@@ -161,6 +178,10 @@ const AddStudent = ({ situation }) => {
         } else {
             setTimeError(false);
         }
+        const selectedTherapyObject = therapyFees.find(
+            fee => fee.label === selectedTherapy
+        );
+
         const formDataToSubmit = new FormData();
         formDataToSubmit.append('name', name);
         formDataToSubmit.append('fatherName', fatherName);
@@ -176,7 +197,12 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append("days", JSON.stringify(days)); // Changed from selectedDays
         formDataToSubmit.append("feeStructure", JSON.stringify(feeStructure)); // Changed from feeStructureDays
         formDataToSubmit.append('HourMinut', HourMinut); // Changed from 'time'
-
+        // therapyPlan: selectedTherapyObject ? { // Ensure selectedTherapyObject exists
+        //     label: selectedTherapyObject.label,
+        //     perSessionCost: selectedTherapyObject.perSession,
+        //     perMonthCost: selectedTherapyObject.perMonth,
+        //     notes: selectedTherapyObject.note,
+        // } : '',
         if (selectedFile) {
             formDataToSubmit.append('medicalReportPath', selectedFile); // Changed 'file' to 'medicalReportPath' to match schema
         }
@@ -411,10 +437,45 @@ const AddStudent = ({ situation }) => {
                                 )}
                                 <TextField fullWidth required className="registerInput" label="Parent Contact" variant="outlined" type="tel" value={parentsContact} onChange={(event) => setPNum(event.target.value)} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} placeholder="03XXXXXXXXX" />
                                 <TextField fullWidth required className="registerInput" label="Address" variant="outlined" multiline rows={3} value={address} onChange={(event) => setAddress(event.target.value)} sx={{ mb: 2 }} />
-                                <TextField
-                                    fullWidth required className="registerInput" label="Monthly Fee" variant="outlined" type="number" value={fee} onChange={(event) => setFees(event.target.value)} sx={{ mb: 2 }}
-                                    InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment> }}
-                                />
+                                <Section title="Therapy Plan Fee Structure">
+                                    <FormControl fullWidth sx={{ mb: 2 }}>
+                                        <InputLabel id="therapy-select-label">Select Therapy Plan *</InputLabel>
+                                        <Select
+                                            labelId="therapy-select-label"
+                                            id="therapy-select"
+                                            value={selectedTherapy}
+                                            label="Select Therapy Plan *"
+                                            onChange={(e) => setSelectedTherapy(e.target.value)}
+                                        >
+                                            {therapyFees.map((option, index) => (
+                                                <MenuItem key={index} value={option.label}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    {selectedTherapy && therapyFees.find(fee => fee.label === selectedTherapy) && (
+                                        <>
+                                            <Box sx={{ p: 2, border: '1px solid #eee', borderRadius: 1, mb: 2, backgroundColor: '#f9f9f9' }}>
+                                                {therapyFees
+                                                    .filter(fee => fee.label === selectedTherapy)
+                                                    .map((fee, index) => (
+                                                        <div key={index}>
+                                                            <Typography variant="subtitle1"><strong>Per Session:</strong> PKR {fee.perSession}/-</Typography>
+                                                            <Typography variant="subtitle1"><strong>Per Month:</strong> PKR {fee.perMonth}/-</Typography>
+                                                            {fee.note && <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: 0.5 }}>{fee.note}</Typography>}
+                                                        </div>
+                                                    ))}
+                                            </Box>
+                                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                                <Grid item xs={12} sm={4}><TextField fullWidth label="Admission Fees" type="number" value={feeDetails.admissionFee} onChange={(e) => setFeeDetails({ ...feeDetails, admissionFee: e.target.value })} /></Grid>
+                                                <Grid item xs={12} sm={4}><TextField fullWidth label="Security Deposit" type="number" value={feeDetails.securityDeposit} onChange={(e) => setFeeDetails({ ...feeDetails, securityDeposit: e.target.value })} /></Grid>
+                                                <Grid item xs={12} sm={4}><TextField fullWidth label="Consultancy Charges" type="number" value={feeDetails.consultancy} onChange={(e) => setFeeDetails({ ...feeDetails, consultancy: e.target.value })} /></Grid>
+                                            </Grid>
+                                            <TextField fullWidth label="Total One-Time Charges" type="number" value={feeDetails.totalAmount} InputProps={{ readOnly: true }} variant="filled" />
+                                        </>
+                                    )}
+                                </Section>
                                 {/* Password field is commented out in original code
                                 <TextField fullWidth required className="registerInput" label="Password" variant="outlined" type="password" value={password} onChange={(event) => setPassword(event.target.value)} sx={{ mb: 2 }} />
                                 */}
@@ -460,7 +521,7 @@ const AddStudent = ({ situation }) => {
                             </Grid>
                         </Grid>
                         <Button fullWidth className="registerButton" onClick={submitHandler} type="submit" variant="contained" color="primary" disabled={loader} sx={{ mt: 3, py: 1.5, fontSize: '1.1rem' }}>
-                            {loader ? <CircularProgress size={24} color="inherit" /> : setBtnName?setBtnName:'Add Student'}
+                            {loader ? <CircularProgress size={24} color="inherit" /> : setBtnName ? setBtnName : 'Add Student'}
                         </Button>
                     </form>
                 </Paper>
@@ -479,7 +540,14 @@ const AddStudent = ({ situation }) => {
         </>
     );
 }
-
+const Section = ({ title, children }) => (
+    <Box component="fieldset" sx={{ border: '1px solid #ddd', borderRadius: 1, p: 2, mb: 3 }}>
+        <Typography component="legend" variant="h6" sx={{ px: 1, fontWeight: 'bold', color: 'primary.main' }}>
+            {title}
+        </Typography>
+        {children}
+    </Box>
+);
 // Basic styles for the popup (can be moved to a CSS file)
 const popupOverlayStyle = {
     position: 'fixed',
