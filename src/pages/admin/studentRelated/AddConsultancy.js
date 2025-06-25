@@ -25,6 +25,7 @@ const AddConsultancy = () => {
 
     const [generatedRollNum, setGeneratedRollNum] = useState('Loading...');
     const [rollNumError, setRollNumError] = useState('');
+    const [rollNumInput, setRollNumInput] = useState('');
 
 
     const [feeDetails, setFeeDetails] = useState({
@@ -43,26 +44,44 @@ const AddConsultancy = () => {
     }, [feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.consultancy]);
 
     // Fetch the next roll number when the component mounts
-    useEffect(() => {
-        const fetchNextRollNum = async () => {
-            try {
-                setRollNumError(''); // Clear previous errors
-                // This endpoint needs to be created on your backend
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/GenerateNextRollNum`);
-                if (response.data && response.data.rollNum) {
-                    setGeneratedRollNum(response.data.rollNum);
-                } else {
-                    // Fallback if backend doesn't return expected format or if there's an issue
-                    setGeneratedRollNum('THS001'); // Default or indicate an issue
-                    console.warn("Could not fetch next roll number, or format was unexpected. Defaulting or showing error.");
-                    setRollNumError('Could not generate roll number automatically. Defaulting to THS001.');
-                }
-            } catch (error) {
-                console.error("Error fetching next roll number:", error);
-                setGeneratedRollNum('Error'); // Show an error state
-                setRollNumError('Failed to fetch roll number. Please check network or try again.');
+    // Modified fetchNextRollNum to be callable on demand
+    const fetchNextRollNum = async () => {
+        try {
+            setLoader(true);
+            setRollNumError(''); // Clear previous errors
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/GenerateNextRollNum`);
+            if (response.data && response.data.rollNum) {
+                setGeneratedRollNum(response.data.rollNum);
+                // Extract the numeric part if needed, assuming format "THS123"
+                setRollNumInput(response.data.rollNum.replace('THS', ''));
+            } else {
+                setGeneratedRollNum('THS001'); // Default fallback
+                setRollNumInput('001');
+                console.warn("Could not fetch next roll number, defaulting.");
+                setRollNumError('Could not generate roll number automatically.');
             }
-        };
+        } catch (error) {
+            console.error("Error fetching next roll number:", error);
+            setGeneratedRollNum('Error');
+            setRollNumError('Failed to fetch roll number.');
+        } finally {
+            setLoader(false);
+        }
+    };
+    const handleRollNumChange = (e) => {
+        const userInput = e.target.value;
+        // Find the numeric part of the input, allowing for "THS" prefix
+        const numericPart = userInput.toUpperCase().replace('THS', '');
+
+        // Allow only numbers in the numeric part
+        if (/^[0-9]*$/.test(numericPart)) {
+            setRollNumInput(numericPart); // Update the state holding just the number
+            setGeneratedRollNum('THS' + numericPart); // Update the display value with the prefix
+            setRollNumError(''); // Clear any errors
+        }
+    };
+    // This useEffect will now run only once on initial component mount
+    useEffect(() => {
         fetchNextRollNum();
     }, []);
 
@@ -119,7 +138,7 @@ const AddConsultancy = () => {
             parentsCNIC: '',    // Field name used in validation and payload
             profession: '',
             gender: '',// Set initial to empty string for placeholder to work
-            maritalStatus:'',
+            maritalStatus: '',
             address: ''
         },
         reference: { // This section was in initial formData but not used in inputs/payload
@@ -197,8 +216,8 @@ const AddConsultancy = () => {
             parentsCNIC: parent.parentsCNIC,
             parentProfession: parent.profession,
             parentAddress: parent.address,
-            parentsGender:parent.gender,
-            parentsMaritalStatus:parent.maritalStatus,
+            parentsGender: parent.gender,
+            parentsMaritalStatus: parent.maritalStatus,
             // referenceType: formData.reference.type, // If reference fields are used
             // referenceDetails: formData.reference.details,
 
@@ -242,7 +261,7 @@ const AddConsultancy = () => {
                 setShowPopup(true);
             }
         } catch (error) {
-            setMessage("Server Error: " + (error.response?.data?.message + " Server" || error.message + " Exception" || "Network error."));
+            setMessage("Server Error: " + (error.response?.data?.message  || error.message + " Exception" || "Network error."));
             setIsSuccess(false);
             setShowPopup(true);
         } finally {
@@ -310,7 +329,7 @@ const AddConsultancy = () => {
             alert('Please complete all student details (Name, Age, DOB, Gender).');
             return false;
         }
-        if (isEmpty(parent.name) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address)|| isEmpty(parent.gender)|| isEmpty(parent.maritalStatus)) {
+        if (isEmpty(parent.name) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address) || isEmpty(parent.gender) || isEmpty(parent.maritalStatus)) {
             alert('Please complete all parent/guardian details.');
             return false;
         }
@@ -372,19 +391,28 @@ const AddConsultancy = () => {
                 </Box>
 
                 {/* Generated Roll Number Display */}
-                <TextField
-                    fullWidth
-                    label="Generated Roll Number"
-                    value={generatedRollNum}
-                    InputProps={{
-                        readOnly: true,
-                        startAdornment: generatedRollNum === 'Loading...' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null,
-                    }}
-                    error={!!rollNumError}
-                    helperText={rollNumError}
-                    sx={{ mb: 2 }}
-                    variant="filled"
-                />
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                    <TextField
+                        fullWidth
+                        label="Roll Number"
+                        value={generatedRollNum}
+                        onChange={handleRollNumChange} // New handler for manual input
+                        InputProps={{
+                            startAdornment: generatedRollNum === 'Loading...' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null,
+                        }}
+                        error={!!rollNumError}
+                        helperText={rollNumError || 'Enter number after "THS" prefix or click Generate.'}
+                        variant="filled"
+                    />
+                    <Button
+                        variant="contained"
+                        onClick={fetchNextRollNum} // Re-use your fetch function on click
+                        disabled={loader}
+                        sx={{ ml: 1, height: '56px' }} // Match height of filled TextField
+                    >
+                        Generate
+                    </Button>
+                </Box>
 
                 {/* Student Details */}
                 <Section title="Student Details">
