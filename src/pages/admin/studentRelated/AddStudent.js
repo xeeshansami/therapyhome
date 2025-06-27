@@ -91,7 +91,44 @@ const AddStudent = ({ situation }) => {
 
     // const fields = { name, rollNum, password, sclassName, adminID, role, attendance, days, feeStructure, HourMinut, fatherName, parentsContact, address, fee, studentEmail };
     // 'fields' object is not directly used for FormData, values are appended individually.
+    const [feeDetails, setFeeDetails] = useState({
+        admissionFee: 5000,
+        securityDeposit: 5000,
+        consultancy: 1000,
+        totalAmount: 11000,
+    });
 
+    useEffect(() => {
+        const { admissionFee, securityDeposit, consultancy } = feeDetails;
+        const total =
+            Number(admissionFee || 0) +
+            Number(securityDeposit || 0) +
+            Number(consultancy || 0);
+
+        setFeeDetails(prev => ({
+            ...prev,
+            totalAmount: total
+        }));
+    }, [feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.consultancy]);
+
+    const therapyFees = [
+        {
+            label: "Single Therapy (8 sessions or less)",
+            perSession: 1500,
+            perMonth: 12000,
+        },
+        {
+            label: "Two or More Therapies (16 sessions or more)",
+            perSession: 1200,
+            perMonth: 19200,
+        },
+        {
+            label: "Three Therapies (24 sessions or more)",
+            perSession: 1125,
+            perMonth: 27000,
+            note: "(Includes other programs like IEP or F&L. 1000 per session charge)"
+        }
+    ];
     const handleGenerateRollNumClick = async () => {
         setRollNumLoading(true);
         setRollNumError('');
@@ -113,24 +150,6 @@ const AddStudent = ({ situation }) => {
         }
     };
 
-    const therapyFees = [
-        {
-            label: "Single Therapy (8 sessions or less)",
-            perSession: 1500,
-            perMonth: 12000,
-        },
-        {
-            label: "Two or More Therapies (16 sessions or more)",
-            perSession: 1200,
-            perMonth: 19200,
-        },
-        {
-            label: "Three Therapies (24 sessions or more)",
-            perSession: 1125,
-            perMonth: 27000,
-            note: "(Includes other programs like IEP or F&L. 1000 per session charge)"
-        }
-    ];
     const submitHandler = async (event) => {
         event.preventDefault();
         // console.log(selectedFile) // For debugging file selection
@@ -187,8 +206,7 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('fatherName', fatherName);
         formDataToSubmit.append('rollNum', rollNum); // Use the state variable 'rollNum'
         formDataToSubmit.append('parentsContact', parentsContact);
-        formDataToSubmit.append('address', address);
-        formDataToSubmit.append('fee', fee);
+        formDataToSubmit.append('parentAddress', address);
         // formDataToSubmit.append('password', password); // Password field is commented out
         formDataToSubmit.append('sclassName', sclassName);
         formDataToSubmit.append('adminID', adminID);
@@ -196,13 +214,18 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append("attendance", JSON.stringify(attendance)); // attendance is an empty array
         formDataToSubmit.append("days", JSON.stringify(days)); // Changed from selectedDays
         formDataToSubmit.append("feeStructure", JSON.stringify(feeStructure)); // Changed from feeStructureDays
+        formDataToSubmit.append('admissionFee', feeDetails.admissionFee); // Changed from 'time'
+        formDataToSubmit.append('securityDeposit', feeDetails.securityDeposit); // Changed from 'time'
+        formDataToSubmit.append('consultancyFeeAmount', feeDetails.consultancy); // Changed from 'time'
+        formDataToSubmit.append('totalFee', feeDetails.totalAmount); // Changed from 'time'
         formDataToSubmit.append('HourMinut', HourMinut); // Changed from 'time'
-        // therapyPlan: selectedTherapyObject ? { // Ensure selectedTherapyObject exists
-        //     label: selectedTherapyObject.label,
-        //     perSessionCost: selectedTherapyObject.perSession,
-        //     perMonthCost: selectedTherapyObject.perMonth,
-        //     notes: selectedTherapyObject.note,
-        // } : '',
+        formDataToSubmit.append('therapyPlan', JSON.stringify(selectedTherapyObject) ? JSON.stringify({ // Ensure selectedTherapyObject exists
+            label: selectedTherapyObject.label,
+            perSessionCost: selectedTherapyObject.perSession,
+            perMonthCost: selectedTherapyObject.perMonth,
+            notes: selectedTherapyObject.note,
+        }) : ''); // Changed from 'time'
+        // Fee details
         if (selectedFile) {
             formDataToSubmit.append('medicalReportPath', selectedFile); // Changed 'file' to 'medicalReportPath' to match schema
         }

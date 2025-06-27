@@ -205,14 +205,14 @@ class AdminInvoice extends Component {
 
   handleRollNumChange = (e) => {
     const value = e.target.value;
-    if (/^\d*$/.test(value)) {
+    if (/^[0-9a-zA-Z\s]*$/.test(value)) {
       this.setState({ rollNum: value });
     }
   };
 
   handleNameChange = (e) => {
     const value = e.target.value;
-    if (/^[a-zA-Z\s]*$/.test(value)) {
+    if (/^[0-9a-zA-Z\s]*$/.test(value)) {
       this.setState({ name: value });
     }
   };
