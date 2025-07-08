@@ -270,13 +270,13 @@ const AdminFees = () => {
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Total Fee (PKR)</TableCell>
+                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Monthly Fee (PKR)</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {state.filteredData.map((student) => (
-                <TableRow key={student._id}>
+              {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
+                <TableRow key={student._id }>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>

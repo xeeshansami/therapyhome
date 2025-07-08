@@ -154,7 +154,7 @@ const AddStudent = ({ situation }) => {
         event.preventDefault();
         // console.log(selectedFile) // For debugging file selection
         // Basic Validations
-        if (!name || !fatherName || !parentsContact || !address || !fee) {
+        if (!name || !fatherName || !parentsContact || !address || !feeDetails.totalAmount) {
             setMessage("Please fill all required fields before submitting.");
             setShowPopup(true);
             return;
@@ -200,7 +200,7 @@ const AddStudent = ({ situation }) => {
         const selectedTherapyObject = therapyFees.find(
             fee => fee.label === selectedTherapy
         );
-
+        debugger
         const formDataToSubmit = new FormData();
         formDataToSubmit.append('name', name);
         formDataToSubmit.append('fatherName', fatherName);
@@ -332,6 +332,7 @@ const AddStudent = ({ situation }) => {
 
     const handleFeeStructureChange = (feeOption) => { // Renamed from handleCheckboxChange2
         setFeeStructureDays([feeOption]); // Allow only one selection
+        debugger
         if (feeStructure.length > 0) setFeeStructureError(false);
     };
 
