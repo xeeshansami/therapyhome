@@ -52,7 +52,7 @@ const SideBar = () => {
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/addstudents") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Add New Students" />
+                    <ListItemText primary="Add/Update Students" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/notices">
                     <ListItemIcon>

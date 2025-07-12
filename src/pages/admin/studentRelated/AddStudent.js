@@ -45,6 +45,7 @@ const AddStudent = ({ situation }) => {
     const [rollNumLoading, setRollNumLoading] = useState(false);
     const [rollNumError, setRollNumError] = useState('');
     const [setBtnName, setButtonName] = useState('');
+    const [setStdUpdateName, setUpdateName] = useState('');
     // const [studentConsultancy, setStudentConsultancy] = useState(''); // This state was set but not used elsewhere in the form submission or display logic
     const [parentsContact, setPNum] = useState('');
     const [address, setAddress] = useState('');
@@ -137,6 +138,7 @@ const AddStudent = ({ situation }) => {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/GenerateNextRollNum`);
             if (response.data && response.data.rollNum) {
                 setButtonName("Add Student");
+                setUpdateName("Add New Student");
                 setRollNum(response.data.rollNum);
             } else {
                 setRollNumError('Failed to parse roll number from server.');
@@ -302,6 +304,7 @@ const AddStudent = ({ situation }) => {
         setAddress(student.parentAddress || student.address || '');
         setFees(student.totalFee || student.fee || ''); // Prefer totalFee if available from consultancy schema
         setButtonName("Update Student");
+        setUpdateName("Update Student");
         // Clear other fields or set them as needed
         setSelectedDays([]);
         setFeeStructureDays([]);
@@ -406,7 +409,7 @@ const AddStudent = ({ situation }) => {
 
                 <Paper elevation={3} sx={{ padding: { xs: 2, md: 4 } }}>
                     <Typography variant="h5" align="left" gutterBottom sx={{ fontWeight: 'bold' }}>
-                        {situation === "Class" ? "Add Student to Class" : "Add New Student"}
+                        {setStdUpdateName === "Update Student" ? setStdUpdateName : "Add New Student"}
                     </Typography>
                     <form onSubmit={submitHandler}> {/* Use form tag for semantics and default browser behaviors */}
                         <Grid container spacing={3}>

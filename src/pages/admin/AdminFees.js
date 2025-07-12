@@ -23,6 +23,9 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
 const AdminFees = () => {
+  const formatTherapyFee = (amount) => {
+    return amount ? `Rs. ${amount.toLocaleString()}` : 'N/A';
+  };
   const navigate = useNavigate();
   const [state, setState] = useState({
     name: '',
@@ -48,14 +51,15 @@ const AdminFees = () => {
   const handleSearch = async () => {
     setState(prev => ({ ...prev, loading: true, error: '', studentData: [], filteredData: [] }));
     try {
-      const payload={
-        id:"684166055d02df2c8772e55a",
-        name:state.name,
+      const payload = {
+        id: "684166055d02df2c8772e55a",
+        name: state.name,
       };
       const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}/students/search`,payload
+        `${process.env.REACT_APP_BASE_URL}/students/search`, payload
       );
       if (response.data?.length > 0) {
+        debugger
         setState(prev => ({
           ...prev,
           studentData: response.data,
@@ -88,6 +92,7 @@ const AdminFees = () => {
       handleSearch();
     }
   };
+
 
   const handleOpenModal = (student) => {
     setState(prev => ({
@@ -154,18 +159,19 @@ const AdminFees = () => {
     axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
       headers: { 'Content-Type': 'application/json' },
     })
-    .then(response => {
-      console.log('Fee details saved:', response.data);
-      setState(prev => ({ ...prev, errors: {}, openModal: false }));
-    })
-    .catch(error => {
-      console.error('Error saving fee details:', error);
-    });
+      .then(response => {
+        console.log('Fee details saved:', response.data);
+        setState(prev => ({ ...prev, errors: {}, openModal: false }));
+      })
+      .catch(error => {
+        console.error('Error saving fee details:', error);
+      });
   };
 
   const handleCloseModal = () => {
     setState(prev => ({ ...prev, error: '', openModal: false }));
   };
+
 
   const handleFeeDetailChange = (e) => {
     const { name, value } = e.target;
@@ -194,6 +200,7 @@ const AdminFees = () => {
       const response = await axios.get(
         `${process.env.REACT_APP_BASE_URL}/AllStudents/684166055d02df2c8772e55a`
       );
+      debugger
       setState(prev => ({
         ...prev,
         studentData: response.data,
@@ -270,19 +277,27 @@ const AdminFees = () => {
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Monthly Fee (PKR)</TableCell>
+                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
+                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
+                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees Pay</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
-                <TableRow key={student._id }>
+                <TableRow key={student._id}>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
+                  </TableCell>
+                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
+                  </TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
                     {formatFee(student.totalFee)}
                   </TableCell>
