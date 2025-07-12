@@ -102,9 +102,9 @@ const AdminFees = () => {
       feeDetails: {
         ...prev.feeDetails,
         date: new Date().toISOString().split('T')[0],
-        totalFee: student.fee,
-        netAmount: student.fee,
-        balance: student.fee
+        totalFee: student.totalFee,
+        netAmount: student.totalFee,
+        balance: student.totalFee
       }
     }));
   };
@@ -301,7 +301,7 @@ const AdminFees = () => {
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
                     {formatFee(student.totalFee)}
                   </TableCell>
-                  <Box display="flex" gap={2}>
+                  <Box display="-ms-flexbox" gap={14}>
                     <Button
                       variant="contained"
                       color="success"
@@ -310,14 +310,14 @@ const AdminFees = () => {
                     >
                       Fee Issue
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="contained"
                       color="success"
                       onClick={handleCallConsultancy}
                       disabled={student.status === 'Paid'}
                     >
                       Consultancy
-                    </Button>
+                    </Button> */}
                   </Box>
                 </TableRow>
               ))}
