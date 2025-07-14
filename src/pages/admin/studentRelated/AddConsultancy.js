@@ -241,15 +241,16 @@ const AddConsultancy = () => {
             remedialQuestions,
             additionalQuestions,
         };
-
+        debugger
         console.log("Submitting payload:", payload);
         setLoader(true);
         try {
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentConsultancy`, payload, {
                 headers: { 'Content-Type': 'application/json' },
             });
-            // debugger; // Keep for debugging if needed
+            debugger; // Keep for debugging if needed
             if (result.data.status === "00") {
+                // handleSaveFee(student,feeDetails.consultancy,new Date().toISOString().split('T')[0],generatedRollNum);
                 setMessage("Student consultancy added successfully! Please generate invoice.");
                 setInvoiceData(result.data.data); // Assuming backend returns the full student data including the saved rollNum
                 setIsSuccess(true);
@@ -261,6 +262,7 @@ const AddConsultancy = () => {
                 setShowPopup(true);
             }
         } catch (error) {
+            debugger
             setMessage("Server Error: " + (error.response?.data?.message  || error.message + " Exception" || "Network error."));
             setIsSuccess(false);
             setShowPopup(true);
@@ -268,6 +270,43 @@ const AddConsultancy = () => {
             setLoader(false);
         }
     }
+
+     const handleSaveFee = (selectedStudent,consultancy,date,rollNum) => {
+        debugger
+        const fields = {
+          adminID: '684166055d02df2c8772e55a',
+          attendance: [],
+          days: selectedStudent.days,
+          fatherName: selectedStudent.fatherName,
+          totalFee: selectedStudent.totalFee,
+          feeStructure: selectedStudent.feeStructure,
+          HourMinut: selectedStudent.HourMinut,
+          name: selectedStudent.name,
+          parentsContact: selectedStudent.parentsContact,
+          password: '',
+          isPaid: "1",
+          role: 'Student',
+          rollNum: rollNum,
+          date: date,
+          netTotalFee: consultancy,
+          paidFee: consultancy,
+          sclassName: selectedStudent.sclassName,
+        };
+    
+        axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+          .then(response => {
+            debugger
+          })
+          .catch(error => {
+            debugger
+            setShowPopup(false); 
+             setIsSuccess(false);
+             setMessage('Error saving fee details:', error);
+            console.error('Error saving fee details:', error);
+          });
+      };
 
     const handleChange = (section, field) => (e) => {
         const { value, type } = e.target;

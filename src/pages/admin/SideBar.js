@@ -54,35 +54,35 @@ const SideBar = () => {
                     </ListItemIcon>
                     <ListItemText primary="Add/Update Students" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/Admin/notices">
-                    <ListItemIcon>
-                        <AnnouncementOutlinedIcon color={location.pathname.startsWith("/Admin/notices") ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Notices" />
-                </ListItemButton>
-                <ListItemButton component={Link} to="/Admin/Invoice">
-                    <ListItemIcon>
-                        <DescriptionIcon  color={location.pathname.startsWith("/Admin/Invoice") ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Invoice" />
-                </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/AddConsultancy">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/AddConsultancy") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Add Consultancy" />
                 </ListItemButton> 
-                <ListItemButton component={Link} to="/Admin/Fees">
+               <ListItemButton component={Link} to="/Admin/Fees">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Fees") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Fees/Salary" />
-                </ListItemButton>   
+                    <ListItemText primary="Make Fees/Salary" />
+                </ListItemButton> 
+                <ListItemButton component={Link} to="/Admin/Invoice">
+                    <ListItemIcon>
+                        <DescriptionIcon  color={location.pathname.startsWith("/Admin/Invoice") ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary="Generate Invoice" />
+                </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/complains">
                     <ListItemIcon>
                         <ReportIcon color={location.pathname.startsWith("/Admin/complains") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Complains" />
+                </ListItemButton>
+                 <ListItemButton component={Link} to="/Admin/notices">
+                    <ListItemIcon>
+                        <AnnouncementOutlinedIcon color={location.pathname.startsWith("/Admin/notices") ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary="Notices" />
                 </ListItemButton>
             </React.Fragment>
             <Divider sx={{ my: 1 }} />

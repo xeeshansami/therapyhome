@@ -16,6 +16,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
+  Checkbox,
   Box
 } from '@mui/material';
 import axios from 'axios';
@@ -26,7 +28,11 @@ const AdminFees = () => {
   const formatTherapyFee = (amount) => {
     return amount ? `Rs. ${amount.toLocaleString()}` : 'N/A';
   };
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
+  const [isMonthlyFee, setIsMonthlyFee] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [state, setState] = useState({
     name: '',
     studentData: [],
@@ -48,6 +54,37 @@ const AdminFees = () => {
     }
   });
 
+  const handleMonthlyFeeToggle = (event) => {
+    const checked = event.target.checked;
+    setIsMonthlyFee(checked);
+
+    if (checked) {
+      try {
+        const plan = JSON.parse(state.selectedStudent?.therapyPlan || '{}');
+        const perMonthCost = plan?.perMonthCost || 0;
+
+        setState(prev => ({
+          ...prev,
+          feeDetails: {
+            ...prev.feeDetails,
+            netAmount: perMonthCost,
+          },
+        }));
+      } catch (e) {
+        console.error("Invalid therapyPlan JSON", e);
+      }
+    } else {
+      // Reset or apply your own logic for netAmount here
+      const admissionFee = 0; // replace with your default calculation if needed
+      setState(prev => ({
+        ...prev,
+        feeDetails: {
+          ...prev.feeDetails,
+          netAmount: state.selectedStudent.totalFee,
+        },
+      }));
+    }
+  };
   const handleSearch = async () => {
     setState(prev => ({ ...prev, loading: true, error: '', studentData: [], filteredData: [] }));
     try {
@@ -114,14 +151,12 @@ const AdminFees = () => {
   };
 
   const handleSaveFee = () => {
+    debugger
     const { feeDetails, selectedStudent } = state;
     const errors = {};
 
     if (!feeDetails.paid || feeDetails.paid < 0) {
       errors.paid = 'Paid Fee cannot be empty or negative';
-    }
-    if (!feeDetails.consultantFee || feeDetails.consultantFee < 0) {
-      errors.consultantFee = 'Consultant Fee cannot be empty or negative';
     }
     if (feeDetails.paid > feeDetails.netAmount) {
       errors.paid = 'Paid Fee cannot be greater than Net Amount';
@@ -131,26 +166,24 @@ const AdminFees = () => {
       setState(prev => ({ ...prev, errors }));
       return;
     }
-
+    debugger
     const fields = {
       address: selectedStudent.address,
       adminID: '684166055d02df2c8772e55a',
       attendance: [],
       days: selectedStudent.days,
       fatherName: selectedStudent.fatherName,
-      totalFee: '65',
+      totalFee: selectedStudent.totalFee,
       feeStructure: selectedStudent.feeStructure,
       HourMinut: selectedStudent.HourMinut,
       name: selectedStudent.name,
-      parentContact: selectedStudent.parentContact,
+      parentsContact: selectedStudent.parentsContact,
       password: '',
-      isPaid: "0",
+      isPaid: "1",
       role: 'Student',
-      rollNum: selectedStudent.role,
-      teacher: "",
+      rollNum: selectedStudent.rollNum,
       date: feeDetails.date,
       netTotalFee: feeDetails.netAmount,
-      consultantFee: feeDetails.consultantFee,
       paidFee: feeDetails.paid,
       sclassName: selectedStudent.sclassName,
       studentEmail: selectedStudent.studentEmail,
@@ -161,13 +194,24 @@ const AdminFees = () => {
     })
       .then(response => {
         console.log('Fee details saved:', response.data);
+        setShowPopup(true); 
+         setIsSuccess(true);
+        setMessage("Fee Invoice Generated, Please Check Invoice Portal");
         setState(prev => ({ ...prev, errors: {}, openModal: false }));
       })
       .catch(error => {
+        setShowPopup(false); 
+         setIsSuccess(false);
+         setMessage('Error saving fee details:', error);
         console.error('Error saving fee details:', error);
       });
   };
-
+  const handlePopupConfirm = () => {
+        setShowPopup(false);
+        // Assuming invoiceData is set correctly before this point
+        // navigate('/Admin/Invoice'); // Original navigation
+        // setShowInvoice(true); // Show invoice dialog instead of navigating away immediately
+    };
   const handleCloseModal = () => {
     setState(prev => ({ ...prev, error: '', openModal: false }));
   };
@@ -175,19 +219,13 @@ const AdminFees = () => {
 
   const handleFeeDetailChange = (e) => {
     const { name, value } = e.target;
-    const numericValue = parseFloat(value) || 0;
+    const numericValue = parseFloat(value);
 
     setState(prev => {
       const updatedFeeDetails = { ...prev.feeDetails, [name]: numericValue };
 
-      if (name === 'consultantFee' || name === 'totalFee') {
-        updatedFeeDetails.netAmount = parseFloat(updatedFeeDetails.totalFee) + parseFloat(updatedFeeDetails.consultantFee);
-      }
-
       if (name === 'paid') {
         updatedFeeDetails.balance = updatedFeeDetails.netAmount - numericValue;
-      } else if (name === 'consultantFee') {
-        updatedFeeDetails.balance = updatedFeeDetails.netAmount - updatedFeeDetails.paid;
       }
 
       return { ...prev, feeDetails: updatedFeeDetails };
@@ -279,7 +317,7 @@ const AdminFees = () => {
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees Pay</TableCell>
+                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees</TableCell>
                 <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -293,10 +331,10 @@ const AdminFees = () => {
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
+                    {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
                   </TableCell>
-                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                    {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
                   </TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
                     {formatFee(student.totalFee)}
@@ -331,35 +369,18 @@ const AdminFees = () => {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Typography variant="h6">Student Info</Typography>
-            <TextField
-              label="Name"
-              variant="outlined"
-              value={state.selectedStudent?.name || ''}
-              fullWidth
-              disabled
-            />
-            <TextField
-              label="Father's Name"
-              variant="outlined"
-              value={state.selectedStudent?.fatherName || ''}
-              fullWidth
-              disabled
-            />
-            <TextField
-              label="Class"
-              variant="outlined"
-              value={state.selectedStudent?.sclassName?.sclassName || ''}
-              fullWidth
-              disabled
-            />
-            <TextField
-              label="Teacher"
-              variant="outlined"
-              value={state.selectedStudent?.teacherName || ''}
-              fullWidth
-              disabled
-            />
+            <TextField label="Name" value={state.selectedStudent?.name || ''} fullWidth disabled />
+            <TextField label="Father's Name" value={state.selectedStudent?.fatherName || ''} fullWidth disabled />
+            <TextField label="Class" value={state.selectedStudent?.sclassName?.sclassName || ''} fullWidth disabled />
             <Typography variant="h6" style={{ marginTop: 20 }}>Fee Info</Typography>
+
+            <FormControlLabel
+              control={
+                <Checkbox checked={isMonthlyFee} onChange={handleMonthlyFeeToggle} />
+              }
+              label="Monthly Fee"
+            />
+
             <TextField
               label="Date"
               type="date"
@@ -369,16 +390,7 @@ const AdminFees = () => {
               fullWidth
               InputLabelProps={{ shrink: true }}
             />
-            <TextField
-              label="Consultant Fee"
-              type="number"
-              name="consultantFee"
-              value={state.feeDetails.consultantFee}
-              onChange={handleFeeDetailChange}
-              fullWidth
-              error={!!state.errors.consultantFee}
-              helperText={state.errors.consultantFee}
-            />
+
             <TextField
               label="Paid Fee"
               type="number"
@@ -389,13 +401,8 @@ const AdminFees = () => {
               error={!!state.errors.paid}
               helperText={state.errors.paid}
             />
-            <TextField
-              label="Total Fee"
-              variant="outlined"
-              value={state.feeDetails.totalFee}
-              fullWidth
-              disabled
-            />
+
+
             <TextField
               label="Net Amount"
               variant="outlined"
@@ -404,6 +411,7 @@ const AdminFees = () => {
               disabled
               style={{ backgroundColor: '#f1f1f1', fontWeight: 'bold' }}
             />
+
             <TextField
               label="Balance"
               variant="outlined"
@@ -413,17 +421,49 @@ const AdminFees = () => {
             />
           </Box>
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={handleCloseModal} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSaveFee} color="primary">
-            Save Fee
-          </Button>
+          <Button onClick={handleCloseModal} color="primary">Cancel</Button>
+          <Button onClick={handleSaveFee} color="primary">Save</Button>
         </DialogActions>
       </Dialog>
+      {showPopup && (
+        <div className="custom-popup-overlay" style={popupOverlayStyle}>
+          <div className="custom-popup" style={popupStyle}>
+            <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
+            <p>{message}</p>
+            <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
+              {isSuccess ? "Generate Invoice" : "Close"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+// Basic styles for the popup (can be moved to a CSS file)
+const popupOverlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1300, // Ensure it's above MUI Dialog by default
+};
+
+const popupStyle = {
+    background: 'white',
+    padding: '20px 40px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+    minWidth: '300px',
+    maxWidth: '500px',
 };
 
 export default AdminFees;

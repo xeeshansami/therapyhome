@@ -290,15 +290,13 @@ class AdminInvoice extends Component {
                   <TableHeader>Roll Number</TableHeader>
                   <TableHeader>Name</TableHeader>
                   <TableHeader>Father's Name</TableHeader>
-                  <TableHeader>Teacher</TableHeader>
                   <TableHeader>Parent Contact</TableHeader>
                   <TableHeader>Fee Structure</TableHeader>
                   <TableHeader>Days</TableHeader>
-                  <TableHeader>Student Fee (PKR)</TableHeader>
-                  <TableHeader>Consultant Fee (PKR)</TableHeader>
-                  <TableHeader>Net Amount (PKR)</TableHeader>
-                  <TableHeader>Balance (PKR)</TableHeader>
-                  <TableHeader>Paid Amount (PKR)</TableHeader>
+                  <TableHeader>Monthly Fee</TableHeader>
+                  <TableHeader>Net Amount</TableHeader>
+                  <TableHeader>Balance</TableHeader>
+                  <TableHeader>Paid Amount</TableHeader>
                   <TableHeader>Status</TableHeader>
                   <TableHeader>Action</TableHeader>
                 </tr>
@@ -309,12 +307,10 @@ class AdminInvoice extends Component {
                     <TableCell>{feeRecord.rollNum}</TableCell>
                     <TableCell>{feeRecord.name}</TableCell>
                     <TableCell>{feeRecord.fatherName}</TableCell>
-                    <TableCell>{feeRecord.teacherName || 'N/A'}</TableCell>
                     <TableCell>{feeRecord.parentsContact}</TableCell>
                     <TableCell>{feeRecord.feeStructure.join(', ')}</TableCell>
                     <TableCell>{feeRecord.days.join(', ')}</TableCell>
                     <TableCell>{feeRecord.totalFee} PKR</TableCell>
-                    <TableCell>{feeRecord.consultantFee} PKR</TableCell>
                     <TableCell>{feeRecord.netTotalFee} PKR</TableCell>
                     <TableCell
                       style={{
