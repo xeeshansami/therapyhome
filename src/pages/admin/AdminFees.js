@@ -209,7 +209,7 @@ const AdminFees = () => {
   const handlePopupConfirm = () => {
         setShowPopup(false);
         // Assuming invoiceData is set correctly before this point
-        // navigate('/Admin/Invoice'); // Original navigation
+        navigate('/Admin/Invoice'); // Original navigation
         // setShowInvoice(true); // Show invoice dialog instead of navigating away immediately
     };
   const handleCloseModal = () => {
@@ -304,64 +304,81 @@ const AdminFees = () => {
         </Button>
       </div>
 
-      {state.filteredData.length > 0 && (
-        <TableContainer component={Paper} style={{ marginTop: '20px', border: '1px solid #ccc' }}>
-          <Table>
-            <TableHead>
-              <TableRow style={{ backgroundColor: '#f4f4f4' }}>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Roll Number</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees</TableCell>
-                <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
-                <TableRow key={student._id}>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                    {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
-                  </TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                    {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
-                  </TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                    {formatFee(student.totalFee)}
-                  </TableCell>
-                  <Box display="-ms-flexbox" gap={14}>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      onClick={() => handleOpenModal(student)}
-                      disabled={student.status === 'Paid'}
-                    >
-                      Fee Issue
-                    </Button>
-                    {/* <Button
-                      variant="contained"
-                      color="success"
-                      onClick={handleCallConsultancy}
-                      disabled={student.status === 'Paid'}
-                    >
-                      Consultancy
-                    </Button> */}
-                  </Box>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+      {/* Outer conditional: Check if it's NOT in consultancy mode OR if there's data to show */}
+      {!state.isConsultancyMode ? (
+          // Case: Not in consultancy mode, display non-consultant students
+          state.filteredData.filter(student => !student.isConsultantStudent).length > 0 ? (
+              <TableContainer component={Paper} style={{ marginTop: '20px', border: '1px solid #ccc' }}>
+                <Table>
+                  <TableHead>
+                    <TableRow style={{ backgroundColor: '#f4f4f4' }}>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Roll Number</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
+                        <TableRow key={student._id}>
+                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
+                          <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
+                          <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
+                          <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
+                          <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
+                          <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
+                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                            {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
+                          </TableCell>
+                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                            {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
+                          </TableCell>
+                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                            {formatFee(student.totalFee)}
+                          </TableCell>
+                          <TableCell>
+                            <Box display="flex" gap={2}>
+                              <Button
+                                  variant="contained"
+                                  color="success"
+                                  onClick={() => handleOpenModal(student)}
+                                  disabled={student.status === 'Paid'}
+                              >
+                                Fee Issue
+                              </Button>
+                              {/* The commented-out button is kept as is */}
+                              {/* <Button
+                    variant="contained"
+                    color="success"
+                    onClick={handleCallConsultancy}
+                    disabled={student.status === 'Paid'}
+                  >
+                    Consultancy
+                  </Button> */}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+          ) : (
+              // Case: No non-consultant students found
+              <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
+                No record found
+              </Typography>
+          )
+      ) : (
+          // Case: state.isConsultancyMode is true (always show "No record found" in this mode)
+          <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
+            No record found
+          </Typography>
       )}
 
       <Dialog open={state.openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
