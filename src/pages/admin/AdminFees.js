@@ -367,6 +367,8 @@ const AdminFees = () => {
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
+                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Consultancy Date</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Date</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
@@ -382,6 +384,8 @@ const AdminFees = () => {
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
+                     <TableCell style={{ border: '1px solid #ccc' }}>{student.consultancyDate}</TableCell>
+                      <TableCell style={{ border: '1px solid #ccc' }}>{student.admissionDate}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>

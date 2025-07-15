@@ -151,9 +151,33 @@ const AddStudent = ({ situation }) => {
             setRollNumLoading(false);
         }
     };
+ const getCurrentDateTimeFormatted = () => {
+        const now = new Date();
 
+        const day = now.getDate();
+        const monthNames = [
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        ];
+        const month = monthNames[now.getMonth()];
+        const year = now.getFullYear();
+
+        let hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+
+        // Pad single digits with a leading zero
+        const pad = (num) => num < 10 ? '0' + num : num;
+
+        return `${pad(day)}-${month}-${year} ${pad(hours)}:${pad(minutes)}:${pad(seconds)} ${ampm}`;
+    };
     const submitHandler = async (event) => {
         event.preventDefault();
+        debugger
         // console.log(selectedFile) // For debugging file selection
         // Basic Validations
         if (!name || !fatherName || !parentsContact || !address || !feeDetails.totalAmount) {
@@ -203,6 +227,7 @@ const AddStudent = ({ situation }) => {
             fee => fee.label === selectedTherapy
         );
         debugger
+        const formattedDateTime = getCurrentDateTimeFormatted();
         const formDataToSubmit = new FormData();
         formDataToSubmit.append('name', name);
         formDataToSubmit.append('fatherName', fatherName);
@@ -211,6 +236,7 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('parentAddress', address);
         // formDataToSubmit.append('password', password); // Password field is commented out
         formDataToSubmit.append('sclassName', sclassName);
+        formDataToSubmit.append('admissionDate', formattedDateTime);
         formDataToSubmit.append('adminID', adminID);
         formDataToSubmit.append('role', role);
         formDataToSubmit.append("attendance", JSON.stringify(attendance)); // attendance is an empty array
