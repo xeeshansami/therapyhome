@@ -291,11 +291,10 @@ class AdminInvoice extends Component {
                   <TableHeader>Name</TableHeader>
                   <TableHeader>Father's Name</TableHeader>
                   <TableHeader>Parent Contact</TableHeader>
-                  <TableHeader>Fee Structure</TableHeader>
-                  <TableHeader>Days</TableHeader>
-                  <TableHeader>Monthly Fee</TableHeader>
-                  <TableHeader>Net Amount</TableHeader>
-                  <TableHeader>Balance</TableHeader>
+                  <TableHeader>Monthly Fee's</TableHeader>
+                  <TableHeader>Admission Fee's</TableHeader>
+                  <TableHeader>Consultancy Fee's</TableHeader>
+                  <TableHeader>Balance Due</TableHeader>
                   <TableHeader>Paid Amount</TableHeader>
                   <TableHeader>Status</TableHeader>
                   <TableHeader>Action</TableHeader>
@@ -308,10 +307,9 @@ class AdminInvoice extends Component {
                     <TableCell>{feeRecord.name}</TableCell>
                     <TableCell>{feeRecord.fatherName}</TableCell>
                     <TableCell>{feeRecord.parentsContact}</TableCell>
-                    <TableCell>{feeRecord.feeStructure.join(', ')}</TableCell>
-                    <TableCell>{feeRecord.days.join(', ')}</TableCell>
-                    <TableCell>{feeRecord.totalFee} PKR</TableCell>
-                    <TableCell>{feeRecord.netTotalFee} PKR</TableCell>
+                    <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '2'? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A" } </TableCell>
+                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '1'? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A" } </TableCell>
+                      <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '0'? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A" } </TableCell>
                     <TableCell
                       style={{
                         color: feeRecord.netTotalFee - feeRecord.paidFee === 0 ? 'green' : 'red',

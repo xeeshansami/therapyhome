@@ -215,21 +215,17 @@ const AddConsultancy = () => {
             age: student.age,
             rollNum: generatedRollNum, // Include the generated roll number
             feePaymentDate: new Date(),
-            paidFee: true,
             diagnosis: medicalHistory.diagnosis,
             diagnosisDetails: medicalHistory.diagnosis ? medicalHistory.diagnosisDetails : '', // Send undefined if not applicable
             therapies: medicalHistory.therapies, // This is the boolean from checkbox
             therapiesDetails: medicalHistory.therapies ? medicalHistory.therapiesDetails : '', // This is the text detail
             medication: medicalHistory.medication,
             medicationDetails: medicalHistory.medication ? medicalHistory.medicationDetails : '',
-
             // Therapies seeking booleans
             speechTherapy: therapiesSeeking.speech, // Align with merged schema boolean fields
             behaviorTherapy: therapiesSeeking.behavior,
             occupationalTherapy: therapiesSeeking.occupational,
             remedialTherapy: therapiesSeeking.remedial,
-            // 'additional' might map to a specific field or be part of 'specificLearningDisabilitiesSupport'
-            // For now, let's assume 'specific' text field covers details for 'additional' if checked.
             specificLearningDisabilitiesSupport: therapiesSeeking.additional, // Example mapping
             specificTherapiesDetails: therapiesSeeking.specific, // Was 'specific'
             attendsSchoolElsewhere: school.attends,
@@ -237,38 +233,19 @@ const AddConsultancy = () => {
             "sclassName": "6841d62692080ba4520a3a66",
             "school": "684166055d02df2c8772e55a",
             parentName: parent.name, // This should be parent.name from form
-            // fatherName: parent.name, // If parent.name is specifically father's name, otherwise distinguish
             parentsContact: parent.parentsContact,
             parentsCNIC: parent.parentsCNIC,
             parentProfession: parent.profession,
             parentAddress: parent.address,
             parentsGender: parent.gender,
             parentsMaritalStatus: parent.maritalStatus,
-            // referenceType: formData.reference.type, // If reference fields are used
-            // referenceDetails: formData.reference.details,
-
-            // Fee details
-            // admissionFee: feeDetails.admissionFee,
-            // securityDeposit: feeDetails.securityDeposit,
-            consultancyFeeAmount: feeDetails.consultancy, // Align with merged schema
             totalFee: feeDetails.consultancy, // Align with merged schema (totalFee or netTotalFee)
-
-            // therapyPlan: selectedTherapyObject ? { // Ensure selectedTherapyObject exists
-            //     label: selectedTherapyObject.label,
-            //     perSessionCost: selectedTherapyObject.perSession,
-            //     perMonthCost: selectedTherapyObject.perMonth,
-            //     notes: selectedTherapyObject.note,
-            // } : '',
-
-            // Include therapy-specific question answers if needed by backend
             speechQuestions,
             behaviorQuestions,
             occupationalQuestions,
             remedialQuestions,
             additionalQuestions,
         };
-        debugger
-        console.log("Submitting payload:", payload);
         setLoader(true);
         try {
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentConsultancy`, payload, {
@@ -278,10 +255,8 @@ const AddConsultancy = () => {
             if (result.data.status === "00") {
                 debugger
                 handleSaveFee(result.data.data, feeDetails.consultancy, new Date().toISOString().split('T')[0], generatedRollNum);
-                setMessage("Student consultancy added successfully! Please generate invoice.");
-                setInvoiceData(result.data.data); // Assuming backend returns the full student data including the saved rollNum
+                setMessage("Student consultancy added successfully! Please generate invoice.");            
                 setIsSuccess(true);
-                // setShowInvoice(true); // Show invoice directly after successful submission
                 setShowPopup(true); // Show success popup first, then invoice via popup confirm
             } else {
                 setMessage("Form submission failed: " + (result.data.message || "Unknown error from server."));
@@ -303,14 +278,9 @@ const AddConsultancy = () => {
         const fields = {
             adminID: '684166055d02df2c8772e55a',
             attendance: [],
-            days: selectedStudent.days,
             fatherName: selectedStudent.parentName,
-            totalFee: consultancy,
-            feeStructure: selectedStudent.feeStructure,
-            HourMinut: selectedStudent.HourMinut,
             name: selectedStudent.name,
             parentsContact: selectedStudent.parentsContact,
-            password: '',
             isPaid: "1",
             role: 'Student',
             rollNum: selectedStudent.rollNum,
@@ -318,6 +288,7 @@ const AddConsultancy = () => {
             netTotalFee: consultancy,
             paidFee: consultancy,
             sclassName: selectedStudent.sclassName||'',
+            isConsultancyOrIsRegistrationOrMonthly: '0',
             school: selectedStudent.school||'',
         };
 
@@ -326,6 +297,17 @@ const AddConsultancy = () => {
         })
             .then(response => {
                 debugger
+                const mergedInvoiceData = {
+                            ...response.data, // Data from fee registration (e.g., receipt ID, fee specific details)
+                            ...selectedStudent, // Full student details from SingleStudent API
+                            // You can add more specific merging logic if needed, e.g.,
+                            // overwrite existing fields from fee registration if fetchedStudentData is more up-to-date
+                            // For example:
+                            // name: fetchedStudentData.name,
+                            // sclassName: fetchedStudentData.sclassName,
+                            // etc.
+                        };
+                setInvoiceData(mergedInvoiceData); // Assuming backend returns the full student data including the saved rollNum
                 console.log(response);
             })
             .catch(error => {

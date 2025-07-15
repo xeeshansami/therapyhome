@@ -95,22 +95,22 @@ const AddStudent = ({ situation }) => {
     const [feeDetails, setFeeDetails] = useState({
         admissionFee: 5000,
         securityDeposit: 5000,
-        consultancy: 1000,
+        otherCharges: 0,
         totalAmount: 11000,
     });
 
     useEffect(() => {
-        const { admissionFee, securityDeposit, consultancy } = feeDetails;
+        const { admissionFee, securityDeposit, otherCharges } = feeDetails;
         const total =
             Number(admissionFee || 0) +
             Number(securityDeposit || 0) +
-            Number(consultancy || 0);
+            Number(otherCharges || 0);
 
         setFeeDetails(prev => ({
             ...prev,
             totalAmount: total
         }));
-    }, [feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.consultancy]);
+    }, [feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.otherCharges]);
 
     const therapyFees = [
         {
@@ -218,7 +218,7 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append("feeStructure", JSON.stringify(feeStructure)); // Changed from feeStructureDays
         formDataToSubmit.append('admissionFee', feeDetails.admissionFee); // Changed from 'time'
         formDataToSubmit.append('securityDeposit', feeDetails.securityDeposit); // Changed from 'time'
-        formDataToSubmit.append('consultancyFeeAmount', feeDetails.consultancy); // Changed from 'time'
+        formDataToSubmit.append('otherCharges', feeDetails.otherCharges); // Changed from 'time'
         formDataToSubmit.append('totalFee', feeDetails.totalAmount); // Changed from 'time'
         formDataToSubmit.append('HourMinut', HourMinut); // Changed from 'time'
         formDataToSubmit.append('therapyPlan', JSON.stringify(selectedTherapyObject) ? JSON.stringify({ // Ensure selectedTherapyObject exists
@@ -497,7 +497,7 @@ const AddStudent = ({ situation }) => {
                                             <Grid container spacing={2} sx={{ mb: 2 }}>
                                                 <Grid item xs={12} sm={4}><TextField fullWidth label="Admission Fees" type="number" value={feeDetails.admissionFee} onChange={(e) => setFeeDetails({ ...feeDetails, admissionFee: e.target.value })} /></Grid>
                                                 <Grid item xs={12} sm={4}><TextField fullWidth label="Security Deposit" type="number" value={feeDetails.securityDeposit} onChange={(e) => setFeeDetails({ ...feeDetails, securityDeposit: e.target.value })} /></Grid>
-                                                <Grid item xs={12} sm={4}><TextField fullWidth label="Consultancy Charges" type="number" value={feeDetails.consultancy} onChange={(e) => setFeeDetails({ ...feeDetails, consultancy: e.target.value })} /></Grid>
+                                                <Grid item xs={12} sm={4}><TextField fullWidth label="Other Charges" type="number" value={feeDetails.otherCharges} onChange={(e) => setFeeDetails({ ...feeDetails, otherCharges: e.target.value })} /></Grid>
                                             </Grid>
                                             <TextField fullWidth label="Total One-Time Charges" type="number" value={feeDetails.totalAmount} InputProps={{ readOnly: true }} variant="filled" />
                                         </>

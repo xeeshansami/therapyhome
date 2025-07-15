@@ -158,58 +158,105 @@ const AdminFees = () => {
     const errors = {};
 
     if (!feeDetails.paid || feeDetails.paid < 0) {
-      errors.paid = 'Paid Fee cannot be empty or negative';
+        errors.paid = 'Paid Fee cannot be empty or negative';
     }
     if (feeDetails.paid > feeDetails.netAmount) {
-      errors.paid = 'Paid Fee cannot be greater than Net Amount';
+        errors.paid = 'Paid Fee cannot be greater than Net Amount';
     }
 
     if (Object.keys(errors).length > 0) {
-      setState(prev => ({ ...prev, errors }));
-      return;
+        setState(prev => ({ ...prev, errors }));
+        return;
     }
     debugger
     const fields = {
-      address: selectedStudent.address,
-      adminID: '684166055d02df2c8772e55a',
-      attendance: [],
-      days: selectedStudent.days,
-      fatherName: selectedStudent.fatherName,
-      totalFee: selectedStudent.totalFee,
-      feeStructure: selectedStudent.feeStructure,
-      HourMinut: selectedStudent.HourMinut,
-      name: selectedStudent.name,
-      parentsContact: selectedStudent.parentsContact,
-      password: '',
-      isPaid: "1",
-      role: 'Student',
-      rollNum: selectedStudent.rollNum,
-      date: feeDetails.date,
-      netTotalFee: feeDetails.netAmount,
-      paidFee: feeDetails.paid,
-      sclassName: selectedStudent.sclassName,
-      studentEmail: selectedStudent.studentEmail,
+        address: selectedStudent.address,
+        adminID: '684166055d02df2c8772e55a',
+        fatherName: selectedStudent.fatherName,
+        name: selectedStudent.name,
+        parentsContact: selectedStudent.parentsContact,
+        isPaid: "1",
+        role: 'Student',
+        rollNum: selectedStudent.rollNum,
+        date: feeDetails.date,
+        netTotalFee: feeDetails.netAmount,
+        paidFee: feeDetails.paid,
+        sclassName: selectedStudent.sclassName,
+        studentEmail: selectedStudent.studentEmail,
+        isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee?'2':'1',
     };
 
     axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
-      headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
     })
-      .then(response => {
+    .then(response => {
         console.log('Fee details saved:', response.data);
-        setShowPopup(true);
-        setIsSuccess(true);
-        debugger
-        setInvoiceData(response.data.data); // Assuming backend returns the full student data including the saved rollNum
-        setMessage("Fee Invoice Generated, Please Check Invoice Portal");
-        setState(prev => ({ ...prev, errors: {}, openModal: false }));
-      })
-      .catch(error => {
+
+        // Assuming the StudentFeeReg API response.data.data contains the rollNum
+        const registeredStudentRollNum = response.data.rollNum; 
+
+        if (registeredStudentRollNum) {
+            // Step 2: Call the getSingleStudent API
+            axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${registeredStudentRollNum}`)
+                .then(singleStudentResponse => {
+                    if (singleStudentResponse.data && singleStudentResponse.data.length > 0) {
+                        const fetchedStudentData = singleStudentResponse.data[0]; // Assuming it returns an array
+                        
+                        // Step 3: Merge the data
+                        // Merge the fee registration response data with the fetched student data
+                        const mergedInvoiceData = {
+                            ...response.data, // Data from fee registration (e.g., receipt ID, fee specific details)
+                            ...fetchedStudentData, // Full student details from SingleStudent API
+                            // You can add more specific merging logic if needed, e.g.,
+                            // overwrite existing fields from fee registration if fetchedStudentData is more up-to-date
+                            // For example:
+                            // name: fetchedStudentData.name,
+                            // sclassName: fetchedStudentData.sclassName,
+                            // etc.
+                        };
+                        debugger
+                        setInvoiceData(mergedInvoiceData);
+                        setShowPopup(true);
+                        setIsSuccess(true);
+                        setMessage("Fee Invoice Generated, Please Check Invoice Portal");
+                        setState(prev => ({ ...prev, errors: {}, openModal: false }));
+
+                    } else {
+                        // Handle case where SingleStudent API finds no student
+                        console.warn("SingleStudent API found no data for rollNum:", registeredStudentRollNum);
+                        setInvoiceData(response.data.data); // Use only fee registration data as fallback
+                        setShowPopup(true);
+                        setIsSuccess(true);
+                        setMessage("Fee Invoice Generated (partial data), Please Check Invoice Portal");
+                        setState(prev => ({ ...prev, errors: {}, openModal: false }));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching single student details:', error);
+                    // Fallback: If SingleStudent API fails, still proceed with initial fee data
+                    setInvoiceData(response.data.data); 
+                    setShowPopup(true);
+                    setIsSuccess(true);
+                    setMessage("Fee Invoice Generated (API error for full data), Please Check Invoice Portal");
+                    setState(prev => ({ ...prev, errors: {}, openModal: false }));
+                });
+        } else {
+            // If rollNum is not available from the first API, proceed with only its data
+            console.warn("RollNum not available from StudentFeeReg response. Proceeding with limited data.");
+            setInvoiceData(response.data.data);
+            setShowPopup(true);
+            setIsSuccess(true);
+            setMessage("Fee Invoice Generated, Please Check Invoice Portal");
+            setState(prev => ({ ...prev, errors: {}, openModal: false }));
+        }
+    })
+    .catch(error => {
         setShowPopup(false);
         setIsSuccess(false);
-        setMessage('Error saving fee details:', error);
+        setMessage('Error saving fee details: ' + (error.response?.data?.message || error.message)); // More robust error message
         console.error('Error saving fee details:', error);
-      });
-  };
+    });
+};
   const handlePopupConfirm = () => {
     setShowPopup(false);
     // Assuming invoiceData is set correctly before this point

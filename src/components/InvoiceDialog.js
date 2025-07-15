@@ -18,12 +18,12 @@ const termsData = [
 ];
 const translateTitle = (title) => {
     const map = {
-      "Admission and Security Deposit": "داخلہ اور سیکیورٹی ڈپازٹ",
-      "Payment and Procedures": "ادائیگی اور طریقہ کار",
-      "Mid-Month Admissions / Enrollment": "ماہ کے درمیان داخلہ / اندراج",
-      "Delayed Payment": "تاخیر شدہ ادائیگی",
-      "Session Leave and Re-Admission": "سیشن چھٹی اور دوبارہ داخلہ",
-      "Fee Policy for Monthly Breaks": "ماہانہ وقفوں کے لیے فیس پالیسی"
+        "Admission and Security Deposit": "داخلہ اور سیکیورٹی ڈپازٹ",
+        "Payment and Procedures": "ادائیگی اور طریقہ کار",
+        "Mid-Month Admissions / Enrollment": "ماہ کے درمیان داخلہ / اندراج",
+        "Delayed Payment": "تاخیر شدہ ادائیگی",
+        "Session Leave and Re-Admission": "سیشن چھٹی اور دوبارہ داخلہ",
+        "Fee Policy for Monthly Breaks": "ماہانہ وقفوں کے لیے فیس پالیسی"
     };
     return map[title] || title;
 };
@@ -154,10 +154,10 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         let html = `<div class="custom-form-page consultant-rec-page">`;
         html += `<div class="page-main-title">Consultant Recommendation</div>`;
         const sections = [
-            { title: "Speech Therapy", questions: ["Does the child have any difficulty pronouncing word?", "Is there any stuttering or fluency problem?", "Does the child follow and understand simple instruction?"]},
-            { title: "Behavior Therapy", questions: ["Are the child have any behavior concern like TANTRUM, AGGRESSIVE, ANXIETY?", "Have the child diagnosis the AUTISM, ADHD, or any other development disorder?", "Are the child facing social interaction challenges?"]},
-            { title: "Occupational Therapy", questions: ["Does the child have any difficulties with daily activities like dress, feeding, swallowing and motor coordination?", "Are the child have any sensory issue?"]},
-            { title: "Remedial Therapy", questions: ["Are there any difficulties in learning, reading, writing & remembering?", "Is the child receiving any special education servies?"]}
+            { title: "Speech Therapy", questions: ["Does the child have any difficulty pronouncing word?", "Is there any stuttering or fluency problem?", "Does the child follow and understand simple instruction?"] },
+            { title: "Behavior Therapy", questions: ["Are the child have any behavior concern like TANTRUM, AGGRESSIVE, ANXIETY?", "Have the child diagnosis the AUTISM, ADHD, or any other development disorder?", "Are the child facing social interaction challenges?"] },
+            { title: "Occupational Therapy", questions: ["Does the child have any difficulties with daily activities like dress, feeding, swallowing and motor coordination?", "Are the child have any sensory issue?"] },
+            { title: "Remedial Therapy", questions: ["Are there any difficulties in learning, reading, writing & remembering?", "Is the child receiving any special education servies?"] }
         ];
         let qNum = 1;
         sections.forEach(section => {
@@ -217,7 +217,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
     const handleDownload = () => {
         const combinedHTMLForPDF = preparePrintPreviewHTML();
         if (!combinedHTMLForPDF) {
-             console.error("Could not prepare content for PDF download.");
+            console.error("Could not prepare content for PDF download.");
             return;
         }
         const tempRenderDiv = document.createElement('div');
@@ -226,12 +226,13 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
             margin: [0.5, 0.2, 0.5, 0.2],
             filename: `invoice_complete-${currentData.name || 'student'}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: true,
+            html2canvas: {
+                scale: 2, useCORS: true, logging: true,
                 onclone: (documentCloned) => {
                     const allElements = documentCloned.querySelectorAll('*');
                     allElements.forEach(el => { el.style.webkitPrintColorAdjust = 'exact'; el.style.colorAdjust = 'exact'; });
                     const therapyHome = documentCloned.querySelector('#invoice-content .therapy-home');
-                    if(therapyHome) therapyHome.style.color = '#ff9800 !important';
+                    if (therapyHome) therapyHome.style.color = '#ff9800 !important';
                 }
             },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
@@ -256,7 +257,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                     <DialogContent sx={{ padding: 0, width: 'auto', maxWidth: 'initial', overflow: 'visible' }}>
                         <div id="invoice-dialog" style={invoiceStyle}>
                             <header className="header" style={headerStyle}><div className="logo-container" style={logoContainerStyle}><img src={appIcon} alt="Logo" className="logo" style={logoStyle} /><div className="therapy-home" style={therapyHomeStyle}>THERAPY HOME</div></div><div className="slip-no" style={slipNoStyle}>SLIP NO. <span style={slipNoSpanStyle}>{('000' + Date.now().toString().slice(-3)).slice(-3)}</span></div></header>
-                            <div className="info-section" style={infoSectionStyle}><div className="info-row" style={infoRowStyle}><div className="info-label" style={infoLabelStyle}>DATE:</div><div className="info-value" style={infoValueStyle}>{new Date().toLocaleDateString()}</div><div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>GR NO:</div><div className="info-value" style={infoValueStyle}>{currentData.rollNum}</div></div><div className="info-row" style={infoRowStyle}><div className="info-label" style={infoLabelStyle}>STUDENT NAME:</div><div className="info-value" style={infoValueStyle}>{currentData.name}</div><div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>FATHER NAME:</div><div className="info-value" style={infoValueStyle}>{currentData.parentName}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>THERAPY FEE:</div><div className="fee-value" style={feeValueStyle}>{currentData.therapyFee}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>I.E.P FEE:</div><div className="fee-value" style={feeValueStyle}>{currentData.iepFee}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>CONSULTANCY FEES:</div><div className="fee-value" style={feeValueStyle}>{currentData.consultancy}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>ADMISSION FEE:</div><div className="fee-value" style={feeValueStyle}>{currentData.admissionFee}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>SINGLE SESSION FEE:</div><div className="fee-value" style={feeValueStyle}>{currentData.singleSessionFee}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>Security Deposit FEE:</div><div className="fee-value" style={feeValueStyle}>{currentData.securityDeposit}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Consultancy Fee:</div><div className="fee-value" style={feeValueStyle}>{currentData.consultancyFeeAmount}</div><div className="balance-label" style={{ ...balanceLabelStyle, marginLeft: '10px' }}>BALANCE DUE:</div><div className="balance-value" style={balanceValueStyle}>{(parseFloat(currentData.totalAmount) || 0) -  (parseFloat(currentData.consultancy) || 0 )}</div></div></div>
+                            <div className="info-section" style={infoSectionStyle}><div className="info-row" style={infoRowStyle}><div className="info-label" style={infoLabelStyle}>DATE:</div><div className="info-value" style={infoValueStyle}>{new Date().toLocaleDateString()}</div><div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>GR NO:</div><div className="info-value" style={infoValueStyle}>{currentData.rollNum}</div></div><div className="info-row" style={infoRowStyle}><div className="info-label" style={infoLabelStyle}>STUDENT NAME:</div><div className="info-value" style={infoValueStyle}>{currentData.name}</div><div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>FATHER NAME:</div><div className="info-value" style={infoValueStyle}>{currentData.parentName}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>MONTHLY FEES:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='2'?JSON.parse(currentData?.therapyPlan || '{}').perMonthCost || 0:'N/A'}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>ADMISSION:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='1'?currentData.admissionFee:'N/A'}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>PER SESSION:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='2'?JSON.parse(currentData?.therapyPlan || '{}').perSessionCost || 0:'N/A'}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>Security Deposit:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='1'?currentData.securityDeposit:'N/A'}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Consultancy Fee:</div><div className="fee-value" style={feeValueStyle}>{(currentData.isConsultantStudent && currentData.isConsultancyOrIsRegistrationOrMonthly=='0') ? currentData.netTotalFee : 'N/A'}</div><div className="balance-label" style={{ ...balanceLabelStyle, marginLeft: '10px' }}>BALANCE DUE:</div><div className="balance-value" style={balanceValueStyle}>{(parseFloat(currentData.netTotalFee) || 0) - (parseFloat(currentData.paidFee) || 0)}</div></div></div>
                             <div className="stamp-signature" style={stampSignatureStyle}><div className="stamp-container" style={stampContainerStyle}>STAMP<div className="stamp" style={stampStyle}><img src={stampImage} alt="Stamp" style={stampImageStyle} /></div></div><div className="signature-container" style={signatureContainerStyle}>SIGNATURE<div className="signature-line" style={signatureLineStyle}></div></div></div>
                             <p className="note" style={noteStyle}><strong style={noteStrongStyle}>Note:</strong> All types of charges should be payable in advance. In case of not paying on time failure to adhere will be applied upon balance may result in Rs. 50/- no exchange request will be entertain in any case.</p><div className="website-info" style={websiteInfoStyle}>Website: <a href="http://www.therapyhome.com.pk" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>www.therapyhome.com.pk</a> | Email: <a href="mailto:therapyhome@gmail.com" style={websiteLinkStyle}>therapyhome@gmail.com</a> <br /> Facebook: <a href="https://www.facebook.com/Therapyhome/" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>Therapyhome</a> | Instagram: <a href="https://www.instagram.com/therapyhomeofficial/" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>Therapyhomeofficial</a></div>
                         </div>
@@ -271,9 +272,9 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
 
             <Dialog open={showPrintPreview} onClose={() => setShowPrintPreview(false)} fullWidth maxWidth="lg" PaperProps={{ sx: { m: 2, width: 'calc(100% - 32px)', height: 'calc(100% - 32px)' } }} >
                 <DialogTitle>Print Preview <Button onClick={handleActualPrintFromPreview} color="primary" variant="contained" sx={{ position: 'absolute', right: 16, top: 12 }} className="no-print" > Print Now </Button> </DialogTitle>
-                <DialogContent dividers sx={{padding: 0, '&::-webkit-scrollbar': {display: 'none'}, msOverflowStyle: 'none', scrollbarWidth: 'none'}}>
+                <DialogContent dividers sx={{ padding: 0, '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
                     <style>{getPrintStyles()}</style>
-                    <div id="print-preview-render-area" dangerouslySetInnerHTML={{ __html: printPreviewHTML }} style={{ zoom: 0.7, overflow: 'auto', height:'100%', display:'flex', flexDirection: 'column', alignItems:'center', padding: '20px', backgroundColor: '#e0e0e0' }} />
+                    <div id="print-preview-render-area" dangerouslySetInnerHTML={{ __html: printPreviewHTML }} style={{ zoom: 0.7, overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', backgroundColor: '#e0e0e0' }} />
                 </DialogContent>
                 <DialogActions className="no-print"> <Button onClick={() => setShowPrintPreview(false)}>Close Preview</Button> </DialogActions>
             </Dialog>
