@@ -23,15 +23,17 @@ import {
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-
+import InvoiceDialog from '../../components/InvoiceDialog'; // adjust path as needed
 const AdminFees = () => {
   const formatTherapyFee = (amount) => {
     return amount ? `Rs. ${amount.toLocaleString()}` : 'N/A';
   };
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoiceData, setInvoiceData] = useState({});
+  const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
   const [isMonthlyFee, setIsMonthlyFee] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [state, setState] = useState({
     name: '',
@@ -194,24 +196,26 @@ const AdminFees = () => {
     })
       .then(response => {
         console.log('Fee details saved:', response.data);
-        setShowPopup(true); 
-         setIsSuccess(true);
+        setShowPopup(true);
+        setIsSuccess(true);
+        debugger
+        setInvoiceData(response.data.data); // Assuming backend returns the full student data including the saved rollNum
         setMessage("Fee Invoice Generated, Please Check Invoice Portal");
         setState(prev => ({ ...prev, errors: {}, openModal: false }));
       })
       .catch(error => {
-        setShowPopup(false); 
-         setIsSuccess(false);
-         setMessage('Error saving fee details:', error);
+        setShowPopup(false);
+        setIsSuccess(false);
+        setMessage('Error saving fee details:', error);
         console.error('Error saving fee details:', error);
       });
   };
   const handlePopupConfirm = () => {
-        setShowPopup(false);
-        // Assuming invoiceData is set correctly before this point
-        navigate('/Admin/Invoice'); // Original navigation
-        // setShowInvoice(true); // Show invoice dialog instead of navigating away immediately
-    };
+    setShowPopup(false);
+    // Assuming invoiceData is set correctly before this point
+    // navigate('/Admin/Invoice'); // Original navigation
+    setShowInvoice(true); // Show invoice dialog instead of navigating away immediately
+  };
   const handleCloseModal = () => {
     setState(prev => ({ ...prev, error: '', openModal: false }));
   };
@@ -306,54 +310,54 @@ const AdminFees = () => {
 
       {/* Outer conditional: Check if it's NOT in consultancy mode OR if there's data to show */}
       {!state.isConsultancyMode ? (
-          // Case: Not in consultancy mode, display non-consultant students
-          state.filteredData.filter(student => !student.isConsultantStudent).length > 0 ? (
-              <TableContainer component={Paper} style={{ marginTop: '20px', border: '1px solid #ccc' }}>
-                <Table>
-                  <TableHead>
-                    <TableRow style={{ backgroundColor: '#f4f4f4' }}>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Roll Number</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
-                        <TableRow key={student._id}>
-                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
-                          <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
-                          <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
-                          <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
-                          <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
-                          <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
-                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                            {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
-                          </TableCell>
-                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                            {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
-                          </TableCell>
-                          <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                            {formatFee(student.totalFee)}
-                          </TableCell>
-                          <TableCell>
-                            <Box display="flex" gap={2}>
-                              <Button
-                                  variant="contained"
-                                  color="success"
-                                  onClick={() => handleOpenModal(student)}
-                                  disabled={student.status === 'Paid'}
-                              >
-                                Fee Issue
-                              </Button>
-                              {/* The commented-out button is kept as is */}
-                              {/* <Button
+        // Case: Not in consultancy mode, display non-consultant students
+        state.filteredData.filter(student => !student.isConsultantStudent).length > 0 ? (
+          <TableContainer component={Paper} style={{ marginTop: '20px', border: '1px solid #ccc' }}>
+            <Table>
+              <TableHead>
+                <TableRow style={{ backgroundColor: '#f4f4f4' }}>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Roll Number</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
+                  <TableRow key={student._id}>
+                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
+                    </TableCell>
+                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
+                    </TableCell>
+                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
+                      {formatFee(student.totalFee)}
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" gap={2}>
+                        <Button
+                          variant="contained"
+                          color="success"
+                          onClick={() => handleOpenModal(student)}
+                          disabled={student.status === 'Paid'}
+                        >
+                          Fee Issue
+                        </Button>
+                        {/* The commented-out button is kept as is */}
+                        {/* <Button
                     variant="contained"
                     color="success"
                     onClick={handleCallConsultancy}
@@ -361,24 +365,24 @@ const AdminFees = () => {
                   >
                     Consultancy
                   </Button> */}
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-          ) : (
-              // Case: No non-consultant students found
-              <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
-                No record found
-              </Typography>
-          )
-      ) : (
-          // Case: state.isConsultancyMode is true (always show "No record found" in this mode)
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          // Case: No non-consultant students found
           <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
             No record found
           </Typography>
+        )
+      ) : (
+        // Case: state.isConsultancyMode is true (always show "No record found" in this mode)
+        <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
+          No record found
+        </Typography>
       )}
 
       <Dialog open={state.openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
@@ -444,6 +448,7 @@ const AdminFees = () => {
           <Button onClick={handleSaveFee} color="primary">Save</Button>
         </DialogActions>
       </Dialog>
+      <InvoiceDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={invoiceData} />
       {showPopup && (
         <div className="custom-popup-overlay" style={popupOverlayStyle}>
           <div className="custom-popup" style={popupStyle}>
@@ -461,26 +466,26 @@ const AdminFees = () => {
 
 // Basic styles for the popup (can be moved to a CSS file)
 const popupOverlayStyle = {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1300, // Ensure it's above MUI Dialog by default
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1300, // Ensure it's above MUI Dialog by default
 };
 
 const popupStyle = {
-    background: 'white',
-    padding: '20px 40px',
-    borderRadius: '8px',
-    textAlign: 'center',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-    minWidth: '300px',
-    maxWidth: '500px',
+  background: 'white',
+  padding: '20px 40px',
+  borderRadius: '8px',
+  textAlign: 'center',
+  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+  minWidth: '300px',
+  maxWidth: '500px',
 };
 
 export default AdminFees;

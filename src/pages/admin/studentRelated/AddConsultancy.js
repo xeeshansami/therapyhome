@@ -1,10 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Checkbox, TextField, Button, Typography, Paper, FormControlLabel, Grid, FormGroup, FormLabel, RadioGroup, Radio, FormControl, CircularProgress } from '@mui/material';
-import { Select, MenuItem, InputLabel } from '@mui/material';
+import React, {useState, useEffect} from 'react';
+import {
+    Box,
+    Checkbox,
+    TextField,
+    Button,
+    Typography,
+    Paper,
+    FormControlLabel,
+    Grid,
+    FormGroup,
+    FormLabel,
+    RadioGroup,
+    Radio,
+    FormControl,
+    CircularProgress
+} from '@mui/material';
+import {Select, MenuItem, InputLabel} from '@mui/material';
 import logo from "../../../assets/logo.png"; // Assuming you have a logo image
 // import { consultancyRegister } from '../../../redux/userRelated/userHandle'; // Not used in the provided snippet
 // import { useDispatch, useSelector } from 'react-redux'; // Not used in the provided snippet
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import InvoiceDialog from './../../../components/InvoiceDialog'; // adjust path as needed
 
@@ -34,7 +49,7 @@ const AddConsultancy = () => {
     });
 
     useEffect(() => {
-        const { consultancy } = feeDetails;
+        const {consultancy} = feeDetails;
         const total = Number(consultancy || 0);
 
         setFeeDetails(prev => ({
@@ -146,11 +161,11 @@ const AddConsultancy = () => {
             details: ''
         },
         // Therapy specific questions
-        speechQuestions: { q1: '', q2: '', q3: '' },
-        behaviorQuestions: { q1: '', q2: '', q3: '' },
-        occupationalQuestions: { q1: '', q2: '' },
-        remedialQuestions: { q1: '', q2: '' },
-        additionalQuestions: { q1: '', q2: '' },
+        speechQuestions: {q1: '', q2: '', q3: ''},
+        behaviorQuestions: {q1: '', q2: '', q3: ''},
+        occupationalQuestions: {q1: '', q2: ''},
+        remedialQuestions: {q1: '', q2: ''},
+        additionalQuestions: {q1: '', q2: ''},
         acceptedTerms: false, // Added for terms and conditions
     });
 
@@ -177,7 +192,18 @@ const AddConsultancy = () => {
             return;
         }
 
-        const { student, medicalHistory, therapiesSeeking, school, parent, speechQuestions, behaviorQuestions, occupationalQuestions, remedialQuestions, additionalQuestions } = formData;
+        const {
+            student,
+            medicalHistory,
+            therapiesSeeking,
+            school,
+            parent,
+            speechQuestions,
+            behaviorQuestions,
+            occupationalQuestions,
+            remedialQuestions,
+            additionalQuestions
+        } = formData;
         const selectedTherapyObject = therapyFees.find(
             fee => fee.label === selectedTherapy
         );
@@ -246,11 +272,12 @@ const AddConsultancy = () => {
         setLoader(true);
         try {
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentConsultancy`, payload, {
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
             });
             debugger; // Keep for debugging if needed
             if (result.data.status === "00") {
-                // handleSaveFee(student,feeDetails.consultancy,new Date().toISOString().split('T')[0],generatedRollNum);
+                debugger
+                handleSaveFee(result.data.data, feeDetails.consultancy, new Date().toISOString().split('T')[0], generatedRollNum);
                 setMessage("Student consultancy added successfully! Please generate invoice.");
                 setInvoiceData(result.data.data); // Assuming backend returns the full student data including the saved rollNum
                 setIsSuccess(true);
@@ -263,7 +290,7 @@ const AddConsultancy = () => {
             }
         } catch (error) {
             debugger
-            setMessage("Server Error: " + (error.response?.data?.message  || error.message + " Exception" || "Network error."));
+            setMessage("Server Error: " + (error.response?.data?.message || error.message + " Exception" || "Network error."));
             setIsSuccess(false);
             setShowPopup(true);
         } finally {
@@ -271,45 +298,47 @@ const AddConsultancy = () => {
         }
     }
 
-     const handleSaveFee = (selectedStudent,consultancy,date,rollNum) => {
+    const handleSaveFee = (selectedStudent, consultancy, date, rollNum) => {
         debugger
         const fields = {
-          adminID: '684166055d02df2c8772e55a',
-          attendance: [],
-          days: selectedStudent.days,
-          fatherName: selectedStudent.fatherName,
-          totalFee: selectedStudent.totalFee,
-          feeStructure: selectedStudent.feeStructure,
-          HourMinut: selectedStudent.HourMinut,
-          name: selectedStudent.name,
-          parentsContact: selectedStudent.parentsContact,
-          password: '',
-          isPaid: "1",
-          role: 'Student',
-          rollNum: rollNum,
-          date: date,
-          netTotalFee: consultancy,
-          paidFee: consultancy,
-          sclassName: selectedStudent.sclassName,
+            adminID: '684166055d02df2c8772e55a',
+            attendance: [],
+            days: selectedStudent.days,
+            fatherName: selectedStudent.parentName,
+            totalFee: consultancy,
+            feeStructure: selectedStudent.feeStructure,
+            HourMinut: selectedStudent.HourMinut,
+            name: selectedStudent.name,
+            parentsContact: selectedStudent.parentsContact,
+            password: '',
+            isPaid: "1",
+            role: 'Student',
+            rollNum: selectedStudent.rollNum,
+            date: date,
+            netTotalFee: consultancy,
+            paidFee: consultancy,
+            sclassName: selectedStudent.sclassName||'',
+            school: selectedStudent.school||'',
         };
-    
+
         axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
-          headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
         })
-          .then(response => {
-            debugger
-          })
-          .catch(error => {
-            debugger
-            setShowPopup(false); 
-             setIsSuccess(false);
-             setMessage('Error saving fee details:', error);
-            console.error('Error saving fee details:', error);
-          });
-      };
+            .then(response => {
+                debugger
+                console.log(response);
+            })
+            .catch(error => {
+                debugger
+                setShowPopup(false);
+                setIsSuccess(false);
+                setMessage('Error saving fee details:', error);
+                console.error('Error saving fee details:', error);
+            });
+    };
 
     const handleChange = (section, field) => (e) => {
-        const { value, type } = e.target;
+        const {value, type} = e.target;
 
         if (section === 'parent' && field === 'parentsContact') {
             if (value && !value.startsWith('03')) {
@@ -317,8 +346,7 @@ const AddConsultancy = () => {
             } else if (value && value.length > 11) {
                 // Prevent further input if length exceeds 11
                 return;
-            }
-            else {
+            } else {
                 setPhoneError('');
             }
         }
@@ -340,7 +368,7 @@ const AddConsultancy = () => {
             const numericValue = value.replace(/[^0-9]/g, '');
             setFormData(prev => ({
                 ...prev,
-                [section]: { ...prev[section], [field]: numericValue.slice(0, 2) }
+                [section]: {...prev[section], [field]: numericValue.slice(0, 2)}
             }));
             return; // Return early after handling age specifically
         }
@@ -348,21 +376,21 @@ const AddConsultancy = () => {
 
         setFormData(prev => ({
             ...prev,
-            [section]: { ...prev[section], [field]: value }
+            [section]: {...prev[section], [field]: value}
         }));
     };
 
     const handleCheckbox = (section, field) => (e) => {
         setFormData(prev => ({
             ...prev,
-            [section]: { ...prev[section], [field]: e.target.checked }
+            [section]: {...prev[section], [field]: e.target.checked}
         }));
     };
 
     const isEmpty = (value) => value === null || value === undefined || value.toString().trim() === '';
 
     const validateForm = () => {
-        const { student, parent, medicalHistory, therapiesSeeking, school, acceptedTerms } = formData;
+        const {student, parent, medicalHistory, therapiesSeeking, school, acceptedTerms} = formData;
 
         if (isEmpty(student.name) || isEmpty(student.age) || isEmpty(student.dob) || isEmpty(student.gender)) {
             alert('Please complete all student details (Name, Age, DOB, Gender).');
@@ -420,24 +448,42 @@ const AddConsultancy = () => {
     };
 
     return (
-        <Box sx={{ padding: { xs: 1, sm: 2, md: 3 }, maxWidth: 800, margin: 'auto' }}>
-            <Paper elevation={3} sx={{ padding: { xs: 1, sm: 2, md: 3 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4, flexDirection: { xs: 'column', sm: 'row' } }}>
-                    <Box component="img" src={logo} alt="Logo" sx={{ width: { xs: 50, sm: 60 }, height: { xs: 50, sm: 60 }, mr: { sm: 2 }, mb: { xs: 1, sm: 0 } }} />
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', letterSpacing: 1.5, textTransform: 'uppercase', color: 'primary.main', borderBottom: '4px solid', borderColor: 'primary.light', fontSize: { xs: '20px', sm: '25px' }, pb: 0.5, textAlign: 'center' }}>
+        <Box sx={{padding: {xs: 1, sm: 2, md: 3}, maxWidth: 800, margin: 'auto'}}>
+            <Paper elevation={3} sx={{padding: {xs: 1, sm: 2, md: 3}}}>
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 4,
+                    flexDirection: {xs: 'column', sm: 'row'}
+                }}>
+                    <Box component="img" src={logo} alt="Logo"
+                         sx={{width: {xs: 50, sm: 60}, height: {xs: 50, sm: 60}, mr: {sm: 2}, mb: {xs: 1, sm: 0}}}/>
+                    <Typography variant="h4" sx={{
+                        fontWeight: 'bold',
+                        letterSpacing: 1.5,
+                        textTransform: 'uppercase',
+                        color: 'primary.main',
+                        borderBottom: '4px solid',
+                        borderColor: 'primary.light',
+                        fontSize: {xs: '20px', sm: '25px'},
+                        pb: 0.5,
+                        textAlign: 'center'
+                    }}>
                         THERAPY HOME Consultancy Form
                     </Typography>
                 </Box>
 
                 {/* Generated Roll Number Display */}
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{display: 'flex', alignItems: 'flex-start', mb: 2}}>
                     <TextField
                         fullWidth
                         label="Roll Number"
                         value={generatedRollNum}
                         onChange={handleRollNumChange} // New handler for manual input
                         InputProps={{
-                            startAdornment: generatedRollNum === 'Loading...' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null,
+                            startAdornment: generatedRollNum === 'Loading...' ?
+                                <CircularProgress size={20} sx={{mr: 1}}/> : null,
                         }}
                         error={!!rollNumError}
                         helperText={rollNumError || 'Enter number after "THS" prefix or click Generate.'}
@@ -447,7 +493,7 @@ const AddConsultancy = () => {
                         variant="contained"
                         onClick={fetchNextRollNum} // Re-use your fetch function on click
                         disabled={loader}
-                        sx={{ ml: 1, height: '56px' }} // Match height of filled TextField
+                        sx={{ml: 1, height: '56px'}} // Match height of filled TextField
                     >
                         Generate
                     </Button>
@@ -455,9 +501,10 @@ const AddConsultancy = () => {
 
                 {/* Student Details */}
                 <Section title="Student Details">
-                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('student', 'name')} value={formData.student.name} />
+                    <TextField fullWidth label="Full Name" sx={{mb: 2}} onChange={handleChange('student', 'name')}
+                               value={formData.student.name}/>
 
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <Grid container spacing={2} sx={{mb: 2}}>
                         {/* Adjusted grid columns for better spacing. Age and DOB are smaller, Gender is larger. */}
                         <FormControl fullWidth>
                             <InputLabel id="gender-select-label">Gender</InputLabel>
@@ -465,7 +512,7 @@ const AddConsultancy = () => {
                                 labelId="gender-select-label"
                                 value={formData.student.gender}
                                 label="Gender"
-                                InputLabelProps={{ shrink: true }}
+                                InputLabelProps={{shrink: true}}
                                 onChange={handleChange('student', 'gender')}
                             >
                                 <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
@@ -474,14 +521,14 @@ const AddConsultancy = () => {
                                 <MenuItem value="Other">Other</MenuItem>
                             </Select>
                         </FormControl>
-                        <Grid  >
+                        <Grid>
                             <TextField
                                 fullWidth
                                 label="Age"
                                 type="text"
                                 value={formData.student.age}
                                 onChange={handleChange('student', 'age')}
-                                inputProps={{ maxLength: 2 }}
+                                inputProps={{maxLength: 2}}
                             />
                         </Grid>
                         <Grid item xs={12} sm={2}>
@@ -489,7 +536,7 @@ const AddConsultancy = () => {
                                 fullWidth
                                 label="Date of Birth"
                                 type="date"
-                                InputLabelProps={{ shrink: true }}
+                                InputLabelProps={{shrink: true}}
                                 onChange={handleChange('student', 'dob')}
                                 value={formData.student.dob}
                             />
@@ -523,12 +570,12 @@ const AddConsultancy = () => {
                     />
                 </Section>
 
-                <Typography variant="h5" fontWeight="bold" sx={{ mt: 3, mb: 1 }}>Consultant Recommendation:</Typography>
+                <Typography variant="h5" fontWeight="bold" sx={{mt: 3, mb: 1}}>Consultant Recommendation:</Typography>
                 <Section title="Therapies Seeking">
                     <Typography variant="body1" gutterBottom>
                         4. Which therapies are you seeking for?
                     </Typography>
-                    <Grid container spacing={1} sx={{ mb: 2 }}>
+                    <Grid container spacing={1} sx={{mb: 2}}>
                         {['Speech', 'Behavior', 'Occupational', 'Remedial', 'Additional'].map((therapy) => (
                             <Grid item xs={6} sm={4} md={2.4} key={therapy}> {/* Adjusted for 5 items */}
                                 <FormControlLabel
@@ -555,24 +602,48 @@ const AddConsultancy = () => {
 
                 {/* Conditional Therapy Questions Sections */}
                 {formData.therapiesSeeking.speech && (
-                    <TherapyQuestionSection title="Speech Therapy Questions" questions={formData.speechQuestions} sectionName="speechQuestions" onChange={setFormData}
-                        questionTexts={{ q1: "1. Does the child have any difficulty pronouncing words?", q2: "2. Is there any stuttering or fluency problem?", q3: "3. Does the child follow and understand simple instruction?" }} />
+                    <TherapyQuestionSection title="Speech Therapy Questions" questions={formData.speechQuestions}
+                                            sectionName="speechQuestions" onChange={setFormData}
+                                            questionTexts={{
+                                                q1: "1. Does the child have any difficulty pronouncing words?",
+                                                q2: "2. Is there any stuttering or fluency problem?",
+                                                q3: "3. Does the child follow and understand simple instruction?"
+                                            }}/>
                 )}
                 {formData.therapiesSeeking.behavior && (
-                    <TherapyQuestionSection title="Behavior Therapy Questions" questions={formData.behaviorQuestions} sectionName="behaviorQuestions" onChange={setFormData}
-                        questionTexts={{ q1: "1. Does the child have any behavior concerns like TANTRUMS, AGGRESSION, ANXIETY?", q2: "2. Has the child been diagnosed with AUTISM, ADHD, or any other developmental disorder?", q3: "3. Is the child facing social interaction challenges?" }} />
+                    <TherapyQuestionSection title="Behavior Therapy Questions" questions={formData.behaviorQuestions}
+                                            sectionName="behaviorQuestions" onChange={setFormData}
+                                            questionTexts={{
+                                                q1: "1. Does the child have any behavior concerns like TANTRUMS, AGGRESSION, ANXIETY?",
+                                                q2: "2. Has the child been diagnosed with AUTISM, ADHD, or any other developmental disorder?",
+                                                q3: "3. Is the child facing social interaction challenges?"
+                                            }}/>
                 )}
                 {formData.therapiesSeeking.occupational && (
-                    <TherapyQuestionSection title="Occupational Therapy Questions" questions={formData.occupationalQuestions} sectionName="occupationalQuestions" onChange={setFormData}
-                        questionTexts={{ q1: "1. Does the child have any difficulties with daily activities like dressing, feeding, swallowing, and motor coordination?", q2: "2. Does the child have any sensory issues?" }} />
+                    <TherapyQuestionSection title="Occupational Therapy Questions"
+                                            questions={formData.occupationalQuestions}
+                                            sectionName="occupationalQuestions" onChange={setFormData}
+                                            questionTexts={{
+                                                q1: "1. Does the child have any difficulties with daily activities like dressing, feeding, swallowing, and motor coordination?",
+                                                q2: "2. Does the child have any sensory issues?"
+                                            }}/>
                 )}
                 {formData.therapiesSeeking.remedial && (
-                    <TherapyQuestionSection title="Remedial Therapy Questions" questions={formData.remedialQuestions} sectionName="remedialQuestions" onChange={setFormData}
-                        questionTexts={{ q1: "1. Are there any difficulties in learning, reading, writing & remembering?", q2: "2. Is the child receiving any special education services?" }} />
+                    <TherapyQuestionSection title="Remedial Therapy Questions" questions={formData.remedialQuestions}
+                                            sectionName="remedialQuestions" onChange={setFormData}
+                                            questionTexts={{
+                                                q1: "1. Are there any difficulties in learning, reading, writing & remembering?",
+                                                q2: "2. Is the child receiving any special education services?"
+                                            }}/>
                 )}
                 {formData.therapiesSeeking.additional && (
-                    <TherapyQuestionSection title="Additional Program Therapy Questions" questions={formData.additionalQuestions} sectionName="additionalQuestions" onChange={setFormData}
-                        questionTexts={{ q1: "1. Inclusive Education Program (I.E.P)?", q2: "2. Fun & Learn (F&L)?" }} />
+                    <TherapyQuestionSection title="Additional Program Therapy Questions"
+                                            questions={formData.additionalQuestions} sectionName="additionalQuestions"
+                                            onChange={setFormData}
+                                            questionTexts={{
+                                                q1: "1. Inclusive Education Program (I.E.P)?",
+                                                q2: "2. Fun & Learn (F&L)?"
+                                            }}/>
                 )}
 
 
@@ -588,15 +659,16 @@ const AddConsultancy = () => {
                 </Section>
 
                 <Section title="Parent/Guardian Details">
-                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'name')} value={formData.parent.name} />
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                    <TextField fullWidth label="Full Name" sx={{mb: 2}} onChange={handleChange('parent', 'name')}
+                               value={formData.parent.name}/>
+                    <Grid container spacing={2} sx={{mb: 2}}>
                         <FormControl fullWidth>
                             <InputLabel id="gender-select-label">Gender</InputLabel>
                             <Select
                                 labelId="gender-select-label"
                                 value={formData.parent.gender}
                                 label="Gender"
-                                InputLabelProps={{ shrink: true }}
+                                InputLabelProps={{shrink: true}}
                                 onChange={handleChange('parent', 'gender')}
                             >
                                 <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
@@ -611,7 +683,7 @@ const AddConsultancy = () => {
                                 labelId="maritalStatus-select-label"
                                 value={formData.parent.maritalStatus}
                                 label="Marital Status"
-                                InputLabelProps={{ shrink: true }}
+                                InputLabelProps={{shrink: true}}
                                 onChange={handleChange('parent', 'maritalStatus')}
                             >
                                 <MenuItem value="Male">Single</MenuItem>
@@ -622,31 +694,35 @@ const AddConsultancy = () => {
                             </Select>
                         </FormControl>
                         <Grid item xs={12} sm={6} md={4}>
-                            <TextField fullWidth required label="Contact" onChange={handleChange('parent', 'parentsContact')}
-                                value={formData.parent.parentsContact}
-                                inputProps={{ maxLength: 11, type: "tel" }}
-                                error={Boolean(phoneError)}
-                                helperText={phoneError} placeholder='03XXXXXXXXX' />
+                            <TextField fullWidth required label="Contact"
+                                       onChange={handleChange('parent', 'parentsContact')}
+                                       value={formData.parent.parentsContact}
+                                       inputProps={{maxLength: 11, type: "tel"}}
+                                       error={Boolean(phoneError)}
+                                       helperText={phoneError} placeholder='03XXXXXXXXX'/>
                         </Grid>
                         <Grid item xs={12} sm={6} md={4}>
                             <TextField fullWidth required label="CNIC" placeholder='4240123456789' type="tel"
-                                value={formData.parent.parentsCNIC}
-                                error={Boolean(cnicError)}
-                                inputProps={{ maxLength: 13 }}
-                                helperText={cnicError}
-                                onChange={handleChange('parent', 'parentsCNIC')} />
+                                       value={formData.parent.parentsCNIC}
+                                       error={Boolean(cnicError)}
+                                       inputProps={{maxLength: 13}}
+                                       helperText={cnicError}
+                                       onChange={handleChange('parent', 'parentsCNIC')}/>
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
-                            <TextField fullWidth label="Profession" onChange={handleChange('parent', 'profession')} value={formData.parent.profession} />
+                            <TextField fullWidth label="Profession" onChange={handleChange('parent', 'profession')}
+                                       value={formData.parent.profession}/>
 
                         </Grid>
                     </Grid>
-                    <TextField fullWidth multiline rows={3} label="Complete Address" sx={{ mb: 2 }} onChange={handleChange('parent', 'address')} value={formData.parent.address} />
+                    <TextField fullWidth multiline rows={3} label="Complete Address" sx={{mb: 2}}
+                               onChange={handleChange('parent', 'address')} value={formData.parent.address}/>
 
                     {/* Reference Section - Simplified */}
-                    <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>Reference (How did you hear about us?)</Typography>
+                    <Typography variant="subtitle1" sx={{mt: 2, mb: 1}}>Reference (How did you hear about
+                        us?)</Typography>
                     <TextField fullWidth label="Reference Details (e.g., Online, Doctor Name, Other)"
-                        onChange={handleChange('reference', 'details')} value={formData.reference.details} />
+                               onChange={handleChange('reference', 'details')} value={formData.reference.details}/>
                 </Section>
 
                 <Section title="Consultancy Fee">
@@ -672,35 +748,40 @@ const AddConsultancy = () => {
                         onChange={handleTopLevelCheckboxChange('acceptedTerms')} // Corrected onChange
                         name="acceptedTerms"
                     />}
-                    label={<>I agree to the{' '}<Typography component="span" color="primary" sx={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => window.open("/terms", "_blank")}>Terms & Conditions</Typography> *</>}
-                    sx={{ mt: 2, mb: 2 }}
+                    label={<>I agree to the{' '}<Typography component="span" color="primary"
+                                                            sx={{textDecoration: 'underline', cursor: 'pointer'}}
+                                                            onClick={() => window.open("/terms", "_blank")}>Terms &
+                        Conditions</Typography> *</>}
+                    sx={{mt: 2, mb: 2}}
                 />
 
-                <Button type="submit" variant="contained" size="large" fullWidth sx={{ mt: 2, py: 1.5 }} onClick={handleSubmit} disabled={loader}>
-                    {loader ? <CircularProgress size={24} color="inherit" /> : "Submit Form & Proceed"}
+                <Button type="submit" variant="contained" size="large" fullWidth sx={{mt: 2, py: 1.5}}
+                        onClick={handleSubmit} disabled={loader}>
+                    {loader ? <CircularProgress size={24} color="inherit"/> : "Submit Form & Proceed"}
                 </Button>
 
                 {showPopup && (
                     <div className="custom-popup-overlay" style={popupOverlayStyle}>
                         <div className="custom-popup" style={popupStyle}>
-                            <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
+                            <h2 style={{color: isSuccess ? 'green' : 'red'}}>{isSuccess ? "Success!" : "Error"}</h2>
                             <p>{message}</p>
-                            <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
+                            <Button variant="contained"
+                                    onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
                                 {isSuccess ? "Generate Invoice" : "Close"}
                             </Button>
                         </div>
                     </div>
                 )}
-                <InvoiceDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={invoiceData} />
+                <InvoiceDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={invoiceData}/>
             </Paper>
         </Box>
     );
 };
 
 // Helper component for sections to maintain consistency
-const Section = ({ title, children }) => (
-    <Box component="fieldset" sx={{ border: '1px solid #ddd', borderRadius: 1, p: 2, mb: 3 }}>
-        <Typography component="legend" variant="h6" sx={{ px: 1, fontWeight: 'bold', color: 'primary.main' }}>
+const Section = ({title, children}) => (
+    <Box component="fieldset" sx={{border: '1px solid #ddd', borderRadius: 1, p: 2, mb: 3}}>
+        <Typography component="legend" variant="h6" sx={{px: 1, fontWeight: 'bold', color: 'primary.main'}}>
             {title}
         </Typography>
         {children}
@@ -708,27 +789,38 @@ const Section = ({ title, children }) => (
 );
 
 // Helper component for checkbox questions with conditional details TextField
-const Question = ({ label, checked, onChange, details, onDetailsChange, detailsLabel = "If yes, please provide details:" }) => (
-    <Box sx={{ mb: 2 }}>
-        <FormControlLabel control={<Checkbox checked={checked} onChange={onChange} />} label={label} />
+const Question = ({
+                      label,
+                      checked,
+                      onChange,
+                      details,
+                      onDetailsChange,
+                      detailsLabel = "If yes, please provide details:"
+                  }) => (
+    <Box sx={{mb: 2}}>
+        <FormControlLabel control={<Checkbox checked={checked} onChange={onChange}/>} label={label}/>
         {checked && (
-            <TextField fullWidth multiline rows={2} label={detailsLabel} sx={{ mt: 1 }} value={details} onChange={onDetailsChange} variant="outlined" size="small" />
+            <TextField fullWidth multiline rows={2} label={detailsLabel} sx={{mt: 1}} value={details}
+                       onChange={onDetailsChange} variant="outlined" size="small"/>
         )}
     </Box>
 );
 
 // Helper component for therapy-specific radio button questions
-const TherapyQuestionSection = ({ title, questions, sectionName, onChange, questionTexts }) => (
-    <Box mt={2} p={2} border="1px solid #e0e0e0" borderRadius={2} sx={{ mb: 2, backgroundColor: '#fcfcfc' }}>
-        <Typography variant="h6" fontWeight="500" sx={{ mb: 1, color: 'secondary.main' }}>{title}</Typography>
+const TherapyQuestionSection = ({title, questions, sectionName, onChange, questionTexts}) => (
+    <Box mt={2} p={2} border="1px solid #e0e0e0" borderRadius={2} sx={{mb: 2, backgroundColor: '#fcfcfc'}}>
+        <Typography variant="h6" fontWeight="500" sx={{mb: 1, color: 'secondary.main'}}>{title}</Typography>
         {Object.keys(questionTexts).map((key) => (
-            <FormControl key={key} fullWidth sx={{ mt: 1.5, mb: 1 }}>
-                <FormLabel component="legend" sx={{ fontSize: '0.9rem', color: '#555' }}>{questionTexts[key]}</FormLabel>
+            <FormControl key={key} fullWidth sx={{mt: 1.5, mb: 1}}>
+                <FormLabel component="legend" sx={{fontSize: '0.9rem', color: '#555'}}>{questionTexts[key]}</FormLabel>
                 <RadioGroup row value={questions?.[key] || ""}
-                    onChange={(e) => onChange(prev => ({ ...prev, [sectionName]: { ...prev[sectionName], [key]: e.target.value } }))}
+                            onChange={(e) => onChange(prev => ({
+                                ...prev,
+                                [sectionName]: {...prev[sectionName], [key]: e.target.value}
+                            }))}
                 >
-                    <FormControlLabel value="Yes" control={<Radio size="small" />} label="Yes" />
-                    <FormControlLabel value="No" control={<Radio size="small" />} label="No" />
+                    <FormControlLabel value="Yes" control={<Radio size="small"/>} label="Yes"/>
+                    <FormControlLabel value="No" control={<Radio size="small"/>} label="No"/>
                     {/* Add 'Sometimes' or 'Not Applicable' if needed */}
                 </RadioGroup>
             </FormControl>
