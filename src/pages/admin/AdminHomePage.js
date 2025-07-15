@@ -1,4 +1,4 @@
-import { Container, Grid, Paper, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Container, Grid, Paper, MenuItem, Select, FormControl, InputLabel,Typography } from '@mui/material';
 import SeeNotice from '../../components/SeeNotice';
 import Students from "../../assets/img1.png";
 import Classes from "../../assets/img2.png";
@@ -30,6 +30,7 @@ const AdminHomePage = () => {
 
     // State for storing total fee collection and selected month
     const [totalFee, setTotalFee] = useState(0);
+    const [totalDailyFee, setDailyTotalFee] = useState(0);
     const [selectedMonth, setSelectedMonth] = useState(() => {
         const currentMonthIndex = new Date().getMonth();
         return months[currentMonthIndex];
@@ -44,6 +45,7 @@ const AdminHomePage = () => {
         dispatch(getAllTeachers(adminID));
 
         fetchTotalFee(selectedMonth); // Fetch total fee for the current month by default
+        fetchDailyTotalFee(); // Fetch total fee for the current month by default
     }, [adminID, dispatch]);
 
     const fetchTotalFee = async (month) => {
@@ -51,6 +53,16 @@ const AdminHomePage = () => {
             let url = `${process.env.REACT_APP_BASE_URL}/TotalStudentsFeeCollections?month=${month}`;
             const response = await axios.get(url);
             setTotalFee(response.data.totalFee || 0);
+        } catch (error) {
+            console.error("Error fetching total fee collection:", error);
+        }
+    };
+
+    const fetchDailyTotalFee = async () => {
+        try {
+            let url = `${process.env.REACT_APP_BASE_URL}/TotalDailyStudentsFeeCollections`;
+            const response = await axios.get(url);
+            setDailyTotalFee(response.data.totalFee || 0);
         } catch (error) {
             console.error("Error fetching total fee collection:", error);
         }
@@ -67,9 +79,9 @@ const AdminHomePage = () => {
     const numberOfClasses = sclassesList && sclassesList.length;
     const numberOfTeachers = teachersList && teachersList.length;
 
-    
+
     return (
-        
+
         <>
             <StyledContainerBackground>
                 <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -116,8 +128,19 @@ const AdminHomePage = () => {
                         <Grid item xs={12} md={3} lg={3}>
                             <StyledPaper>
                                 <img src={Fees} alt="Fees" />
-                                <Title>Fees Collection</Title>
-                                <Data start={0} end={totalFee} duration={2.5} prefix="PKR " />
+                                <Title>Fees Collection Daily</Title>
+                                <Data start={0} end={totalDailyFee} duration={2.5} prefix="PKR " />
+                            </StyledPaper>
+                        </Grid>
+                        <Grid item xs={12} md={3} lg={3}>
+                            <StyledPaper>
+                                <img src={Fees} alt="Fees" />
+                                <Title>Fees Collection Monthly</Title>
+
+                                <Typography variant="h6" style={{ color: 'red', fontWeight: 'bold' }}>
+                                    <Data start={0} end={totalFee} duration={2.5} prefix="PKR " />
+                                </Typography>
+
                             </StyledPaper>
                         </Grid>
                         <Grid item xs={12} md={12} lg={12}>
