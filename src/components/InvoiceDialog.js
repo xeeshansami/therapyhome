@@ -256,10 +256,85 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                     <DialogTitle sx={{ display: 'none' }}>Invoice</DialogTitle>
                     <DialogContent sx={{ padding: 0, width: 'auto', maxWidth: 'initial', overflow: 'visible' }}>
                         <div id="invoice-dialog" style={invoiceStyle}>
-                            <header className="header" style={headerStyle}><div className="logo-container" style={logoContainerStyle}><img src={appIcon} alt="Logo" className="logo" style={logoStyle} /><div className="therapy-home" style={therapyHomeStyle}>THERAPY HOME</div></div><div className="slip-no" style={slipNoStyle}>SLIP NO. <span style={slipNoSpanStyle}>{('000' + Date.now().toString().slice(-3)).slice(-3)}</span></div></header>
-                            <div className="info-section" style={infoSectionStyle}><div className="info-row" style={infoRowStyle}><div className="info-label" style={infoLabelStyle}>DATE:</div><div className="info-value" style={infoValueStyle}>{new Date().toLocaleDateString()}</div><div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>GR NO:</div><div className="info-value" style={infoValueStyle}>{currentData.rollNum}</div></div><div className="info-row" style={infoRowStyle}><div className="info-label" style={infoLabelStyle}>STUDENT NAME:</div><div className="info-value" style={infoValueStyle}>{currentData.name}</div><div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>FATHER NAME:</div><div className="info-value" style={infoValueStyle}>{currentData.parentName}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>MONTHLY FEES:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='2'?JSON.parse(currentData?.therapyPlan || '{}').perMonthCost || 0:'N/A'}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>ADMISSION:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='1'?currentData.admissionFee:'N/A'}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>PER SESSION:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='2'?JSON.parse(currentData?.therapyPlan || '{}').perSessionCost || 0:'N/A'}</div></div><div className="info-row" style={infoRowStyle}><div className="fee-label" style={feeLabelStyle}>Security Deposit:</div><div className="fee-value" style={feeValueStyle}>{currentData.isConsultancyOrIsRegistrationOrMonthly=='1'?currentData.securityDeposit:'N/A'}</div><div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Consultancy Fee:</div><div className="fee-value" style={feeValueStyle}>{(currentData.isConsultantStudent && currentData.isConsultancyOrIsRegistrationOrMonthly=='0') ? currentData.netTotalFee : 'N/A'}</div><div className="balance-label" style={{ ...balanceLabelStyle, marginLeft: '10px' }}>BALANCE DUE:</div><div className="balance-value" style={balanceValueStyle}>{(parseFloat(currentData.netTotalFee) || 0) - (parseFloat(currentData.paidFee) || 0)}</div></div></div>
-                            <div className="stamp-signature" style={stampSignatureStyle}><div className="stamp-container" style={stampContainerStyle}>STAMP<div className="stamp" style={stampStyle}><img src={stampImage} alt="Stamp" style={stampImageStyle} /></div></div><div className="signature-container" style={signatureContainerStyle}>SIGNATURE<div className="signature-line" style={signatureLineStyle}></div></div></div>
-                            <p className="note" style={noteStyle}><strong style={noteStrongStyle}>Note:</strong> All types of charges should be payable in advance. In case of not paying on time failure to adhere will be applied upon balance may result in Rs. 50/- no exchange request will be entertain in any case.</p><div className="website-info" style={websiteInfoStyle}>Website: <a href="http://www.therapyhome.com.pk" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>www.therapyhome.com.pk</a> | Email: <a href="mailto:therapyhome@gmail.com" style={websiteLinkStyle}>therapyhome@gmail.com</a> <br /> Facebook: <a href="https://www.facebook.com/Therapyhome/" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>Therapyhome</a> | Instagram: <a href="https://www.instagram.com/therapyhomeofficial/" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>Therapyhomeofficial</a></div>
+                            <header className="header" style={headerStyle}>
+                                <div className="logo-container" style={logoContainerStyle}>
+                                    <img src={appIcon} alt="Logo" className="logo" style={logoStyle} />
+                                    <div className="therapy-home" style={therapyHomeStyle}>THERAPY HOME</div>
+                                </div>
+                                <div className="slip-no" style={slipNoStyle}>INVOICE# <span style={slipNoSpanStyle}>{currentData.invoiceID}</span></div>
+                            </header>
+
+                            <div className="info-section" style={infoSectionStyle}>
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="info-label" style={infoLabelStyle}>DATE:</div>
+                                    <div className="info-value" style={infoValueStyle}>{new Date().toLocaleDateString()}</div>
+                                    <div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>GR NO:</div>
+                                    <div className="info-value" style={infoValueStyle}>{currentData.rollNum}</div>
+                                </div>
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="info-label" style={infoLabelStyle}>STUDENT NAME:</div>
+                                    <div className="info-value" style={infoValueStyle}>{currentData.name}</div>
+                                    <div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>FATHER NAME:</div>
+                                    <div className="info-value" style={infoValueStyle}>{currentData.parentName}</div>
+                                </div>
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="fee-label" style={{ ...feeLabelStyle, }}>Monthly Fee's:</div>
+                                    <div className="fee-value" style={feeValueStyle}>
+                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '2' ? JSON.parse(currentData?.therapyPlan || '{}').perMonthCost || 0 : 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="fee-label" style={feeLabelStyle}>Admission Fee's:</div>
+                                    <div className="fee-value" style={feeValueStyle}>
+                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '1' ? currentData.admissionFee : 'N/A'}
+                                    </div>
+                                    <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Per Session:</div>
+                                    <div className="fee-value" style={feeValueStyle}>
+                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '2' ? JSON.parse(currentData?.therapyPlan || '{}').perSessionCost || 0 : 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="fee-label" style={feeLabelStyle}>Security Deposit:</div>
+                                    <div className="fee-value" style={feeValueStyle}>
+                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '1' ? currentData.securityDeposit : 'N/A'}
+                                    </div>
+                                    <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Consultancy Fee's:</div>
+                                    <div className="fee-value" style={feeValueStyle}>
+                                        {(currentData.isConsultantStudent && currentData.isConsultancyOrIsRegistrationOrMonthly === '0') ? currentData.netTotalFee : 'N/A'}
+                                    </div>
+                                </div>
+
+                                {/* NEW ROW FOR PAID AMOUNT AND BALANCE DUE */}
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="fee-label" style={feeLabelStyle}>Paid Amount:</div>
+                                    <div className="fee-value" style={{ ...feeValueStyle, color: 'green', fontWeight: 'bold' }}>
+                                        {currentData.paidFee || 0} {/* Green Highlight */}
+                                    </div>
+                                    <div className="balance-label" style={{ ...balanceLabelStyle, marginLeft: '10px' }}>Balance Due:</div>
+                                    <div className="balance-value" style={{ ...balanceValueStyle, color: 'red', fontWeight: 'bold' }}>
+                                        {(parseFloat(currentData.netTotalFee) || 0) - (parseFloat(currentData.paidFee) || 0)} {/* Red Highlight */}
+                                    </div>
+                                </div>
+
+                            </div> {/* End of info-section */}
+
+                            <div className="stamp-signature" style={stampSignatureStyle}>
+                                <div className="stamp-container" style={stampContainerStyle}>STAMP
+                                    <div className="stamp" style={stampStyle}>
+                                        <img src={stampImage} alt="Stamp" style={stampImageStyle} />
+                                    </div>
+                                </div>
+                                <div className="signature-container" style={signatureContainerStyle}>SIGNATURE
+                                    <div className="signature-line" style={signatureLineStyle}></div>
+                                </div>
+                            </div>
+                            <p className="note" style={noteStyle}>
+                                <strong style={noteStrongStyle}>Note:</strong> All types of charges should be payable in advance. In case of not paying on time failure to adhere will be applied upon balance may result in Rs. 50/- no exchange request will be entertain in any case.
+                            </p>
+                            <div className="website-info" style={websiteInfoStyle}>
+                                Website: <a href="http://www.therapyhome.com.pk" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>www.therapyhome.com.pk</a> | Email: <a href="mailto:therapyhome@gmail.com" style={websiteLinkStyle}>therapyhome@gmail.com</a> <br />
+                                Facebook: <a href="https://www.facebook.com/Therapyhome/" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>Therapyhome</a> | Instagram: <a href="https://www.instagram.com/therapyhomeofficial/" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>Therapyhomeofficial</a>
+                            </div>
                         </div>
                     </DialogContent>
                     <DialogActions id="invoice-dialog-actions" sx={{ pt: 2, justifyContent: 'center', width: '100%', maxWidth: '8.5in' }}>
@@ -269,7 +344,6 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                     </DialogActions>
                 </Box>
             </Dialog>
-
             <Dialog open={showPrintPreview} onClose={() => setShowPrintPreview(false)} fullWidth maxWidth="lg" PaperProps={{ sx: { m: 2, width: 'calc(100% - 32px)', height: 'calc(100% - 32px)' } }} >
                 <DialogTitle>Print Preview <Button onClick={handleActualPrintFromPreview} color="primary" variant="contained" sx={{ position: 'absolute', right: 16, top: 12 }} className="no-print" > Print Now </Button> </DialogTitle>
                 <DialogContent dividers sx={{ padding: 0, '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none' }}>

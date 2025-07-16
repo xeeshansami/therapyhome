@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import {
-  Button, TextField, CircularProgress, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel,
+  Button, TextField, CircularProgress, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel,InputAdornment
 } from '@mui/material';
 import styled from 'styled-components';
+import InvoiceDialog from './../../components/InvoiceDialog'; // adjust path as needed
 
 // Styling components
 const AdminInvoiceContainer = styled.div`
@@ -48,6 +49,8 @@ class AdminInvoice extends Component {
     feeRecords: [],
     loading: false,
     error: '',
+    showInvoice: false, // New state for controlling InvoiceDialog visibility
+    invoiceData: {},    // New state to hold data for the invoice
   };
 
   fetchStudentFee = async () => {
@@ -93,16 +96,38 @@ class AdminInvoice extends Component {
       this.setState({ name: value });
     }
   };
-   generateInvoice = (feeRecord) => {
-    // For now, let's just log the feeRecord to the console.
-    // In a real application, you would implement your invoice generation logic here,
-    // e.g., opening a modal, navigating to a new page, or making another API call.
-    console.log("Generating invoice for:", feeRecord);
-    alert(`Generate invoice for Roll Number: ${feeRecord.rollNum}, Name: ${feeRecord.name}`);
+
+  // Modified generateInvoice function to set invoiceData and showInvoice
+  generateInvoice = async (feeRecord) => {
+    // You'll need to fetch the full student data here, similar to AdminFees' handleSaveFee
+    // This is crucial because the `InvoiceDialog` likely needs comprehensive student details,
+    // not just the fee record.
+    try {
+      const studentResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${feeRecord.rollNum}`);
+      if (studentResponse.data && studentResponse.data.length > 0) {
+        const fullStudentData = studentResponse.data[0];
+        // Merge feeRecord with full student data
+        const mergedData = {
+          ...feeRecord,
+          ...fullStudentData,
+        };
+        this.setState({ invoiceData: mergedData, showInvoice: true });
+      } else {
+        console.warn("Could not find full student data for invoice. Using only fee record.");
+        this.setState({ invoiceData: feeRecord, showInvoice: true }); // Fallback to fee record if full student data isn't found
+      }
+    } catch (error) {
+      console.error("Error fetching student data for invoice:", error);
+      this.setState({ invoiceData: feeRecord, showInvoice: true }); // Fallback even on error
+    }
+  };
+
+  handleCloseInvoice = () => {
+    this.setState({ showInvoice: false, invoiceData: {} });
   };
 
   render() {
-    const { feeRecords, loading, error, searchBy, rollNum, name } = this.state;
+    const { feeRecords, loading, error, searchBy, rollNum, name, showInvoice, invoiceData } = this.state;
 
     return (
       <AdminInvoiceContainer>
@@ -125,6 +150,9 @@ class AdminInvoice extends Component {
             value={rollNum}
             onChange={this.handleRollNumChange}
             fullWidth
+            InputProps={{
+              startAdornment: <InputAdornment position="start">THS</InputAdornment>,
+              }}
             style={{ marginTop: '20px' }}
           />
         ) : (
@@ -165,6 +193,7 @@ class AdminInvoice extends Component {
             <Table>
               <thead>
                 <tr>
+                  <TableHeader>Invoice No</TableHeader>
                   <TableHeader>Roll Number</TableHeader>
                   <TableHeader>Name</TableHeader>
                   <TableHeader>Father's Name</TableHeader>
@@ -175,12 +204,13 @@ class AdminInvoice extends Component {
                   <TableHeader>Balance Due</TableHeader>
                   <TableHeader>Paid Amount</TableHeader>
                   <TableHeader>Status</TableHeader>
-                   <TableHeader>Action</TableHeader>
+                  <TableHeader>Action</TableHeader>
                 </tr>
               </thead>
               <tbody>
                 {feeRecords.map((feeRecord) => (
                   <tr key={feeRecord.id}>
+                    <TableCell>{feeRecord.invoiceID}</TableCell>
                     <TableCell>{feeRecord.rollNum}</TableCell>
                     <TableCell>{feeRecord.name}</TableCell>
                     <TableCell>{feeRecord.fatherName}</TableCell>
@@ -208,7 +238,7 @@ class AdminInvoice extends Component {
                     >
                       {feeRecord.netTotalFee - feeRecord.paidFee === 0 ? '✔️' : '❌'}
                     </TableCell>
-                     <TableCell>
+                    <TableCell>
                       <Button
                         variant="contained"
                         color="secondary"
@@ -223,6 +253,9 @@ class AdminInvoice extends Component {
             </Table>
           </FeeRecordsContent>
         )}
+
+        {/* Invoice Dialog */}
+        <InvoiceDialog open={showInvoice} onClose={this.handleCloseInvoice} data={invoiceData} />
       </AdminInvoiceContainer>
     );
   }

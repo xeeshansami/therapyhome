@@ -39,6 +39,8 @@ const AddConsultancy = () => {
     // const [cnic, setCNIC] = useState(''); // Redundant
 
     const [generatedRollNum, setGeneratedRollNum] = useState('Loading...');
+    const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('Loading...');
+    const [invoiceNoError, setInvoiceNoError] = useState('');
     const [rollNumError, setRollNumError] = useState('');
     const [rollNumInput, setRollNumInput] = useState('');
 
@@ -67,6 +69,7 @@ const AddConsultancy = () => {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/GenerateNextRollNum`);
             if (response.data && response.data.rollNum) {
                 setGeneratedRollNum(response.data.rollNum);
+                fetchNextInvoiceNo();
                 // Extract the numeric part if needed, assuming format "THS123"
                 setRollNumInput(response.data.rollNum.replace('THS', ''));
             } else {
@@ -79,6 +82,26 @@ const AddConsultancy = () => {
             console.error("Error fetching next roll number:", error);
             setGeneratedRollNum('Error');
             setRollNumError('Failed to fetch roll number.');
+        } finally {
+            setLoader(false);
+        }
+    };
+    const fetchNextInvoiceNo = async () => {
+        try {
+            setLoader(true);
+            setInvoiceNoError(''); // Clear previous errors
+            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/invoices/next-number`);
+            if (response.data && response.data.invoiceNum) {
+                setGeneratedInvoiceNo(response.data.invoiceNum);
+            } else {
+                setGeneratedInvoiceNo('THS16072025-01'); // Default fallback
+                console.warn("Could not fetch invoice number, defaulting.");
+                setInvoiceNoError('Could not generate invoice number automatically.');
+            }
+        } catch (error) {
+            console.error("Error fetching next invoice number:", error);
+            setGeneratedInvoiceNo('Error');
+            setInvoiceNoError('Failed to fetch invoice number.');
         } finally {
             setLoader(false);
         }
@@ -309,6 +332,7 @@ const AddConsultancy = () => {
             parentsContact: selectedStudent.parentsContact,
             isPaid: "1",
             role: 'Student',
+            invoiceID:generatedInvoiceNo,
             rollNum: selectedStudent.rollNum,
             date: date,
             netTotalFee: consultancy,
