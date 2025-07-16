@@ -355,7 +355,7 @@ const AddConsultancy = () => {
             schoolDetails: school.attends ? school.details : '',
 
             // --- Reference (Nested Object) ---
-            reference:reference.details,
+            reference: reference.details,
 
             // --- Consultant Recommendation Section (Boolean conversions) ---
             rec_speech_difficultyPronouncing: convertToBoolean(speechQuestions.q1),
@@ -427,7 +427,7 @@ const AddConsultancy = () => {
         const fields = {
             adminID: '684166055d02df2c8772e55a',
             attendance: [],
-            fatherName: selectedStudent.parentName,
+            parentName: selectedStudent.parentName,
             name: selectedStudent.name,
             parentsContact: selectedStudent.parentsContact,
             isPaid: "1",
@@ -512,6 +512,44 @@ const AddConsultancy = () => {
         }));
     };
 
+    const handleCnicChange = (e) => {
+        // 1. Get the raw input value and remove all non-digit characters.
+        let rawValue = e.target.value.replace(/[^0-9]/g, '');
+
+        // 2. Limit the total number of digits to 13.
+        if (rawValue.length > 13) {
+            rawValue = rawValue.slice(0, 13);
+        }
+
+        // 3. Apply the formatting: XXXXX-XXXXXXX-X
+        let formattedValue = rawValue;
+        if (rawValue.length > 5) {
+            // Add hyphen after the 5th digit
+            formattedValue = `${rawValue.slice(0, 5)}-${rawValue.slice(5)}`;
+        }
+        if (rawValue.length > 12) {
+            // Add hyphen after the 12th digit (5 + 7)
+            formattedValue = `${rawValue.slice(0, 5)}-${rawValue.slice(5, 12)}-${rawValue.slice(12)}`;
+        }
+
+        // 4. Update the state directly.
+        setFormData(prevState => ({
+            ...prevState,
+            parent: {
+                ...prevState.parent,
+                parentsCNIC: formattedValue,
+            },
+        }));
+
+
+        // 5. Optional: Basic validation for CNIC length.
+        if (formattedValue.length > 0 && formattedValue.length < 15) {
+            setCNICError('CNIC must be 13 digits.');
+        } else {
+            setCNICError('');
+        }
+    };
+
     const handleCheckbox = (section, field) => (e) => {
         setFormData(prev => ({
             ...prev,
@@ -539,7 +577,7 @@ const AddConsultancy = () => {
         } else {
             setPhoneError('');
         }
-        if (parent.parentsCNIC.length !== 13) {
+        if (parent.parentsCNIC.length < 13) {
             alert('Parent CNIC must be 13 digits.');
             setCNICError('Parent CNIC must be 13 digits.');
             return false;
@@ -833,13 +871,20 @@ const AddConsultancy = () => {
                                 error={Boolean(phoneError)}
                                 helperText={phoneError} placeholder='03XXXXXXXXX' />
                         </Grid>
+                        {/* CNIC Field with Auto-Formatting */}
                         <Grid item xs={12} sm={6} md={4}>
-                            <TextField fullWidth required label="CNIC" placeholder='4240123456789' type="tel"
+                            <TextField
+                                fullWidth
+                                required
+                                label="CNIC"
+                                placeholder='XXXXX-XXXXXXX-X'
+                                type="tel"
                                 value={formData.parent.parentsCNIC}
                                 error={Boolean(cnicError)}
-                                inputProps={{ maxLength: 13 }}
-                                helperText={cnicError}
-                                onChange={handleChange('parent', 'parentsCNIC')} />
+                                inputProps={{ maxLength: 15 }} // 13 digits + 2 hyphens
+                                helperText={cnicError || "A 13-digit CNIC will be auto-formatted."}
+                                onChange={handleCnicChange}
+                            />
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
                             <TextField fullWidth label="Profession" onChange={handleChange('parent', 'profession')}
