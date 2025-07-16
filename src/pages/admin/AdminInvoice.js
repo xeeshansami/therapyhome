@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import {
-  Button, TextField, CircularProgress, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel,InputAdornment
+  Button, TextField, CircularProgress, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, InputAdornment,
 } from '@mui/material';
 import styled from 'styled-components';
 import InvoiceDialog from './../../components/InvoiceDialog'; // adjust path as needed
 
-// Styling components
+// Styling components (these remain the same)
 const AdminInvoiceContainer = styled.div`
   padding: 20px;
   width: 100%;
@@ -43,31 +43,66 @@ const TableHeader = styled.th`
 
 class AdminInvoice extends Component {
   state = {
-    rollNum: '',
-    name: '',
-    searchBy: 'roll',
+    rollNum: '', // Value for Roll Number input
+    name: '',    // Value for Name input
+    parentsContact: '', // New: Value for Parents Contact input
+    invoiceID: '', // New: Value for Invoice ID input
+    searchBy: 'rollNum', // Default search option
     feeRecords: [],
     loading: false,
     error: '',
-    showInvoice: false, // New state for controlling InvoiceDialog visibility
-    invoiceData: {},    // New state to hold data for the invoice
+    showInvoice: false,
+    invoiceData: {},
   };
 
   fetchStudentFee = async () => {
-    const { rollNum, name, searchBy } = this.state;
+    const { rollNum, name, parentsContact, invoiceID, searchBy } = this.state;
     this.setState({ loading: true, error: '', feeRecords: [] });
 
     try {
       let url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/`;
-      if (searchBy === 'roll') {
-        url += rollNum;
-      } else {
-        url += name;
+      let searchValue = ''; // This will hold the value to send to the API
+
+      // Determine which value to use based on searchBy
+      switch (searchBy) {
+        case 'rollNum':
+          // Assuming backend expects "THS" prefix for roll numbers, if not, remove the prefix here.
+          searchValue = rollNum;
+          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
+          break;
+        case 'name':
+          searchValue = name;
+          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
+          break;
+        case 'parentsContact': // New API endpoint for Parents Contact
+          searchValue = parentsContact;
+          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
+          break;
+        case 'invoiceID': // New API endpoint for Invoice ID
+          searchValue = invoiceID;
+          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
+          break;
+        default:
+          this.setState({ loading: false, error: 'Invalid search criteria selected.' });
+          return;
       }
+
+      // Ensure a search value is provided
+      if (!searchValue) {
+        this.setState({ loading: false, error: 'Please enter a value to search.' });
+        return;
+      }
+
       const response = await axios.get(url);
-      this.setState({ feeRecords: response.data, loading: false });
+
+      if (response.data && response.data.length > 0) {
+        this.setState({ feeRecords: response.data, loading: false });
+      } else {
+        this.setState({ feeRecords: [], loading: false, error: 'No fee records found for the given criteria.' });
+      }
     } catch (err) {
-      this.setState({ loading: false, error: 'Error fetching student fee data' });
+      console.error("Error fetching student fee data:", err);
+      this.setState({ loading: false, error: 'Error fetching student fee data. Please try again.' });
     }
   };
 
@@ -75,38 +110,68 @@ class AdminInvoice extends Component {
     this.setState({ loading: true, error: '', feeRecords: [] });
 
     try {
-      let url = `${process.env.REACT_APP_BASE_URL}/AllFeeStudents`;
+      const url = `${process.env.REACT_APP_BASE_URL}/AllFeeStudents`;
       const response = await axios.get(url);
       this.setState({ feeRecords: response.data, loading: false });
     } catch (err) {
-      this.setState({ loading: false, error: 'Error fetching all student fee data' });
+      console.error("Error fetching all student fee data:", err);
+      this.setState({ loading: false, error: 'Error fetching all student fee data.' });
     }
   };
 
-  handleRollNumChange = (e) => {
-    const value = e.target.value;
-    if (/^[0-9a-zA-Z\s]*$/.test(value)) {
-      this.setState({ rollNum: value });
+  // New: handleKeyPress for search on Enter
+  handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      this.fetchStudentFee();
     }
   };
 
-  handleNameChange = (e) => {
-    const value = e.target.value;
-    if (/^[0-9a-zA-Z\s]*$/.test(value)) {
-      this.setState({ name: value });
+ // --- MODIFIED handleInputChange ---
+  handleInputChange = (fieldName) => (e) => {
+    let value = e.target.value;
+
+    switch (fieldName) {
+      case 'rollNum':
+        // For rollNum, remove all spaces and restrict to alphanumeric characters
+        value = value.replace(/\s/g, '');
+        if (!/^[0-9a-zA-Z]*$/.test(value)) {
+          // If after removing spaces, it contains invalid chars, don't update state
+          return;
+        }
+        break;
+      case 'parentsContact':
+        // For parentsContact, allow only digits, plus signs, and hyphens, no letters or other symbols
+        if (!/^[0-9+-]*$/.test(value)) {
+          return;
+        }
+        break;
+      case 'invoiceID':
+        // For invoiceID, remove all spaces and restrict to alphanumeric and hyphens
+        value = value.replace(/\s/g, '');
+        if (!/^[0-9a-zA-Z-]*$/.test(value)) {
+          return;
+        }
+        break;
+      case 'name':
+        // For name, allow letters and spaces, but remove any non-alphabetic/non-space characters
+        value = value.replace(/[^a-zA-Z\s]/g, '');
+        break;
+      default:
+        // Default behavior for any other fieldName not explicitly handled
+        if (!/^[0-9a-zA-Z\s-]*$/.test(value)) {
+          return;
+        }
     }
+
+    this.setState({ [fieldName]: value });
   };
 
-  // Modified generateInvoice function to set invoiceData and showInvoice
+  // Modified generateInvoice function (remains largely the same as previous updates)
   generateInvoice = async (feeRecord) => {
-    // You'll need to fetch the full student data here, similar to AdminFees' handleSaveFee
-    // This is crucial because the `InvoiceDialog` likely needs comprehensive student details,
-    // not just the fee record.
     try {
       const studentResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${feeRecord.rollNum}`);
       if (studentResponse.data && studentResponse.data.length > 0) {
         const fullStudentData = studentResponse.data[0];
-        // Merge feeRecord with full student data
         const mergedData = {
           ...feeRecord,
           ...fullStudentData,
@@ -114,11 +179,11 @@ class AdminInvoice extends Component {
         this.setState({ invoiceData: mergedData, showInvoice: true });
       } else {
         console.warn("Could not find full student data for invoice. Using only fee record.");
-        this.setState({ invoiceData: feeRecord, showInvoice: true }); // Fallback to fee record if full student data isn't found
+        this.setState({ invoiceData: feeRecord, showInvoice: true });
       }
     } catch (error) {
       console.error("Error fetching student data for invoice:", error);
-      this.setState({ invoiceData: feeRecord, showInvoice: true }); // Fallback even on error
+      this.setState({ invoiceData: feeRecord, showInvoice: true });
     }
   };
 
@@ -127,7 +192,34 @@ class AdminInvoice extends Component {
   };
 
   render() {
-    const { feeRecords, loading, error, searchBy, rollNum, name, showInvoice, invoiceData } = this.state;
+    const { feeRecords, loading, error, searchBy, rollNum, name, parentsContact, invoiceID, showInvoice, invoiceData } = this.state;
+
+    // Determine the label and value for the single search TextField
+    let textFieldLabel = '';
+    let textFieldValue = '';
+    let inputAdornment = null; // For the "THS" prefix
+
+    switch (searchBy) {
+      case 'rollNum':
+        textFieldLabel = 'Enter Roll Number';
+        textFieldValue = rollNum;
+        inputAdornment = <InputAdornment position="start">THS</InputAdornment>;
+        break;
+      case 'name':
+        textFieldLabel = 'Enter Student Name';
+        textFieldValue = name;
+        break;
+      case 'parentsContact':
+        textFieldLabel = 'Enter Parent Contact';
+        textFieldValue = parentsContact;
+        break;
+      case 'invoiceID':
+        textFieldLabel = 'Enter Invoice ID';
+        textFieldValue = invoiceID;
+        break;
+      default:
+        textFieldLabel = 'Select search type';
+    }
 
     return (
       <AdminInvoiceContainer>
@@ -136,35 +228,37 @@ class AdminInvoice extends Component {
           <RadioGroup
             row
             value={searchBy}
-            onChange={(e) => this.setState({ searchBy: e.target.value })}
+            onChange={(e) => {
+              // Clear all input values when switching search type
+              this.setState({
+                searchBy: e.target.value,
+                rollNum: '',
+                name: '',
+                parentsContact: '',
+                invoiceID: ''
+              });
+            }}
           >
-            <FormControlLabel value="roll" control={<Radio />} label="Roll Number" />
+            <FormControlLabel value="rollNum" control={<Radio />} label="Roll Number" />
             <FormControlLabel value="name" control={<Radio />} label="Name" />
+            <FormControlLabel value="parentsContact" control={<Radio />} label="Parent Contact" /> {/* New Radio Option */}
+            <FormControlLabel value="invoiceID" control={<Radio />} label="Invoice ID" /> {/* New Radio Option */}
           </RadioGroup>
         </FormControl>
 
-        {searchBy === 'roll' ? (
-          <TextField
-            label="Enter Roll Number"
-            variant="outlined"
-            value={rollNum}
-            onChange={this.handleRollNumChange}
-            fullWidth
-            InputProps={{
-              startAdornment: <InputAdornment position="start">THS</InputAdornment>,
-              }}
-            style={{ marginTop: '20px' }}
-          />
-        ) : (
-          <TextField
-            label="Enter Name"
-            variant="outlined"
-            value={name}
-            onChange={this.handleNameChange}
-            fullWidth
-            style={{ marginTop: '20px' }}
-          />
-        )}
+        {/* Single TextField for all search types */}
+        <TextField
+          label={textFieldLabel}
+          variant="outlined"
+          onKeyPress={this.handleKeyPress}
+          value={textFieldValue}
+          onChange={this.handleInputChange(searchBy)} // Use searchBy to set correct state field
+          fullWidth
+          style={{ marginTop: '20px' }}
+          InputProps={{ // Apply InputAdornment only for Roll Number
+            startAdornment: inputAdornment,
+          }}
+        />
 
         <Button
           variant="contained"
@@ -210,7 +304,7 @@ class AdminInvoice extends Component {
               <tbody>
                 {feeRecords.map((feeRecord) => (
                   <tr key={feeRecord.id}>
-                    <TableCell>{feeRecord.invoiceID}</TableCell>
+                    <TableCell>{feeRecord.invoiceID}</TableCell> {/* Display Invoice ID */}
                     <TableCell>{feeRecord.rollNum}</TableCell>
                     <TableCell>{feeRecord.name}</TableCell>
                     <TableCell>{feeRecord.fatherName}</TableCell>
