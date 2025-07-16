@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import {
-  Button, TextField, CircularProgress, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, InputAdornment,
+  Button, TextField, CircularProgress, Radio, Box,RadioGroup, FormControlLabel, FormControl, FormLabel, InputAdornment,
 } from '@mui/material';
 import styled from 'styled-components';
 import InvoiceDialog from './../../components/InvoiceDialog'; // adjust path as needed
@@ -48,6 +48,7 @@ class AdminInvoice extends Component {
     parentsContact: '', // New: Value for Parents Contact input
     invoiceID: '', // New: Value for Invoice ID input
     searchBy: 'rollNum', // Default search option
+    feeTypeFilter: 'All', // New: Default secondary filter option
     feeRecords: [],
     loading: false,
     error: '',
@@ -55,45 +56,53 @@ class AdminInvoice extends Component {
     invoiceData: {},
   };
 
+  // --- START MODIFIED fetchStudentFee ---
   fetchStudentFee = async () => {
-    const { rollNum, name, parentsContact, invoiceID, searchBy } = this.state;
+    const { rollNum, name, parentsContact, invoiceID, searchBy, feeTypeFilter } = this.state;
     this.setState({ loading: true, error: '', feeRecords: [] });
 
-    try {
-      let url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/`;
-      let searchValue = ''; // This will hold the value to send to the API
+    let searchValue = ''; // This will hold the value for the primary search
 
-      // Determine which value to use based on searchBy
-      switch (searchBy) {
-        case 'rollNum':
-          // Assuming backend expects "THS" prefix for roll numbers, if not, remove the prefix here.
-          searchValue = rollNum;
-          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
-          break;
-        case 'name':
-          searchValue = name;
-          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
-          break;
-        case 'parentsContact': // New API endpoint for Parents Contact
-          searchValue = parentsContact;
-          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
-          break;
-        case 'invoiceID': // New API endpoint for Invoice ID
-          searchValue = invoiceID;
-          url = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/search/${searchValue}`;
-          break;
-        default:
-          this.setState({ loading: false, error: 'Invalid search criteria selected.' });
-          return;
-      }
-
-      // Ensure a search value is provided
-      if (!searchValue) {
-        this.setState({ loading: false, error: 'Please enter a value to search.' });
+    // Determine which input value corresponds to the selected 'searchBy' option
+    switch (searchBy) {
+      case 'rollNum':
+        searchValue = rollNum;
+        break;
+      case 'name':
+        searchValue = name;
+        break;
+      case 'parentsContact':
+        searchValue = parentsContact;
+        break;
+      case 'invoiceID':
+        searchValue = invoiceID;
+        break;
+      default:
+        // This case should ideally not be reached if radio buttons are properly controlled
+        this.setState({ loading: false, error: 'Invalid search criteria selected.' });
         return;
-      }
+    }
 
-      const response = await axios.get(url);
+    // Ensure a search value is provided for the primary search.
+    // If not, clear the error and prevent API call.
+    if (!searchValue) {
+      this.setState({ loading: false, error: 'Please enter a value to search.' });
+      return;
+    }
+
+    // Define the new POST API endpoint
+    const apiEndpoint = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/filter`;
+
+    // Construct the payload for the POST request
+    const payload = {
+      searchBy: searchBy,       // e.g., 'rollNum', 'name', 'parentsContact', 'invoiceID'
+      searchValue: searchValue, // The actual value from the selected input field
+      feeTypeFilter: feeTypeFilter, // e.g., 'All', 'ConsultancyFees', 'MonthlyFees'
+    };
+
+    try {
+      // Make the POST request with the payload
+      const response = await axios.post(apiEndpoint, payload);
 
       if (response.data && response.data.length > 0) {
         this.setState({ feeRecords: response.data, loading: false });
@@ -105,6 +114,7 @@ class AdminInvoice extends Component {
       this.setState({ loading: false, error: 'Error fetching student fee data. Please try again.' });
     }
   };
+  // --- END MODIFIED fetchStudentFee ---
 
   fetchAllStudentFee = async () => {
     this.setState({ loading: true, error: '', feeRecords: [] });
@@ -190,9 +200,15 @@ class AdminInvoice extends Component {
   handleCloseInvoice = () => {
     this.setState({ showInvoice: false, invoiceData: {} });
   };
+    handleFeeTypeFilterChange = (event) => {
+    this.setState({ feeTypeFilter: event.target.value }, () => {
+      // Re-run the search with the new filter immediately
+      this.fetchStudentFee();
+    });
+  };
 
   render() {
-    const { feeRecords, loading, error, searchBy, rollNum, name, parentsContact, invoiceID, showInvoice, invoiceData } = this.state;
+    const { feeRecords, loading, error, searchBy, rollNum, name, parentsContact,feeTypeFilter, invoiceID, showInvoice, invoiceData } = this.state;
 
     // Determine the label and value for the single search TextField
     let textFieldLabel = '';
@@ -260,24 +276,41 @@ class AdminInvoice extends Component {
           }}
         />
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={this.fetchStudentFee}
-          disabled={loading}
-          style={{ marginTop: '20px' }}
-        >
-          {loading ? <CircularProgress size={24} /> : 'Search'}
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={this.fetchAllStudentFee}
-          disabled={loading}
-          style={{ marginTop: '20px', marginLeft: '20px' }}
-        >
-          {loading ? <CircularProgress size={24} /> : 'Fetch All Records'}
-        </Button>
+         {/* This Box contains the Search and Fetch All Records buttons */}
+        <Box sx={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={this.fetchStudentFee}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Search'}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={this.fetchAllStudentFee}
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Fetch All Records'}
+          </Button>
+        </Box>
+
+        {/* --- Moved Fee Type Filter below the buttons --- */}
+        <FormControl component="fieldset" style={{ marginTop: '20px' }}>
+          <FormLabel component="legend">Filter by Fee Type</FormLabel>
+          <RadioGroup
+            row
+            value={feeTypeFilter}
+            onChange={this.handleFeeTypeFilterChange}
+          >
+            <FormControlLabel value="All" control={<Radio />} label="All" />
+            <FormControlLabel value="ConsultancyFees" control={<Radio />} label="Consultancy Fees" />
+            <FormControlLabel value="AdmissionsFees" control={<Radio />} label="Admissions Fees" />
+            <FormControlLabel value="MonthlyFees" control={<Radio />} label="Monthly Fees" />
+          </RadioGroup>
+        </FormControl>
+        {/* --- End Moved Fee Type Filter --- */}
 
         {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
 
