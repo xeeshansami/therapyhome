@@ -220,7 +220,7 @@ const AdminFees = () => {
     const fields = {
       address: selectedStudent.address,
       adminID: '684166055d02df2c8772e55a',
-      fatherName: selectedStudent.fatherName,
+      parentName: selectedStudent.parentName,
       name: selectedStudent.name,
       parentsContact: selectedStudent.parentsContact,
       isPaid: "1",
@@ -472,7 +472,7 @@ const AdminFees = () => {
                   <TableRow key={student._id}>
                     <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.parentName}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.consultancyDate}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.admissionDate}</TableCell>
@@ -532,7 +532,7 @@ const AdminFees = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Typography variant="h6">Student Info</Typography>
             <TextField label="Name" value={state.selectedStudent?.name || ''} fullWidth disabled />
-            <TextField label="Father's Name" value={state.selectedStudent?.fatherName || ''} fullWidth disabled />
+            <TextField label="Father's Name" value={state.selectedStudent?.parentName || ''} fullWidth disabled />
             <TextField label="Class" value={state.selectedStudent?.sclassName?.sclassName || ''} fullWidth disabled />
             <Typography variant="h6" style={{ marginTop: 20 }}>Fee Info</Typography>
 

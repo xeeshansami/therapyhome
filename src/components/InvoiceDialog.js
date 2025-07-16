@@ -7,7 +7,10 @@ import html2pdf from 'html2pdf.js';
 import stampImage from '../assets/stamp.png';
 import appIcon from '../assets/logo.png';
 
-// Data for the Terms Page
+// Helper function to render a checkbox based on a boolean value
+const renderCheckbox = (isChecked) => (isChecked ? '☑' : '☐');
+
+// Data for the Terms Page (remains unchanged)
 const termsData = [
     { id: 'a', title: "Admission and Security Deposit", english: "The finalized Admission fees and security deposit must be submitted to confirm your child's enrollment or to confirm your therapy slotting.", urdu: "آپ کے بچے کے داخلے کی تصدیق یا آپ کی تھراپی کی سلاٹنگ کی تصدیق کے لیے حتمی داخلہ فیس اور سیکیورٹی ڈپازٹ جمع کروانا ضروری ہے۔" },
     { id: 'b', title: "Payment and Procedures", english: `Parents can submit fees through the following options:\n1. Cash Payment\n2. Online Transfer (Please share the online slip with us).\n\nBank: Meezan Bank\nTitle: THERAPY HOME\nAccount No: 0156-0109649823`, urdu: `والدین درج ذیل طریقوں سے فیس جمع کروا سکتے ہیں:\n1. نقد ادائیگی\n2. آن لائن ٹرانسفر (براہ کرم آن لائن سلپ ہمیں فراہم کریں)\n\nبینک: میزان بینک\nاکاؤنٹ ٹائٹل: تھراپی ہوم\nاکاؤنٹ نمبر: 0156-0109649823` },
@@ -55,7 +58,7 @@ const noteStrongStyle = { color: 'red', fontWeight: 'bold', WebkitPrintColorAdju
 const websiteInfoStyle = { marginTop: '8px', fontSize: '0.6em', color: '#777', textAlign: 'center', WebkitPrintColorAdjust: 'exact', colorAdjust: 'exact' };
 const websiteLinkStyle = { color: '#007bff', textDecoration: 'none', WebkitPrintColorAdjust: 'exact', colorAdjust: 'exact' };
 
-// Meticulously Scoped Print Styles
+// Meticulously Scoped Print Styles (remains unchanged)
 const getPrintStyles = () => `
     body { font-family: Arial, sans-serif; font-size: 10px; color: #333; margin: 0; -webkit-print-color-adjust: exact; color-adjust: exact; }
     #printable-area-wrapper { background-color: white !important; }
@@ -118,6 +121,9 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
     const [showPrintPreview, setShowPrintPreview] = useState(false);
     const [printPreviewHTML, setPrintPreviewHTML] = useState('');
 
+    // Helper function to render a checkbox based on a boolean value
+    const renderCheckbox = (isChecked) => (isChecked ? '☑' : '☐');
+
     const generateTermsHTML = () => {
         let termsHTML = `<div class="terms-page-container">`;
         termsHTML += `<h2>Rules and Regulations for Parents Visiting a Therapy Home</h2>`;
@@ -128,46 +134,222 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         return termsHTML;
     };
 
+    // Initialize currentData with defaults, then merge props.data
+    // This ensures all expected fields are present, preventing errors.
+    const currentData = {
+        // --- Basic Info from original invoice data ---
+        name: 'N/A', parentName: 'N/A', rollNum: 'N/A',
+        invoiceID: 'N/A', // Assuming this comes with main student data or fee record
+        isConsultancyOrIsRegistrationOrMonthly: 'N/A', // Used in main invoice fee display
+        isConsultantStudent: false, // Used in main invoice fee display
+
+        // Fee amounts for main invoice display
+        admissionFee: 0,
+        securityDeposit: 0,
+        netTotalFee: 0, // This is the 'totalFee' from the fee record or monthly fee
+        paidFee: 0, // This is the 'paidFee' from the fee record
+        therapyPlan: {}, // Empty object for therapyPlan defaults if not provided
+
+        // --- Medical History Section ---
+        doctorDiagnosisCondition: false, // Boolean
+        doctorDiagnosisDetails: '',
+        takingTherapiesBefore: false, // Boolean
+        therapiesBeforeDetails: '',
+        onMedication: false, // Boolean
+        medicationDetails: '',
+        therapiesSeeking: [], // Array of strings e.g., ['Speech Therapy', 'Behavior Therapy']
+        therapiesSeekingSpecific: '', // "Any specific" text
+        childAttendsSchool: false, // Boolean
+        schoolDetails: '',
+        // Parent details for Medical History section (using existing schema fields)
+        parentDetails_fullName: '', // Map to currentData.parentName or currentData.parentName
+        parentDetails_contact: '',  // Map to currentData.parentsContact
+        parentDetails_profession: '', // Map to currentData.parentProfession
+        parentDetails_address: '',    // Map to currentData.address or currentData.parentAddress
+
+        // --- Reference (nested object as per schema) ---
+        reference: {
+            online: false,
+            online_details: '',
+            doctorName: false,
+            doctorName_details: '',
+            other: false,
+            other_details: '',
+        },
+
+        // --- Consultant Recommendation Section ---
+        rec_speech_difficultyPronouncing: false,
+        rec_speech_stuttering: false,
+        rec_speech_followInstructions: false,
+        rec_behavior_concern: false,
+        rec_behavior_diagnosis: false, // For AUTISM, ADHD, etc.
+        rec_behavior_socialChallenges: false,
+        rec_occupational_dailyActivities: false,
+        rec_occupational_sensoryIssue: false,
+        rec_remedial_difficultiesLearning: false,
+        rec_remedial_specialEducation: false,
+        rec_additional_iep: false, // For Inclusive Edification Program
+        rec_additional_fl: false,  // For Fun & Learn
+
+        // Merge actual data on top of defaults
+        ...data
+    };
+
+    // Helper for safe access to therapyPlan properties
+    const getTherapyPlanValue = (key) => {
+        try {
+            // Attempt to parse therapyPlan if it's a string, otherwise use directly
+            const plan = typeof currentData.therapyPlan === 'string'
+                ? JSON.parse(currentData.therapyPlan || '{}')
+                : currentData.therapyPlan || {};
+            return plan[key] || 0; // Return value or 0 if not found
+        } catch (e) {
+            console.error("Error parsing therapyPlan:", e);
+            return 0;
+        }
+    };
+
+
     const generateMedicalHistoryPageHTML = () => {
         let html = `<div class="custom-form-page medical-history-page">`;
         html += `<div class="page-main-title">Medical History</div>`;
         html += `<div class="form-section"><div class="form-section-title">Medical History</div><div class="section-content">`;
-        html += `<div class="form-question"><span class="q-num">1.</span><span class="q-label">Did doctor have diagnosis any condition?</span> <span class="options">☐ Yes ☐ No</span></div><div class="details-line">If yes, please provide details: <span class="underline-fill"></span></div>`;
-        html += `<div class="form-question"><span class="q-num">2.</span><span class="q-label">Have you taking any therapies before?</span> <span class="options">☐ Yes ☐ No</span></div><div class="details-line">If yes, please provide details: <span class="underline-fill"></span></div>`;
-        html += `<div class="form-question"><span class="q-num">3.</span><span class="q-label">Is the child currently on any medication?</span> <span class="options">☐ Yes ☐ No</span></div><div class="details-line">If yes, please provide details: <span class="underline-fill"></span></div>`;
-        html += `<div class="form-question"><span class="q-num">4.</span><span class="q-label">Which therapies are you seeking for?</span></div><div class="checkbox-group" style="margin-left:20px;"><label>☐ Speech Therapy</label><label>☐ Behavior Therapy</label><label>☐ Occupational Therapy</label><label>☐ Remedial Therapy</label></div><div class="details-line">Any specific: <span class="underline-fill" style="min-width:300px;"></span></div>`;
-        html += `</div></div>`;
+
+        // Question 1: Did doctor have diagnosis any condition?
+        html += `<div class="form-question">
+                    <span class="q-num">1.</span>
+                    <span class="q-label">Did doctor have diagnosis any condition?</span>
+                    <span class="options">
+                        ${renderCheckbox(currentData.doctorDiagnosisCondition)} Yes
+                        ${renderCheckbox(!currentData.doctorDiagnosisCondition)} No
+                    </span>
+                 </div>
+                 <div class="details-line">If yes, please provide details: <span class="underline-fill">${currentData.doctorDiagnosisDetails || ''}</span></div>`;
+
+        // Question 2: Have you taking any therapies before?
+        html += `<div class="form-question">
+                    <span class="q-num">2.</span>
+                    <span class="q-label">Have you taking any therapies before?</span>
+                    <span class="options">
+                        ${renderCheckbox(currentData.takingTherapiesBefore)} Yes
+                        ${renderCheckbox(!currentData.takingTherapiesBefore)} No
+                    </span>
+                 </div>
+                 <div class="details-line">If yes, please provide details: <span class="underline-fill">${currentData.therapiesBeforeDetails || ''}</span></div>`;
+
+        // Question 3: Is the child currently on any medication?
+        html += `<div class="form-question">
+                    <span class="q-num">3.</span>
+                    <span class="q-label">Is the child currently on any medication?</span>
+                    <span class="options">
+                        ${renderCheckbox(currentData.onMedication)} Yes
+                        ${renderCheckbox(!currentData.onMedication)} No
+                    </span>
+                 </div>
+                 <div class="details-line">If yes, please provide details: <span class="underline-fill">${currentData.medicationDetails || ''}</span></div>`;
+
+        // Question 4: Which therapies are you seeking for?
+        html += `<div class="form-question"><span class="q-num">4.</span><span class="q-label">Which therapies are you seeking for?</span></div>
+                 <div class="checkbox-group" style="margin-left:20px;">
+                     <label>${renderCheckbox(currentData.therapiesSeeking.includes('Speech Therapy'))} Speech Therapy</label>
+                     <label>${renderCheckbox(currentData.therapiesSeeking.includes('Behavior Therapy'))} Behavior Therapy</label>
+                     <label>${renderCheckbox(currentData.therapiesSeeking.includes('Occupational Therapy'))} Occupational Therapy</label>
+                     <label>${renderCheckbox(currentData.therapiesSeeking.includes('Remedial Therapy'))} Remedial Therapy</label>
+                 </div>
+                 <div class="details-line">Any specific: <span class="underline-fill" style="min-width:300px;">${currentData.therapiesSeekingSpecific || ''}</span></div>`;
+        html += `</div></div>`; // End Medical History form section
+
         html += `<div class="form-section"><div class="form-section-title">Other Information</div><div class="section-content">`;
-        html += `<div class="form-question"><span class="q-num">1.</span><span class="q-label">Does the child attend the school?</span> <span class="options">☐ Yes ☐ No</span></div><div class="details-line">If yes, please provide details: <span class="underline-fill"></span></div>`;
-        html += `</div></div>`;
+        // Other Information Question 1: Does the child attend the school?
+        html += `<div class="form-question">
+                    <span class="q-num">1.</span>
+                    <span class="q-label">Does the child attend the school?</span>
+                    <span class="options">
+                        ${renderCheckbox(currentData.childAttendsSchool)} Yes
+                        ${renderCheckbox(!currentData.childAttendsSchool)} No
+                    </span>
+                 </div>
+                 <div class="details-line">If yes, please provide details: <span class="underline-fill">${currentData.schoolDetails || ''}</span></div>`;
+        html += `</div></div>`; // End Other Information section
+
         html += `<div class="form-section"><div class="form-section-title">Parents/Guardian Details</div><div class="section-content">`;
-        html += `<div class="grid-inputs"><div class="field-container"><label>Full Name:</label><div class="input-line"></div></div><div class="field-container"><label>Contact:</label><div class="input-line"></div></div></div>`;
-        html += `<div class="full-width-field field-container" style="margin-bottom:10px;"><label>Parents Profession:</label><div class="input-line"></div></div>`;
-        html += `<div class="full-width-field field-container" style="margin-bottom:10px;"><label>Complete Address:</label><div class="input-line" style="height: 2.4em;"></div></div>`;
-        html += `<div class="form-question"><span class="q-label">Reference:</span> <label>☐ Online <span class="underline-fill" style="min-width:100px;"></span></label>, <label>☐ Doctor name: <span class="underline-fill" style="min-width:100px;"></span></label>, <label>☐ Other: <span class="underline-fill" style="min-width:100px;"></span></label></div>`;
-        html += `</div></div>`;
-        html += `</div>`;
+        html += `<div class="grid-inputs">
+                    <div class="field-container"><label>Full Name:</label><div class="input-line">${currentData.parentName || currentData.parentName || ''}</div></div>
+                    <div class="field-container"><label>Contact:</label><div class="input-line">${currentData.parentsContact || ''}</div></div>
+                 </div>`;
+        html += `<div class="full-width-field field-container" style="margin-bottom:10px;"><label>Parents Profession:</label><div class="input-line">${currentData.parentProfession || ''}</div></div>`;
+        html += `<div class="full-width-field field-container" style="margin-bottom:10px;"><label>Complete Address:</label><div class="input-line" style="height: 2.4em;"><p style="margin:0; white-space: pre-line;">${currentData.address || currentData.parentAddress || ''}</p></div></div>`;
+        html += `<div class="form-question">
+                    <span class="q-label">Reference:</span>
+                    <label>
+                        <span class="underline-fill" style="min-width:100px;">${currentData.reference}</span>
+                    </label>,
+                 </div>`;
+        html += `</div></div>`; // End Parents/Guardian Details section
+        html += `</div>`; // End custom-form-page
         return html;
     };
 
     const generateConsultantRecPageHTML = () => {
         let html = `<div class="custom-form-page consultant-rec-page">`;
         html += `<div class="page-main-title">Consultant Recommendation</div>`;
+        let qNum = 1; // Question numbering for display
+
         const sections = [
-            { title: "Speech Therapy", questions: ["Does the child have any difficulty pronouncing word?", "Is there any stuttering or fluency problem?", "Does the child follow and understand simple instruction?"] },
-            { title: "Behavior Therapy", questions: ["Are the child have any behavior concern like TANTRUM, AGGRESSIVE, ANXIETY?", "Have the child diagnosis the AUTISM, ADHD, or any other development disorder?", "Are the child facing social interaction challenges?"] },
-            { title: "Occupational Therapy", questions: ["Does the child have any difficulties with daily activities like dress, feeding, swallowing and motor coordination?", "Are the child have any sensory issue?"] },
-            { title: "Remedial Therapy", questions: ["Are there any difficulties in learning, reading, writing & remembering?", "Is the child receiving any special education servies?"] }
+            {
+                title: "Speech Therapy",
+                questions: [
+                    { label: "Does the child have any difficulty pronouncing word?", dataKey: "rec_speech_difficultyPronouncing" },
+                    { label: "Is there any stuttering or fluency problem?", dataKey: "rec_speech_stuttering" },
+                    { label: "Does the child follow and understand simple instruction?", dataKey: "rec_speech_followInstructions" }
+                ]
+            },
+            {
+                title: "Behavior Therapy",
+                questions: [
+                    { label: "Are the child have any behavior concern like TANTRUM, AGGRESSIVE, ANXIETY?", dataKey: "rec_behavior_concern" },
+                    { label: "Have the child diagnosis the AUTISM, ADHD, or any other development disorder?", dataKey: "rec_behavior_diagnosis" },
+                    { label: "Are the child facing social interaction challenges?", dataKey: "rec_behavior_socialChallenges" }
+                ]
+            },
+            {
+                title: "Occupational Therapy",
+                questions: [
+                    { label: "Does the child have any difficulties with daily activities like dress, feeding, swallowing and motor coordination?", dataKey: "rec_occupational_dailyActivities" },
+                    { label: "Are the child have any sensory issue?", dataKey: "rec_occupational_sensoryIssue" }
+                ]
+            },
+            {
+                title: "Remedial Therapy",
+                questions: [
+                    { label: "Are there any difficulties in learning, reading, writing & remembering?", dataKey: "rec_remedial_difficultiesLearning" },
+                    { label: "Is the child receiving any special education servies?", dataKey: "rec_remedial_specialEducation" }
+                ]
+            }
         ];
-        let qNum = 1;
+
         sections.forEach(section => {
             html += `<div class="form-section"><div class="form-section-title">${section.title}</div><div class="section-content">`;
             section.questions.forEach(question => {
-                html += `<div class="form-question"><span class="q-num">${qNum++}.</span><span class="q-label">${question}</span> <span class="options">☐ Yes ☐ No</span></div>`;
+                const isYes = currentData[question.dataKey]; // Assuming these are already boolean from schema
+                html += `<div class="form-question">
+                            <span class="q-num">${qNum++}.</span>
+                            <span class="q-label">${question.label}</span>
+                            <span class="options">
+                                ${renderCheckbox(isYes)} Yes
+                                ${renderCheckbox(!isYes)} No
+                            </span>
+                         </div>`;
             });
             html += `</div></div>`;
         });
-        html += `<div class="form-section"><div class="form-section-title">Additional Program</div><div class="section-content checkbox-group"><label>☐ Inclusive Edification Program (I.E.P)</label> <label>☐ Fun & Learn (F&L)</label></div></div>`;
+
+        html += `<div class="form-section"><div class="form-section-title">Additional Program</div>
+                    <div class="section-content checkbox-group">
+                        <label>${renderCheckbox(currentData.rec_additional_iep)} Inclusive Edification Program (I.E.P)</label>
+                        <label>${renderCheckbox(currentData.rec_additional_fl)} Fun & Learn (F&L)</label>
+                    </div>
+                 </div>`;
         html += `</div>`;
         return html;
     };
@@ -178,16 +360,18 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
             console.error("Invoice element not found for preview.");
             return "";
         }
-        const invoiceContentHTML = invoiceElement.innerHTML;
+        // Clone the invoice content and set class for print view to ensure specific print styles
+        const invoiceContentClone = invoiceElement.cloneNode(true);
+        invoiceContentClone.id = "invoice-content"; // Give it a consistent ID for print styles
+        invoiceContentClone.classList.add('invoice-dialog-print-view'); // Add class for print styles
+
         const medicalHistoryHTML = generateMedicalHistoryPageHTML(); // Page 2
         const consultantRecHTML = generateConsultantRecPageHTML();   // Page 3
-        const termsContentHTML = generateTermsHTML();                 // Page 4
+        const termsContentHTML = generateTermsHTML();                // Page 4
 
         return `
             <div id="printable-area-wrapper">
-                <div id="invoice-content" class="invoice-dialog-print-view">
-                    ${invoiceContentHTML}
-                </div>
+                ${invoiceContentClone.outerHTML}
                 ${medicalHistoryHTML}
                 ${consultantRecHTML}
                 ${termsContentHTML}
@@ -211,6 +395,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`<html><head><title>Print</title><style>${getPrintStyles()}</style></head><body>${printPreviewHTML}</body></html>`);
         printWindow.document.close();
+        // Give browser a moment to render before printing
         setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
     };
 
@@ -222,6 +407,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         }
         const tempRenderDiv = document.createElement('div');
         tempRenderDiv.innerHTML = combinedHTMLForPDF;
+
         const opt = {
             margin: [0.5, 0.2, 0.5, 0.2],
             filename: `invoice_complete-${currentData.name || 'student'}.pdf`,
@@ -232,7 +418,13 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                     const allElements = documentCloned.querySelectorAll('*');
                     allElements.forEach(el => { el.style.webkitPrintColorAdjust = 'exact'; el.style.colorAdjust = 'exact'; });
                     const therapyHome = documentCloned.querySelector('#invoice-content .therapy-home');
-                    if (therapyHome) therapyHome.style.color = '#ff9800 !important';
+                    if (therapyHome) therapyHome.style.color = '#ff9800 !important'; // Ensure brand color is printed
+                    const noteStrong = documentCloned.querySelector('#invoice-content .note strong');
+                    if (noteStrong) noteStrong.style.color = 'red !important'; // Ensure note strong is red
+                    const websiteInfo = documentCloned.querySelector('#invoice-content .website-info');
+                    if (websiteInfo) websiteInfo.style.color = '#777 !important'; // Ensure website info is grey
+                    const websiteLinks = documentCloned.querySelectorAll('#invoice-content .website-info a');
+                    websiteLinks.forEach(a => { a.style.color = '#007bff !important'; }); // Ensure links are blue
                 }
             },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
@@ -241,13 +433,6 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         html2pdf().from(tempRenderDiv.firstChild).set(opt).save();
     };
 
-    const currentData = {
-        name: 'N/A', parentName: 'N/A', rollNum: 'N/A', consultancy: '0',
-        admissionFee: '0', securityDeposit: '0', consultancyFeeAmount: '0',
-        totalAmount: 0, therapyFee: 'N/A', iepFee: 'N/A',
-        singleSessionFee: 'N/A', lateFee: 'N/A', forTheMonth: 'N/A',
-        ...data
-    };
 
     return (
         <>

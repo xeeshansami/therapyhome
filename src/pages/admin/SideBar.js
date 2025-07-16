@@ -48,18 +48,19 @@ const SideBar = () => {
                     </ListItemIcon>
                     <ListItemText primary="View All Students" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/Admin/addstudents">
-                    <ListItemIcon>
-                        <PersonOutlineIcon color={location.pathname.startsWith("/Admin/addstudents") ? 'primary' : 'inherit'} />
-                    </ListItemIcon>
-                    <ListItemText primary="Add/Update Students" />
-                </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/AddConsultancy">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/AddConsultancy") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Add Consultancy" />
                 </ListItemButton> 
+                <ListItemButton component={Link} to="/Admin/addstudents">
+                    <ListItemIcon>
+                        <PersonOutlineIcon color={location.pathname.startsWith("/Admin/addstudents") ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary="Add/Update Students" />
+                </ListItemButton>
+                
                <ListItemButton component={Link} to="/Admin/Fees">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Fees") ? 'primary' : 'inherit'} />

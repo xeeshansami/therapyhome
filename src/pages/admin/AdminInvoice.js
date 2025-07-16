@@ -340,7 +340,7 @@ class AdminInvoice extends Component {
                     <TableCell>{feeRecord.invoiceID}</TableCell> {/* Display Invoice ID */}
                     <TableCell>{feeRecord.rollNum}</TableCell>
                     <TableCell>{feeRecord.name}</TableCell>
-                    <TableCell>{feeRecord.fatherName}</TableCell>
+                    <TableCell>{feeRecord.parentName}</TableCell>
                     <TableCell>{feeRecord.parentsContact}</TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '2' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '1' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>

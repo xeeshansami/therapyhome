@@ -171,7 +171,7 @@ const AddConsultancy = () => {
             details: ''
         },
         parent: {
-            name: '',
+            parentName: '',
             parentsContact: '', // Field name used in validation and payload
             parentsCNIC: '',    // Field name used in validation and payload
             profession: '',
@@ -203,6 +203,21 @@ const AddConsultancy = () => {
             ...prev,
             [field]: e.target.checked
         }));
+    };
+    const convertYesNoToBoolean = (value) => {
+        if (typeof value === 'boolean') {
+            return value; // Already a boolean
+        }
+        if (typeof value === 'string') {
+            const lowerValue = value.toLowerCase();
+            if (lowerValue === 'yes' || lowerValue === 'true') {
+                return true;
+            }
+            if (lowerValue === 'no' || lowerValue === 'false') {
+                return false;
+            }
+        }
+        return false; // Default or handle as per your requirement if value is unexpected
     };
     const getCurrentDateTimeFormatted = () => {
         const now = new Date();
@@ -249,52 +264,137 @@ const AddConsultancy = () => {
             behaviorQuestions,
             occupationalQuestions,
             remedialQuestions,
-            additionalQuestions
+            additionalQuestions,
+            reference
         } = formData;
         const selectedTherapyObject = therapyFees.find(
             fee => fee.label === selectedTherapy
         );
         const formattedDateTime = getCurrentDateTimeFormatted();
+        debugger
+
+        // Helper function to convert 'Yes'/'No' or 'true'/'false' strings to boolean
+        const convertToBoolean = (value) => {
+            if (typeof value === 'boolean') {
+                return value; // Already a boolean
+            }
+            if (typeof value === 'string') {
+                const lowerValue = value.toLowerCase();
+                return lowerValue === 'yes' || lowerValue === 'true';
+            }
+            return false; // Default to false for unexpected values or if not provided
+        };
+
+        const formatTherapiesSeekingForSchema = (therapiesSeekingObject) => {
+            const selectedTherapies = [];
+            // Add robust check: Ensure therapiesSeekingObject is an object
+            if (!therapiesSeekingObject || typeof therapiesSeekingObject !== 'object') {
+                return selectedTherapies;
+            }
+
+            // Only push if the boolean flag is true
+            if (therapiesSeekingObject.speech) {
+                selectedTherapies.push('Speech Therapy');
+            }
+            if (therapiesSeekingObject.behavior) {
+                selectedTherapies.push('Behavior Therapy');
+            }
+            if (therapiesSeekingObject.occupational) {
+                selectedTherapies.push('Occupational Therapy');
+            }
+            if (therapiesSeekingObject.remedial) {
+                selectedTherapies.push('Remedial Therapy');
+            }
+            // 'additional' is likely for the Additional Program (IEP/F&L), not a therapy in therapiesSeeking enum
+            // So, it shouldn't be pushed here unless 'Additional Therapy' is a valid enum value.
+            // Based on your schema, it's not.
+            return selectedTherapies;
+        };
+
         const payload = {
+            // --- Basic Information ---
             name: student.name,
             dob: student.dob,
             gender: student.gender,
             age: student.age,
-            rollNum: generatedRollNum, // Include the generated roll number
-            feePaymentDate: new Date(),
-            diagnosis: medicalHistory.diagnosis,
-            diagnosisDetails: medicalHistory.diagnosis ? medicalHistory.diagnosisDetails : '', // Send undefined if not applicable
-            therapies: medicalHistory.therapies, // This is the boolean from checkbox
-            therapiesDetails: medicalHistory.therapies ? medicalHistory.therapiesDetails : '', // This is the text detail
-            medication: medicalHistory.medication,
-            medicationDetails: medicalHistory.medication ? medicalHistory.medicationDetails : '',
-            // Therapies seeking booleans
-            speechTherapy: therapiesSeeking.speech, // Align with merged schema boolean fields
-            behaviorTherapy: therapiesSeeking.behavior,
-            occupationalTherapy: therapiesSeeking.occupational,
-            remedialTherapy: therapiesSeeking.remedial,
-            specificLearningDisabilitiesSupport: therapiesSeeking.additional, // Example mapping
-            specificTherapiesDetails: therapiesSeeking.specific, // Was 'specific'
-            attendsSchoolElsewhere: school.attends,
-            schoolElsewhereDetails: school.attends ? school.details : '',
-            "sclassName": "6841d62692080ba4520a3a66",
-            "school": "684166055d02df2c8772e55a",
-            parentName: parent.name, // This should be parent.name from form
-            consultancyDate:formattedDateTime,
+            rollNum: generatedRollNum,
+            isConsultantStudent: convertToBoolean(student.isConsultantStudent), // Ensure this is set based on your form/logic
+            // role: "Student", // Default in schema, usually not explicitly sent unless user can change roles
+
+            // --- Contact and Address ---
             parentsContact: parent.parentsContact,
+            parentName: parent.parentName,
             parentsCNIC: parent.parentsCNIC,
             parentProfession: parent.profession,
-            parentAddress: parent.address,
-            parentsGender: parent.gender,
-            parentsMaritalStatus: parent.maritalStatus,
-            totalFee: feeDetails.consultancy, // Align with merged schema (totalFee or netTotalFee)
-            speechQuestions,
-            behaviorQuestions,
-            occupationalQuestions,
-            remedialQuestions,
-            additionalQuestions,
+            parentAddress: parent.address, // Assuming this maps to parentAddress in schema
+            // If you have a separate 'address' for the student, add: address: student.address,
+            // If you have studentEmail in your form: studentEmail: student.email,
+
+            // --- Academic & Schedule Information ---
+            sclassName: "6841d62692080ba4520a3a66",
+            school: "684166055d02df2c8772e55a",
+            // If you collect sessionTime, days, feeStructure:
+            // sessionTime: student.sessionTime,
+            // days: student.days,
+            // feeStructure: student.feeStructure,
+            admissionDate: student.admissionDate,
+            consultancyDate: formattedDateTime,
+            // If you assign a teacher: assignedTeacher: student.assignedTeacher,
+
+            // --- Medical History Section ---
+            doctorDiagnosisCondition: convertToBoolean(medicalHistory.diagnosis),
+            doctorDiagnosisDetails: medicalHistory.diagnosis ? medicalHistory.diagnosisDetails : '',
+            takingTherapiesBefore: convertToBoolean(medicalHistory.therapies),
+            therapiesBeforeDetails: medicalHistory.therapies ? medicalHistory.therapiesDetails : '',
+            onMedication: convertToBoolean(medicalHistory.medication),
+            medicationDetails: medicalHistory.medication ? medicalHistory.medicationDetails : '',
+            // therapiesSeeking expects an array of strings, ensure your form maps to this
+            therapiesSeeking: formatTherapiesSeekingForSchema(therapiesSeeking),
+            therapiesSeekingSpecific: therapiesSeeking.specific || '', // Access 'specific' from the correct object
+            childAttendsSchool: convertToBoolean(school.attends),
+            schoolDetails: school.attends ? school.details : '',
+
+            // --- Reference (Nested Object) ---
+            reference:reference.details,
+
+            // --- Consultant Recommendation Section (Boolean conversions) ---
+            rec_speech_difficultyPronouncing: convertToBoolean(speechQuestions.q1),
+            rec_speech_stuttering: convertToBoolean(speechQuestions.q2),
+            rec_speech_followInstructions: convertToBoolean(speechQuestions.q3),
+
+            rec_behavior_concern: convertToBoolean(behaviorQuestions.q1),
+            rec_behavior_diagnosis: convertToBoolean(behaviorQuestions.q2),
+            rec_behavior_socialChallenges: convertToBoolean(behaviorQuestions.q3),
+
+            rec_occupational_dailyActivities: convertToBoolean(occupationalQuestions.q1),
+            rec_occupational_sensoryIssue: convertToBoolean(occupationalQuestions.q2),
+
+            rec_remedial_difficultiesLearning: convertToBoolean(remedialQuestions.q1),
+            rec_remedial_specialEducation: convertToBoolean(remedialQuestions.q2),
+
+            rec_additional_iep: convertToBoolean(additionalQuestions.q1),
+            rec_additional_fl: convertToBoolean(additionalQuestions.q2),
+
+            // --- Fee Details (Ensure parseFloat and correct mapping) ---
+            admissionFee: parseFloat(feeDetails.admissionFee) || 0,
+            securityDeposit: parseFloat(feeDetails.securityDeposit) || 0,
+            otherCharges: parseFloat(feeDetails.otherCharges) || 0,
+            therapyPlan: feeDetails.therapyPlan ? {
+                label: feeDetails.therapyPlan.label || '',
+                perSessionCost: parseFloat(feeDetails.therapyPlan.perSessionCost) || 0,
+                perMonthCost: parseFloat(feeDetails.therapyPlan.perMonthCost) || 0,
+                notes: feeDetails.therapyPlan.notes || ''
+            } : {},
+            totalFee: parseFloat(feeDetails.totalFee) || 0,
+            isPaid: "1", // If your schema's `isPaid` is Boolean, convert: convertToBoolean(feeDetails.isPaid)
+            isConsultancyOrIsRegistrationOrMonthly: feeDetails.isConsultancyOrIsRegistrationOrMonthly,
+            invoiceID: generatedInvoiceNo, // Use the schema's field name 'invoiceID'
+
+            // --- Terms Acceptance ---
+            acceptedTerms: convertToBoolean(feeDetails.acceptedTerms),
         };
         setLoader(true);
+        debugger
         try {
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentConsultancy`, payload, {
                 headers: { 'Content-Type': 'application/json' },
@@ -332,7 +432,7 @@ const AddConsultancy = () => {
             parentsContact: selectedStudent.parentsContact,
             isPaid: "1",
             role: 'Student',
-            invoiceID:generatedInvoiceNo,
+            invoiceID: generatedInvoiceNo,
             rollNum: selectedStudent.rollNum,
             date: date,
             netTotalFee: consultancy,
@@ -428,7 +528,7 @@ const AddConsultancy = () => {
             alert('Please complete all student details (Name, Age, DOB, Gender).');
             return false;
         }
-        if (isEmpty(parent.name) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address) || isEmpty(parent.gender) || isEmpty(parent.maritalStatus)) {
+        if (isEmpty(parent.parentName) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address) || isEmpty(parent.gender) || isEmpty(parent.maritalStatus)) {
             alert('Please complete all parent/guardian details.');
             return false;
         }
@@ -691,8 +791,8 @@ const AddConsultancy = () => {
                 </Section>
 
                 <Section title="Parent/Guardian Details">
-                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'name')}
-                        value={formData.parent.name} />
+                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'parentName')}
+                        value={formData.parent.parentName} />
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                         <FormControl fullWidth>
                             <InputLabel id="gender-select-label">Gender</InputLabel>
