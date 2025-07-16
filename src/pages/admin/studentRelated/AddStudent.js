@@ -25,7 +25,17 @@ const AddStudent = ({ situation }) => {
     const [selectedTherapy, setSelectedTherapy] = useState('');
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const feeStructureOptions = ['Daily', 'Weekly', 'Monthly']; // Renamed from feeStrucutre for clarity
-
+    const timeSlots = [
+        "09:00 AM - 06:00 PM",
+        "10:00 AM - 05:00 PM",
+        "11:00 AM - 04:00 PM",
+        "12:00 PM - 06:00 PM",
+        "01:00 PM - 02:00 PM",
+        "02:00 PM - 03:00 PM",
+        "03:00 PM - 04:00 PM",
+        "04:00 PM - 05:00 PM",
+        "05:00 PM - 06:00 PM",
+    ];
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const params = useParams();
@@ -151,7 +161,7 @@ const AddStudent = ({ situation }) => {
             setRollNumLoading(false);
         }
     };
- const getCurrentDateTimeFormatted = () => {
+    const getCurrentDateTimeFormatted = () => {
         const now = new Date();
 
         const day = now.getDate();
