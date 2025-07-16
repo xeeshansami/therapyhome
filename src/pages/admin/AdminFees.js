@@ -18,12 +18,16 @@ import {
   DialogTitle,
   FormControlLabel,
   Checkbox,
-  Box
+  Box,
+  // Make sure to import FormControl and FormLabel if you use them
+  FormControl,
+  FormLabel
 } from '@mui/material';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import InvoiceDialog from '../../components/InvoiceDialog'; // adjust path as needed
+
 const AdminFees = () => {
   const formatTherapyFee = (amount) => {
     return amount ? `Rs. ${amount.toLocaleString()}` : 'N/A';
@@ -35,8 +39,14 @@ const AdminFees = () => {
   const navigate = useNavigate();
   const [isMonthlyFee, setIsMonthlyFee] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
   const [state, setState] = useState({
     name: '',
+    rollNum: '',         // Added for Roll Number search
+    parentsContact: '',  // Added for Parents Contact search
+    showNameSearch: true,     // New: Controls visibility of Name search field
+    showRollNumSearch: false, // New: Controls visibility of Roll Number search field
+    showParentsContactSearch: false, // New: Controls visibility of Parents Contact search field
     studentData: [],
     filteredData: [],
     error: '',
@@ -76,7 +86,6 @@ const AdminFees = () => {
         console.error("Invalid therapyPlan JSON", e);
       }
     } else {
-      // Reset or apply your own logic for netAmount here
       const admissionFee = 0; // replace with your default calculation if needed
       setState(prev => ({
         ...prev,
@@ -87,18 +96,58 @@ const AdminFees = () => {
       }));
     }
   };
+
+  // New handler for checkbox changes
+  const handleCheckboxChange = (field) => (event) => {
+    const checked = event.target.checked;
+    setState(prev => {
+      const newState = {
+        ...prev,
+        [`show${field}Search`]: checked // Toggle the visibility state (e.g., showNameSearch)
+      };
+      // If a checkbox is unchecked, clear the corresponding input field's value
+      if (!checked) {
+        if (field === 'Name') newState.name = '';
+        if (field === 'RollNum') newState.rollNum = '';
+        if (field === 'ParentsContact') newState.parentsContact = '';
+      }
+      return newState;
+    });
+  };
+
   const handleSearch = async () => {
     setState(prev => ({ ...prev, loading: true, error: '', studentData: [], filteredData: [] }));
     try {
       const payload = {
-        id: "684166055d02df2c8772e55a",
-        name: state.name,
+        id: "684166055d02df2c8772e55a", // Keep the admin ID
       };
+
+      // Conditionally add search parameters to payload based on checkbox state and input value
+      if (state.showNameSearch && state.name) {
+        payload.name = state.name;
+      }
+      if (state.showRollNumSearch && state.rollNum) {
+        payload.rollNum = state.rollNum;
+      }
+      if (state.showParentsContactSearch && state.parentsContact) {
+        payload.parentsContact = state.parentsContact;
+      }
+
+      // Validate if at least one search criterion is provided
+      // The `id` field is always there, so if payload has only 'id', it means no other criteria were entered.
+      if (Object.keys(payload).length === 1 && payload.id) {
+        setState(prev => ({
+          ...prev,
+          error: 'Please select a search criterion and enter a value.',
+          loading: false
+        }));
+        return; // Prevent the API call
+      }
+
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}/students/search`, payload
       );
       if (response.data?.length > 0) {
-        debugger
         setState(prev => ({
           ...prev,
           studentData: response.data,
@@ -111,7 +160,7 @@ const AdminFees = () => {
           ...prev,
           studentData: [],
           filteredData: [],
-          error: 'No students found with that name',
+          error: 'No students found matching the selected criteria', // Updated message
           loading: false
         }));
       }
@@ -131,7 +180,6 @@ const AdminFees = () => {
       handleSearch();
     }
   };
-
 
   const handleOpenModal = (student) => {
     setState(prev => ({
@@ -153,120 +201,104 @@ const AdminFees = () => {
   };
 
   const handleSaveFee = () => {
-    debugger
+    // debugger // Keep or remove debugger as needed
     const { feeDetails, selectedStudent } = state;
     const errors = {};
 
     if (!feeDetails.paid || feeDetails.paid < 0) {
-        errors.paid = 'Paid Fee cannot be empty or negative';
+      errors.paid = 'Paid Fee cannot be empty or negative';
     }
     if (feeDetails.paid > feeDetails.netAmount) {
-        errors.paid = 'Paid Fee cannot be greater than Net Amount';
+      errors.paid = 'Paid Fee cannot be greater than Net Amount';
     }
 
     if (Object.keys(errors).length > 0) {
-        setState(prev => ({ ...prev, errors }));
-        return;
+      setState(prev => ({ ...prev, errors }));
+      return;
     }
-    debugger
+    // debugger // Keep or remove debugger as needed
     const fields = {
-        address: selectedStudent.address,
-        adminID: '684166055d02df2c8772e55a',
-        fatherName: selectedStudent.fatherName,
-        name: selectedStudent.name,
-        parentsContact: selectedStudent.parentsContact,
-        isPaid: "1",
-        role: 'Student',
-        rollNum: selectedStudent.rollNum,
-        date: feeDetails.date,
-        netTotalFee: feeDetails.netAmount,
-        paidFee: feeDetails.paid,
-        sclassName: selectedStudent.sclassName,
-        studentEmail: selectedStudent.studentEmail,
-        isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee?'2':'1',
+      address: selectedStudent.address,
+      adminID: '684166055d02df2c8772e55a',
+      fatherName: selectedStudent.fatherName,
+      name: selectedStudent.name,
+      parentsContact: selectedStudent.parentsContact,
+      isPaid: "1",
+      role: 'Student',
+      rollNum: selectedStudent.rollNum,
+      date: feeDetails.date,
+      netTotalFee: feeDetails.netAmount,
+      paidFee: feeDetails.paid,
+      sclassName: selectedStudent.sclassName,
+      studentEmail: selectedStudent.studentEmail,
+      isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee ? '2' : '1',
     };
 
     axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
-        headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
     })
-    .then(response => {
+      .then(response => {
         console.log('Fee details saved:', response.data);
 
-        // Assuming the StudentFeeReg API response.data.data contains the rollNum
-        const registeredStudentRollNum = response.data.rollNum; 
+        const registeredStudentRollNum = response.data.rollNum;
 
         if (registeredStudentRollNum) {
-            // Step 2: Call the getSingleStudent API
-            axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${registeredStudentRollNum}`)
-                .then(singleStudentResponse => {
-                    if (singleStudentResponse.data && singleStudentResponse.data.length > 0) {
-                        const fetchedStudentData = singleStudentResponse.data[0]; // Assuming it returns an array
-                        
-                        // Step 3: Merge the data
-                        // Merge the fee registration response data with the fetched student data
-                        const mergedInvoiceData = {
-                            ...response.data, // Data from fee registration (e.g., receipt ID, fee specific details)
-                            ...fetchedStudentData, // Full student details from SingleStudent API
-                            // You can add more specific merging logic if needed, e.g.,
-                            // overwrite existing fields from fee registration if fetchedStudentData is more up-to-date
-                            // For example:
-                            // name: fetchedStudentData.name,
-                            // sclassName: fetchedStudentData.sclassName,
-                            // etc.
-                        };
-                        debugger
-                        setInvoiceData(mergedInvoiceData);
-                        setShowPopup(true);
-                        setIsSuccess(true);
-                        setMessage("Fee Invoice Generated, Please Check Invoice Portal");
-                        setState(prev => ({ ...prev, errors: {}, openModal: false }));
+          axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${registeredStudentRollNum}`)
+            .then(singleStudentResponse => {
+              if (singleStudentResponse.data && singleStudentResponse.data.length > 0) {
+                const fetchedStudentData = singleStudentResponse.data[0];
+                const mergedInvoiceData = {
+                  ...response.data,
+                  ...fetchedStudentData,
+                };
+                // debugger // Keep or remove debugger as needed
+                setInvoiceData(mergedInvoiceData);
+                setShowPopup(true);
+                setIsSuccess(true);
+                setMessage("Fee Invoice Generated, Please Check Invoice Portal");
+                setState(prev => ({ ...prev, errors: {}, openModal: false }));
 
-                    } else {
-                        // Handle case where SingleStudent API finds no student
-                        console.warn("SingleStudent API found no data for rollNum:", registeredStudentRollNum);
-                        setInvoiceData(response.data.data); // Use only fee registration data as fallback
-                        setShowPopup(true);
-                        setIsSuccess(true);
-                        setMessage("Fee Invoice Generated (partial data), Please Check Invoice Portal");
-                        setState(prev => ({ ...prev, errors: {}, openModal: false }));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching single student details:', error);
-                    // Fallback: If SingleStudent API fails, still proceed with initial fee data
-                    setInvoiceData(response.data.data); 
-                    setShowPopup(true);
-                    setIsSuccess(true);
-                    setMessage("Fee Invoice Generated (API error for full data), Please Check Invoice Portal");
-                    setState(prev => ({ ...prev, errors: {}, openModal: false }));
-                });
+              } else {
+                console.warn("SingleStudent API found no data for rollNum:", registeredStudentRollNum);
+                setInvoiceData(response.data.data);
+                setShowPopup(true);
+                setIsSuccess(true);
+                setMessage("Fee Invoice Generated (partial data), Please Check Invoice Portal");
+                setState(prev => ({ ...prev, errors: {}, openModal: false }));
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching single student details:', error);
+              setInvoiceData(response.data.data);
+              setShowPopup(true);
+              setIsSuccess(true);
+              setMessage("Fee Invoice Generated (API error for full data), Please Check Invoice Portal");
+              setState(prev => ({ ...prev, errors: {}, openModal: false }));
+            });
         } else {
-            // If rollNum is not available from the first API, proceed with only its data
-            console.warn("RollNum not available from StudentFeeReg response. Proceeding with limited data.");
-            setInvoiceData(response.data.data);
-            setShowPopup(true);
-            setIsSuccess(true);
-            setMessage("Fee Invoice Generated, Please Check Invoice Portal");
-            setState(prev => ({ ...prev, errors: {}, openModal: false }));
+          console.warn("RollNum not available from StudentFeeReg response. Proceeding with limited data.");
+          setInvoiceData(response.data.data);
+          setShowPopup(true);
+          setIsSuccess(true);
+          setMessage("Fee Invoice Generated, Please Check Invoice Portal");
+          setState(prev => ({ ...prev, errors: {}, openModal: false }));
         }
-    })
-    .catch(error => {
+      })
+      .catch(error => {
         setShowPopup(false);
         setIsSuccess(false);
-        setMessage('Error saving fee details: ' + (error.response?.data?.message || error.message)); // More robust error message
+        setMessage('Error saving fee details: ' + (error.response?.data?.message || error.message));
         console.error('Error saving fee details:', error);
-    });
-};
+      });
+  };
+
   const handlePopupConfirm = () => {
     setShowPopup(false);
-    // Assuming invoiceData is set correctly before this point
-    // navigate('/Admin/Invoice'); // Original navigation
-    setShowInvoice(true); // Show invoice dialog instead of navigating away immediately
+    setShowInvoice(true);
   };
   const handleCloseModal = () => {
     setState(prev => ({ ...prev, error: '', openModal: false }));
   };
-
 
   const handleFeeDetailChange = (e) => {
     const { name, value } = e.target;
@@ -289,7 +321,7 @@ const AdminFees = () => {
       const response = await axios.get(
         `${process.env.REACT_APP_BASE_URL}/AllStudents/684166055d02df2c8772e55a`
       );
-      debugger
+      // debugger // Keep or remove debugger as needed
       setState(prev => ({
         ...prev,
         studentData: response.data,
@@ -315,21 +347,79 @@ const AdminFees = () => {
         Student Fee Portal
       </Typography>
 
-      <div style={{ display: 'flex', gap: '15px' }}>
-        <TextField
-          label="Search By Student Name"
-          variant="outlined"
-          value={state.name}
-          onChange={(e) => setState(prev => ({ ...prev, name: e.target.value }))}
-          onKeyPress={handleKeyPress}
-          fullWidth
-          margin="normal"
-          InputProps={{
-            style: {
-              height: '56px',
-            },
-          }}
-        />
+      {/* Checkboxes for search criteria */}
+      <FormControl component="fieldset" margin="normal">
+        <FormLabel component="legend">Filters:</FormLabel>
+        <FormLabel component="legend">Search By:</FormLabel>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.showNameSearch}
+                onChange={handleCheckboxChange('Name')}
+              />
+            }
+            label="Student Name"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.showRollNumSearch}
+                onChange={handleCheckboxChange('RollNum')}
+              />
+            }
+            label="Roll Number"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={state.showParentsContactSearch}
+                onChange={handleCheckboxChange('ParentsContact')}
+              />
+            }
+            label="Parent Contact"
+          />
+        </Box>
+      </FormControl>
+
+      {/* Conditional rendering of TextFields */}
+      <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}> {/* Use column to stack fields */}
+        {state.showNameSearch && (
+          <TextField
+            label="Enter Student Name"
+            variant="outlined"
+            value={state.name}
+            onChange={(e) => setState(prev => ({ ...prev, name: e.target.value }))}
+            onKeyPress={handleKeyPress}
+            fullWidth
+            margin="normal"
+            InputProps={{ style: { height: '56px' } }}
+          />
+        )}
+        {state.showRollNumSearch && (
+          <TextField
+            label="Enter Roll Number"
+            variant="outlined"
+            value={state.rollNum}
+            onChange={(e) => setState(prev => ({ ...prev, rollNum: e.target.value }))}
+            onKeyPress={handleKeyPress}
+            fullWidth
+            margin="normal"
+            InputProps={{ style: { height: '56px' } }}
+          />
+        )}
+        {state.showParentsContactSearch && (
+          <TextField
+            label="Enter Parent Contact"
+            variant="outlined"
+            value={state.parentsContact}
+            onChange={(e) => setState(prev => ({ ...prev, parentsContact: e.target.value }))}
+            onKeyPress={handleKeyPress}
+            fullWidth
+            margin="normal"
+            InputProps={{ style: { height: '56px' } }}
+          />
+        )}
       </div>
 
       {state.error && !state.loading && <div style={{ color: 'red', marginTop: '10px' }}>{state.error}</div>}
@@ -367,8 +457,8 @@ const AdminFees = () => {
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
-                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Consultancy Date</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Date</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Consultancy Date</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Date</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
@@ -384,8 +474,8 @@ const AdminFees = () => {
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.fatherName}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
-                     <TableCell style={{ border: '1px solid #ccc' }}>{student.consultancyDate}</TableCell>
-                      <TableCell style={{ border: '1px solid #ccc' }}>{student.admissionDate}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.consultancyDate}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.admissionDate}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
@@ -409,13 +499,13 @@ const AdminFees = () => {
                         </Button>
                         {/* The commented-out button is kept as is */}
                         {/* <Button
-                    variant="contained"
-                    color="success"
-                    onClick={handleCallConsultancy}
-                    disabled={student.status === 'Paid'}
-                  >
-                    Consultancy
-                  </Button> */}
+                            variant="contained"
+                            color="success"
+                            onClick={handleCallConsultancy}
+                            disabled={student.status === 'Paid'}
+                          >
+                            Consultancy
+                          </Button> */}
                       </Box>
                     </TableCell>
                   </TableRow>
