@@ -9,7 +9,7 @@ import Popup from '../../../components/Popup';
 import axios from 'axios';
 import { getAllSclasses } from '../../../redux/sclassRelated/sclassHandle';
 
-import { Box, FormControlLabel, FormGroup, Checkbox, Typography, TextField, Button, Grid, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Box, FormControlLabel, ListItemText, FormGroup, Checkbox, Typography, TextField, Button, Grid, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 
 
 const AddStudent = ({ situation }) => {
@@ -42,7 +42,7 @@ const AddStudent = ({ situation }) => {
     const userState = useSelector(state => state.user);
     const { status, currentUser, response } = userState;
     const { sclassesList } = useSelector((state) => state.sclass);
-
+    const [selectedClassTiming, setSelectedClassTiming] = useState('');
     const [daySelectionError, setDaySelectionError] = useState(false);
     const [feeStructureError, setFeeStructureError] = useState(false);
     const [timeError, setTimeError] = useState(false);
@@ -60,6 +60,7 @@ const AddStudent = ({ situation }) => {
     const [parentsContact, setPNum] = useState('');
     const [address, setAddress] = useState('');
     const [fee, setFees] = useState('');
+    const [selectedClasses, setSelectedClasses] = useState([]);
 
     const [password, setPassword] = useState(''); // Password field is commented out in JSX
     const [className, setClassName] = useState('');
@@ -72,13 +73,30 @@ const AddStudent = ({ situation }) => {
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
     const [loader, setLoader] = useState(false); // This is for form submission loader
-
+    const classTimings = [
+        '08:00AM to 01:00PM',
+        '09:00AM to 02:00PM',
+        '10:00AM to 03:00PM',
+        '11:00AM to 04:00PM',
+        '12:00PM to 05:00PM',
+        '01:00PM to 06:00PM',
+        '02:00PM to 07:00PM',
+        '03:00PM to 08:00PM',
+        '04:00PM to 09:00PM',
+    ];
     useEffect(() => {
         if (situation === "Class") {
             setSclassName(params.id);
         }
     }, [params.id, situation]);
+    const handleChange = (event) => {
+        const {
+            target: { value },
+        } = event;
 
+        // MUI may pass string if autofill is used
+        setSelectedClasses(typeof value === 'string' ? value.split(',') : value);
+    };
     useEffect(() => {
         dispatch(getAllSclasses(adminID, "Sclass"));
     }, [adminID, dispatch]);
@@ -203,9 +221,8 @@ const AddStudent = ({ situation }) => {
         } else {
             setRollNumError(""); // Clear error if roll number is present
         }
-
-        if (sclassName === "" || sclassName === "Select Class") {
-            setMessage("Please select a class.");
+        if (!selectedClasses || selectedClasses.length === 0) {
+            setMessage("Please select at least one class.");
             setShowPopup(true);
             return;
         }
@@ -225,7 +242,7 @@ const AddStudent = ({ situation }) => {
         } else {
             setFeeStructureError(false);
         }
-        if (!selectedTime.hour || !selectedTime.minute) {
+        if (selectedClassTiming=='') {
             setTimeError(true);
             setMessage("Please select a valid time.");
             setShowPopup(true);
@@ -244,8 +261,9 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('rollNum', rollNum); // Use the state variable 'rollNum'
         formDataToSubmit.append('parentsContact', parentsContact);
         formDataToSubmit.append('parentAddress', address);
-        // formDataToSubmit.append('password', password); // Password field is commented out
-        formDataToSubmit.append('sclassName', sclassName);
+        if (selectedClasses.length > 0) {
+            formDataToSubmit.append('sclassName', selectedClasses[0]);
+        }
         formDataToSubmit.append('admissionDate', formattedDateTime);
         formDataToSubmit.append('adminID', adminID);
         formDataToSubmit.append('role', role);
@@ -256,7 +274,7 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('securityDeposit', feeDetails.securityDeposit); // Changed from 'time'
         formDataToSubmit.append('otherCharges', feeDetails.otherCharges); // Changed from 'time'
         formDataToSubmit.append('totalFee', feeDetails.totalAmount); // Changed from 'time'
-        formDataToSubmit.append('HourMinut', HourMinut); // Changed from 'time'
+        formDataToSubmit.append('selectedClassTiming', selectedClassTiming); // Changed from 'time'
         formDataToSubmit.append('therapyPlan', JSON.stringify(selectedTherapyObject) ? JSON.stringify({ // Ensure selectedTherapyObject exists
             label: selectedTherapyObject.label,
             perSessionCost: selectedTherapyObject.perSession,
@@ -483,13 +501,24 @@ const AddStudent = ({ situation }) => {
 
                                 {situation === "Student" && (
                                     <FormControl fullWidth required sx={{ mb: 2 }}>
-                                        <InputLabel id="class-select-label">Class</InputLabel>
-                                        <Select labelId="class-select-label" value={className} onChange={changeHandler} displayEmpty>
-                                            <MenuItem value='Select Class' disabled>Select Class</MenuItem>
+                                        <InputLabel id="multi-class-label">Class</InputLabel>
+                                        <Select
+                                            labelId="multi-class-label"
+                                            multiple
+                                            value={selectedClasses}
+                                            onChange={handleChange}
+                                            renderValue={(selected) =>
+                                                sclassesList
+                                                    .filter((item) => selected.includes(item._id))
+                                                    .map((item) => item.sclassName)
+                                                    .join(', ')
+                                            }
+                                        >
                                             {sclassesList && sclassesList.length > 0 ? (
-                                                sclassesList.map((classItem, index) => (
-                                                    <MenuItem key={index} value={classItem.sclassName}>
-                                                        {classItem.sclassName}
+                                                sclassesList.map((classItem) => (
+                                                    <MenuItem key={classItem._id} value={classItem._id}>
+                                                        <Checkbox checked={selectedClasses.includes(classItem._id)} />
+                                                        <ListItemText primary={classItem.sclassName} />
                                                     </MenuItem>
                                                 ))
                                             ) : (
@@ -497,6 +526,7 @@ const AddStudent = ({ situation }) => {
                                             )}
                                         </Select>
                                     </FormControl>
+
                                 )}
                                 <TextField fullWidth required className="registerInput" label="Parent Contact" variant="outlined" type="tel" value={parentsContact} onChange={(event) => setPNum(event.target.value)} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} placeholder="03XXXXXXXXX" />
                                 <TextField fullWidth required className="registerInput" label="Address" variant="outlined" multiline rows={3} value={address} onChange={(event) => setAddress(event.target.value)} sx={{ mb: 2 }} />
@@ -557,14 +587,32 @@ const AddStudent = ({ situation }) => {
                                 </Box>
 
                                 <Box sx={{ mb: 2 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Select Time *</Typography>
-                                    <Grid container spacing={1}>
-                                        <Grid item xs={4}><FormControl fullWidth variant="outlined"><InputLabel>Hour</InputLabel><Select name="hour" value={selectedTime.hour} onChange={handleTimeChange} label="Hour"><MenuItem value=""><em>Hour</em></MenuItem>{Array.from({ length: 12 }, (_, i) => (<MenuItem key={i + 1} value={i + 1}>{i + 1}</MenuItem>))}</Select></FormControl></Grid>
-                                        <Grid item xs={4}><FormControl fullWidth variant="outlined"><InputLabel>Minute</InputLabel><Select name="minute" value={selectedTime.minute} onChange={handleTimeChange} label="Minute"><MenuItem value=""><em>Minute</em></MenuItem>{Array.from({ length: 60 }, (_, i) => (<MenuItem key={i} value={i < 10 ? `0${i}` : i}>{i < 10 ? `0${i}` : i}</MenuItem>))}</Select></FormControl></Grid>
-                                        <Grid item xs={4}><FormControl fullWidth variant="outlined"><InputLabel>Period</InputLabel><Select name="period" value={selectedTime.period} onChange={handleTimeChange} label="Period"><MenuItem value="AM">AM</MenuItem><MenuItem value="PM">PM</MenuItem></Select></FormControl></Grid>
-                                    </Grid>
-                                    {timeError && <Typography color="error" variant="caption" sx={{ display: 'block', mt: 1 }}>Please select hour and minute.</Typography>}
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        Student Classes Timing *
+                                    </Typography>
+                                    <FormControl fullWidth variant="outlined" required>
+                                        <InputLabel id="class-time-label">Class Timing</InputLabel>
+                                        <Select
+                                            labelId="class-time-label"
+                                            name="classTiming"
+                                            value={selectedClassTiming}
+                                            onChange={(e) => setSelectedClassTiming(e.target.value)}
+                                            label="Class Timing"
+                                        >
+                                            <MenuItem value=""><em>Select Timing</em></MenuItem>
+                                            {classTimings.map((time, idx) => (
+                                                <MenuItem key={idx} value={time}>{time}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+
+                                    {timeError && (
+                                        <Typography color="error" variant="caption" sx={{ display: 'block', mt: 1 }}>
+                                            Please select a class timing.
+                                        </Typography>
+                                    )}
                                 </Box>
+
 
                                 <Box sx={{ mb: 2 }}>
                                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Select Fee Structure *</Typography>
