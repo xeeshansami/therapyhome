@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import {
-  Button, TextField, CircularProgress, Radio, Box,RadioGroup, FormControlLabel, FormControl, FormLabel, InputAdornment,
+  Button, TextField, CircularProgress, Typography,Radio, Box, RadioGroup, FormControlLabel, FormControl, FormLabel, InputAdornment,
 } from '@mui/material';
 import styled from 'styled-components';
 import InvoiceDialog from './../../components/InvoiceDialog'; // adjust path as needed
@@ -136,7 +136,7 @@ class AdminInvoice extends Component {
     }
   };
 
- // --- MODIFIED handleInputChange ---
+  // --- MODIFIED handleInputChange ---
   handleInputChange = (fieldName) => (e) => {
     let value = e.target.value;
 
@@ -200,7 +200,7 @@ class AdminInvoice extends Component {
   handleCloseInvoice = () => {
     this.setState({ showInvoice: false, invoiceData: {} });
   };
-    handleFeeTypeFilterChange = (event) => {
+  handleFeeTypeFilterChange = (event) => {
     this.setState({ feeTypeFilter: event.target.value }, () => {
       // Re-run the search with the new filter immediately
       this.fetchStudentFee();
@@ -208,7 +208,7 @@ class AdminInvoice extends Component {
   };
 
   render() {
-    const { feeRecords, loading, error, searchBy, rollNum, name, parentsContact,feeTypeFilter, invoiceID, showInvoice, invoiceData } = this.state;
+    const { feeRecords, loading, error, searchBy, rollNum, name, parentsContact, feeTypeFilter, invoiceID, showInvoice, invoiceData } = this.state;
 
     // Determine the label and value for the single search TextField
     let textFieldLabel = '';
@@ -219,7 +219,6 @@ class AdminInvoice extends Component {
       case 'rollNum':
         textFieldLabel = 'Enter Roll Number';
         textFieldValue = rollNum;
-        inputAdornment = <InputAdornment position="start">THS</InputAdornment>;
         break;
       case 'name':
         textFieldLabel = 'Enter Student Name';
@@ -239,6 +238,9 @@ class AdminInvoice extends Component {
 
     return (
       <AdminInvoiceContainer>
+        <Typography variant="h4" gutterBottom>
+          Invoice's
+        </Typography>
         <FormControl component="fieldset">
           <FormLabel component="legend">Search By</FormLabel>
           <RadioGroup
@@ -276,7 +278,7 @@ class AdminInvoice extends Component {
           }}
         />
 
-         {/* This Box contains the Search and Fetch All Records buttons */}
+        {/* This Box contains the Search and Fetch All Records buttons */}
         <Box sx={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
           <Button
             variant="contained"
@@ -323,7 +325,7 @@ class AdminInvoice extends Component {
                   <TableHeader>Invoice No</TableHeader>
                   <TableHeader>Roll Number</TableHeader>
                   <TableHeader>Name</TableHeader>
-                  <TableHeader>Father's Name</TableHeader>
+                  <TableHeader>Parent's Name</TableHeader>
                   <TableHeader>Parent Contact</TableHeader>
                   <TableHeader>Monthly Fee's</TableHeader>
                   <TableHeader>Admission Fee's</TableHeader>
@@ -340,7 +342,7 @@ class AdminInvoice extends Component {
                     <TableCell>{feeRecord.invoiceID}</TableCell> {/* Display Invoice ID */}
                     <TableCell>{feeRecord.rollNum}</TableCell>
                     <TableCell>{feeRecord.name}</TableCell>
-                    <TableCell>{feeRecord.parentName}</TableCell>
+                    <TableCell>{feeRecord.parentsName}</TableCell>
                     <TableCell>{feeRecord.parentsContact}</TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '2' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '1' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>

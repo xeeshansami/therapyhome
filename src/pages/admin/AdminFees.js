@@ -39,7 +39,9 @@ const AdminFees = () => {
   const navigate = useNavigate();
   const [isMonthlyFee, setIsMonthlyFee] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
+  const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('Loading...');
+  const [invoiceNoError, setInvoiceNoError] = useState('');
+  const [loader, setLoader] = useState(false);
   const [state, setState] = useState({
     name: '',
     rollNum: '',         // Added for Roll Number search
@@ -65,7 +67,26 @@ const AdminFees = () => {
       balance: ''
     }
   });
-
+  const fetchNextInvoiceNo = async () => {
+    try {
+      setLoader(true);
+      setInvoiceNoError(''); // Clear previous errors
+      const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/invoices/next-number`);
+      if (response.data && response.data.invoiceNum) {
+        setGeneratedInvoiceNo(response.data.invoiceNum);
+      } else {
+        setGeneratedInvoiceNo('THS16072025-01'); // Default fallback
+        console.warn("Could not fetch invoice number, defaulting.");
+        setInvoiceNoError('Could not generate invoice number automatically.');
+      }
+    } catch (error) {
+      console.error("Error fetching next invoice number:", error);
+      setGeneratedInvoiceNo('Error');
+      setInvoiceNoError('Failed to fetch invoice number.');
+    } finally {
+      setLoader(false);
+    }
+  };
   const handleMonthlyFeeToggle = (event) => {
     const checked = event.target.checked;
     setIsMonthlyFee(checked);
@@ -116,64 +137,42 @@ const AdminFees = () => {
   };
 
   const handleSearch = async () => {
-    setState(prev => ({ ...prev, loading: true, error: '', studentData: [], filteredData: [] }));
-    try {
-      const payload = {
-        id: "684166055d02df2c8772e55a", // Keep the admin ID
-      };
+        setState(prev => ({ ...prev, loading: true, error: '', studentData: [], filteredData: [] }));
+        
+        const { searchBy, name, rollNum, parentsContact } = state;
+        const payload = { id: "684166055d02df2c8772e55a" };
+        let searchValue = '';
 
-      // Conditionally add search parameters to payload based on checkbox state and input value
-      if (state.showNameSearch && state.name) {
-        payload.name = state.name;
-      }
-      if (state.showRollNumSearch && state.rollNum) {
-        payload.rollNum = state.rollNum;
-      }
-      if (state.showParentsContactSearch && state.parentsContact) {
-        payload.parentsContact = state.parentsContact;
-      }
+        // Determine which value to use based on the selected filter
+        if (searchBy === 'Name') {
+            payload.name = name;
+            searchValue = name;
+        } else if (searchBy === 'RollNum') {
+            payload.rollNum = rollNum;
+            searchValue = rollNum;
+        } else if (searchBy === 'ParentsContact') {
+            payload.parentsContact = parentsContact;
+            searchValue = parentsContact;
+        }
 
-      // Validate if at least one search criterion is provided
-      // The `id` field is always there, so if payload has only 'id', it means no other criteria were entered.
-      if (Object.keys(payload).length === 1 && payload.id) {
-        setState(prev => ({
-          ...prev,
-          error: 'Please select a search criterion and enter a value.',
-          loading: false
-        }));
-        return; // Prevent the API call
-      }
+        if (!searchValue.trim()) {
+            setState(prev => ({ ...prev, error: 'Please enter a value to search.', loading: false }));
+            return;
+        }
 
-      const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}/students/search`, payload
-      );
-      if (response.data?.length > 0) {
-        setState(prev => ({
-          ...prev,
-          studentData: response.data,
-          filteredData: response.data,
-          error: '',
-          loading: false
-        }));
-      } else {
-        setState(prev => ({
-          ...prev,
-          studentData: [],
-          filteredData: [],
-          error: 'No students found matching the selected criteria', // Updated message
-          loading: false
-        }));
-      }
-    } catch (err) {
-      setState(prev => ({
-        ...prev,
-        studentData: [],
-        filteredData: [],
-        error: 'Error fetching student data',
-        loading: false
-      }));
-    }
-  };
+        try {
+            // Replace mockApi with your actual axios.post call
+            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/students/search`, payload);
+            
+            if (response.data?.length > 0) {
+                setState(prev => ({ ...prev, studentData: response.data, filteredData: response.data, error: '', loading: false }));
+            } else {
+                setState(prev => ({ ...prev, studentData: [], filteredData: [], error: 'No students found matching the criteria.', loading: false }));
+            }
+        } catch (err) {
+            setState(prev => ({ ...prev, studentData: [], filteredData: [], error: 'Error fetching student data.', loading: false }));
+        }
+    };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -181,7 +180,8 @@ const AdminFees = () => {
     }
   };
 
-  const handleOpenModal = (student) => {
+  const handleOpenModal = async (student) => {
+    await fetchNextInvoiceNo();
     setState(prev => ({
       ...prev,
       openModal: true,
@@ -200,7 +200,7 @@ const AdminFees = () => {
     navigate("/Admin/addConsultancy");
   };
 
-  const handleSaveFee = () => {
+  const handleSaveFee = async () => {
     // debugger // Keep or remove debugger as needed
     const { feeDetails, selectedStudent } = state;
     const errors = {};
@@ -216,11 +216,12 @@ const AdminFees = () => {
       setState(prev => ({ ...prev, errors }));
       return;
     }
+
     // debugger // Keep or remove debugger as needed
     const fields = {
       address: selectedStudent.address,
       adminID: '684166055d02df2c8772e55a',
-      parentName: selectedStudent.parentName,
+      parentsName: selectedStudent.parentsName,
       name: selectedStudent.name,
       parentsContact: selectedStudent.parentsContact,
       isPaid: "1",
@@ -232,14 +233,15 @@ const AdminFees = () => {
       sclassName: selectedStudent.sclassName,
       studentEmail: selectedStudent.studentEmail,
       isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee ? '2' : '1',
+      invoiceID: generatedInvoiceNo, // Use the schema's field name 'invoiceID'
     };
-
+    debugger
     axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
       headers: { 'Content-Type': 'application/json' },
     })
       .then(response => {
         console.log('Fee details saved:', response.data);
-
+        debugger
         const registeredStudentRollNum = response.data.rollNum;
 
         if (registeredStudentRollNum) {
@@ -314,7 +316,19 @@ const AdminFees = () => {
       return { ...prev, feeDetails: updatedFeeDetails };
     });
   };
-
+ // New handler for the single-select checkbox group
+    const handleFilterChange = (filterName) => {
+        setState(prev => ({
+            ...prev,
+            searchBy: filterName,
+            // Clear input fields when changing filter type for a better UX
+            name: '',
+            rollNum: '',
+            parentsContact: '',
+            error: ''
+        }));
+    };
+    
   const fetchAllStudents = async () => {
     setState(prev => ({ ...prev, loading: true }));
     try {
@@ -347,44 +361,28 @@ const AdminFees = () => {
         Student Fee Portal
       </Typography>
 
-      {/* Checkboxes for search criteria */}
+      {/* Checkboxes for search criteria - UPDATED */}
       <FormControl component="fieldset" margin="normal">
-        <FormLabel component="legend">Filters:</FormLabel>
         <FormLabel component="legend">Search By:</FormLabel>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <FormControlLabel
-            control={
-              <Checkbox
-                checked={state.showNameSearch}
-                onChange={handleCheckboxChange('Name')}
-              />
-            }
+            control={<Checkbox checked={state.searchBy === 'Name'} onChange={() => handleFilterChange('Name')} />}
             label="Student Name"
           />
           <FormControlLabel
-            control={
-              <Checkbox
-                checked={state.showRollNumSearch}
-                onChange={handleCheckboxChange('RollNum')}
-              />
-            }
+            control={<Checkbox checked={state.searchBy === 'RollNum'} onChange={() => handleFilterChange('RollNum')} />}
             label="Roll Number"
           />
           <FormControlLabel
-            control={
-              <Checkbox
-                checked={state.showParentsContactSearch}
-                onChange={handleCheckboxChange('ParentsContact')}
-              />
-            }
+            control={<Checkbox checked={state.searchBy === 'ParentsContact'} onChange={() => handleFilterChange('ParentsContact')} />}
             label="Parent Contact"
           />
         </Box>
       </FormControl>
 
-      {/* Conditional rendering of TextFields */}
-      <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}> {/* Use column to stack fields */}
-        {state.showNameSearch && (
+      {/* Conditional rendering of TextFields - UPDATED */}
+      <Box sx={{ mt: 2, maxWidth: '500px' }}>
+        {state.searchBy === 'Name' && (
           <TextField
             label="Enter Student Name"
             variant="outlined"
@@ -392,11 +390,9 @@ const AdminFees = () => {
             onChange={(e) => setState(prev => ({ ...prev, name: e.target.value }))}
             onKeyPress={handleKeyPress}
             fullWidth
-            margin="normal"
-            InputProps={{ style: { height: '56px' } }}
           />
         )}
-        {state.showRollNumSearch && (
+        {state.searchBy === 'RollNum' && (
           <TextField
             label="Enter Roll Number"
             variant="outlined"
@@ -404,11 +400,9 @@ const AdminFees = () => {
             onChange={(e) => setState(prev => ({ ...prev, rollNum: e.target.value }))}
             onKeyPress={handleKeyPress}
             fullWidth
-            margin="normal"
-            InputProps={{ style: { height: '56px' } }}
           />
         )}
-        {state.showParentsContactSearch && (
+        {state.searchBy === 'ParentsContact' && (
           <TextField
             label="Enter Parent Contact"
             variant="outlined"
@@ -416,34 +410,20 @@ const AdminFees = () => {
             onChange={(e) => setState(prev => ({ ...prev, parentsContact: e.target.value }))}
             onKeyPress={handleKeyPress}
             fullWidth
-            margin="normal"
-            InputProps={{ style: { height: '56px' } }}
           />
         )}
-      </div>
+      </Box>
 
-      {state.error && !state.loading && <div style={{ color: 'red', marginTop: '10px' }}>{state.error}</div>}
+      {state.error && !state.loading && <Typography color="error" sx={{ mt: 2 }}>{state.error}</Typography>}
 
-      <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-        <Button
-          variant="contained"
-          disabled={state.loading}
-          onClick={handleSearch}
-          color="primary"
-          startIcon={<SearchIcon />}
-        >
-          {state.loading ? <CircularProgress size={24} color="inherit" /> : 'Search'}
+      <Box sx={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+        <Button variant="contained" disabled={state.loading} onClick={handleSearch} startIcon={<SearchIcon />}>
+          {state.loading ? <CircularProgress size={24} /> : 'Search'}
         </Button>
-
-        <Button
-          variant="contained"
-          onClick={fetchAllStudents}
-          color="primary"
-          startIcon={<VisibilityIcon />}
-        >
+        <Button variant="contained" onClick={fetchAllStudents} startIcon={<VisibilityIcon />}>
           Show All Students
         </Button>
-      </div>
+      </Box>
 
       {/* Outer conditional: Check if it's NOT in consultancy mode OR if there's data to show */}
       {!state.isConsultancyMode ? (
@@ -455,7 +435,7 @@ const AdminFees = () => {
                 <TableRow style={{ backgroundColor: '#f4f4f4' }}>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Roll Number</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Father's Name</TableCell>
+                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent's Name</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Consultancy Date</TableCell>
                   <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Date</TableCell>
@@ -472,7 +452,7 @@ const AdminFees = () => {
                   <TableRow key={student._id}>
                     <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.parentName}</TableCell>
+                    <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsName}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.consultancyDate}</TableCell>
                     <TableCell style={{ border: '1px solid #ccc' }}>{student.admissionDate}</TableCell>
@@ -532,7 +512,7 @@ const AdminFees = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Typography variant="h6">Student Info</Typography>
             <TextField label="Name" value={state.selectedStudent?.name || ''} fullWidth disabled />
-            <TextField label="Father's Name" value={state.selectedStudent?.parentName || ''} fullWidth disabled />
+            <TextField label="Parent's Name" value={state.selectedStudent?.parentsName || ''} fullWidth disabled />
             <TextField label="Class" value={state.selectedStudent?.sclassName?.sclassName || ''} fullWidth disabled />
             <Typography variant="h6" style={{ marginTop: 20 }}>Fee Info</Typography>
 

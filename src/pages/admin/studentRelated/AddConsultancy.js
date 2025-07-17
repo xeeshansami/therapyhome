@@ -171,7 +171,7 @@ const AddConsultancy = () => {
             details: ''
         },
         parent: {
-            parentName: '',
+            parentsName: '',
             parentsContact: '', // Field name used in validation and payload
             parentsCNIC: '',    // Field name used in validation and payload
             profession: '',
@@ -323,7 +323,7 @@ const AddConsultancy = () => {
 
             // --- Contact and Address ---
             parentsContact: parent.parentsContact,
-            parentName: parent.parentName,
+            parentsName: parent.parentsName,
             parentsCNIC: parent.parentsCNIC,
             parentProfession: parent.profession,
             parentAddress: parent.address, // Assuming this maps to parentAddress in schema
@@ -427,7 +427,7 @@ const AddConsultancy = () => {
         const fields = {
             adminID: '684166055d02df2c8772e55a',
             attendance: [],
-            parentName: selectedStudent.parentName,
+            parentsName: selectedStudent.parentsName,
             name: selectedStudent.name,
             parentsContact: selectedStudent.parentsContact,
             isPaid: "1",
@@ -566,7 +566,7 @@ const AddConsultancy = () => {
             alert('Please complete all student details (Name, Age, DOB, Gender).');
             return false;
         }
-        if (isEmpty(parent.parentName) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address) || isEmpty(parent.gender) || isEmpty(parent.maritalStatus)) {
+        if (isEmpty(parent.parentsName) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address) || isEmpty(parent.gender) || isEmpty(parent.maritalStatus)) {
             alert('Please complete all parent/guardian details.');
             return false;
         }
@@ -829,8 +829,8 @@ const AddConsultancy = () => {
                 </Section>
 
                 <Section title="Parent/Guardian Details">
-                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'parentName')}
-                        value={formData.parent.parentName} />
+                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'parentsName')}
+                        value={formData.parent.parentsName} />
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                         <FormControl fullWidth>
                             <InputLabel id="gender-select-label">Gender</InputLabel>

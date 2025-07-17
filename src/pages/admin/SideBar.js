@@ -46,13 +46,13 @@ const SideBar = () => {
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/students") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="View All Students" />
+                    <ListItemText primary="View Students" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/AddConsultancy">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/AddConsultancy") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Add Consultancy" />
+                    <ListItemText primary="Consultancy Form" />
                 </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/addstudents">
                     <ListItemIcon>
@@ -65,13 +65,13 @@ const SideBar = () => {
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Fees") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Make Fees/Salary" />
+                    <ListItemText primary="Fee-Salary Portal" />
                 </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/Invoice">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Invoice") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Generate Invoice" />
+                    <ListItemText primary="Invoice's" />
                 </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/complains">
                     <ListItemIcon>

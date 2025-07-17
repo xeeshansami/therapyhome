@@ -139,7 +139,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
     // This ensures all expected fields are present, preventing errors.
     const currentData = {
         // --- Basic Info from original invoice data ---
-        name: 'N/A', parentName: 'N/A', rollNum: 'N/A',
+        name: 'N/A', parentsName: 'N/A', rollNum: 'N/A',
         invoiceID: 'N/A', // Assuming this comes with main student data or fee record
         isConsultancyOrIsRegistrationOrMonthly: 'N/A', // Used in main invoice fee display
         isConsultantStudent: false, // Used in main invoice fee display
@@ -163,7 +163,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         childAttendsSchool: false, // Boolean
         schoolDetails: '',
         // Parent details for Medical History section (using existing schema fields)
-        parentDetails_fullName: '', // Map to currentData.parentName or currentData.parentName
+        parentDetails_fullName: '', // Map to currentData.parentsName or currentData.parentsName
         parentDetails_contact: '',  // Map to currentData.parentsContact
         parentDetails_profession: '', // Map to currentData.parentProfession
         parentDetails_address: '',    // Map to currentData.address or currentData.parentAddress
@@ -275,7 +275,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
 
         html += `<div class="form-section"><div class="form-section-title">Parents/Guardian Details</div><div class="section-content">`;
         html += `<div class="grid-inputs">
-                    <div class="field-container"><label>Full Name:</label><div class="input-line">${currentData.parentName || currentData.parentName || ''}</div></div>
+                    <div class="field-container"><label>Full Name:</label><div class="input-line">${currentData.parentsName || currentData.parentsName || ''}</div></div>
                     <div class="field-container"><label>Contact:</label><div class="input-line">${currentData.parentsContact || ''}</div></div>
                  </div>`;
         html += `<div class="full-width-field field-container" style="margin-bottom:10px;"><label>Parents Profession:</label><div class="input-line">${currentData.parentProfession || ''}</div></div>`;
@@ -460,8 +460,8 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="info-label" style={infoLabelStyle}>STUDENT NAME:</div>
                                     <div className="info-value" style={infoValueStyle}>{currentData.name}</div>
-                                    <div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>FATHER NAME:</div>
-                                    <div className="info-value" style={infoValueStyle}>{currentData.parentName}</div>
+                                    <div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>PARENT'S NAME:</div>
+                                    <div className="info-value" style={infoValueStyle}>{currentData.parentsName}</div>
                                 </div>
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="fee-label" style={{ ...feeLabelStyle, }}>Monthly Fee's:</div>

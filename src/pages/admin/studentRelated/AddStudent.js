@@ -48,7 +48,7 @@ const AddStudent = ({ situation }) => {
     const [timeError, setTimeError] = useState(false);
 
     const [name, setName] = useState('');
-    const [parentName, setparentName] = useState('');
+    const [parentsName, setparentsName] = useState('');
 
     // Roll Number specific states
     const [rollNum, setRollNum] = useState(''); // This will hold the generated or selected student's roll number
@@ -100,7 +100,7 @@ const AddStudent = ({ situation }) => {
 
     const HourMinut = selectedTime.hour && selectedTime.minute ? `${selectedTime.hour}:${selectedTime.minute} ${selectedTime.period}` : "";
 
-    // const fields = { name, rollNum, password, sclassName, adminID, role, attendance, days, feeStructure, HourMinut, parentName, parentsContact, address, fee, studentEmail };
+    // const fields = { name, rollNum, password, sclassName, adminID, role, attendance, days, feeStructure, HourMinut, parentsName, parentsContact, address, fee, studentEmail };
     // 'fields' object is not directly used for FormData, values are appended individually.
     const [feeDetails, setFeeDetails] = useState({
         admissionFee: 5000,
@@ -190,7 +190,7 @@ const AddStudent = ({ situation }) => {
         debugger
         // console.log(selectedFile) // For debugging file selection
         // Basic Validations
-        if (!name || !parentName || !parentsContact || !address || !feeDetails.totalAmount) {
+        if (!name || !parentsName || !parentsContact || !address || !feeDetails.totalAmount) {
             setMessage("Please fill all required fields before submitting.");
             setShowPopup(true);
             return;
@@ -240,7 +240,7 @@ const AddStudent = ({ situation }) => {
         const formattedDateTime = getCurrentDateTimeFormatted();
         const formDataToSubmit = new FormData();
         formDataToSubmit.append('name', name);
-        formDataToSubmit.append('parentName', parentName);
+        formDataToSubmit.append('parentsName', parentsName);
         formDataToSubmit.append('rollNum', rollNum); // Use the state variable 'rollNum'
         formDataToSubmit.append('parentsContact', parentsContact);
         formDataToSubmit.append('parentAddress', address);
@@ -333,7 +333,7 @@ const AddStudent = ({ situation }) => {
 
     const handleSelectStudent = (student) => {
         setName(student.name || '');
-        setparentName(student.parentName || student.parentName || ''); // Prefer parentName if available
+        setparentsName(student.parentsName || student.parentsName || ''); // Prefer parentsName if available
         setRollNum(student.rollNum || ''); // Populate rollNum, will be read-only
         // setStudentConsultancy(student.isConsultantStudent || false); // State not used elsewhere
         setPNum(student.parentsContact || student.parentsContact || '');
@@ -419,7 +419,7 @@ const AddStudent = ({ situation }) => {
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Student Name</TableCell>
-                                        <TableCell>Parent Name</TableCell>
+                                        <TableCell>Parent's Name</TableCell>
                                         <TableCell>Contact</TableCell>
                                         <TableCell>Roll No.</TableCell>
                                         <TableCell>Action</TableCell>
@@ -429,7 +429,7 @@ const AddStudent = ({ situation }) => {
                                     {searchResults.map((student) => (
                                         <TableRow hover key={student._id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                                             <TableCell>{student.name}</TableCell>
-                                            <TableCell>{student.parentName || student.parentName}</TableCell>
+                                            <TableCell>{student.parentsName || student.parentsName}</TableCell>
                                             <TableCell>{student.parentsContact || student.parentsContact}</TableCell>
                                             <TableCell>{student.rollNum}</TableCell>
                                             <TableCell>
@@ -452,7 +452,7 @@ const AddStudent = ({ situation }) => {
                             {/* Left Column for Form Fields */}
                             <Grid item xs={12} md={6}>
                                 <TextField fullWidth required className="registerInput" label="Student Name" variant="outlined" value={name} onChange={(event) => setName(event.target.value)} sx={{ mb: 2 }} />
-                                <TextField fullWidth required className="registerInput" label="Father's/Parent's Name" variant="outlined" value={parentName} onChange={(event) => setparentName(event.target.value)} sx={{ mb: 2 }} />
+                                <TextField fullWidth required className="registerInput" label="Father's/Parent's Name" variant="outlined" value={parentsName} onChange={(event) => setparentsName(event.target.value)} sx={{ mb: 2 }} />
 
                                 {/* Roll Number with Generate Button */}
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
