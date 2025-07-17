@@ -85,10 +85,10 @@ class AdminInvoice extends Component {
 
     // Ensure a search value is provided for the primary search.
     // If not, clear the error and prevent API call.
-    if (!searchValue) {
-      this.setState({ loading: false, error: 'Please enter a value to search.' });
-      return;
-    }
+    // if (!searchValue) {
+    //   this.setState({ loading: false, error: 'Please enter a value to search.' });
+    //   return;
+    // }
 
     // Define the new POST API endpoint
     const apiEndpoint = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/filter`;

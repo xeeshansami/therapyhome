@@ -5,6 +5,7 @@ import html2pdf from 'html2pdf.js';
 
 // Replace with your actual imports
 import stampImage from '../assets/stamp.png';
+import signatureImg from '../assets/signofadmin.png';
 import appIcon from '../assets/logo.png';
 
 // Helper function to render a checkbox based on a boolean value
@@ -57,7 +58,7 @@ const noteStyle = { marginTop: '10px', fontSize: '0.6em', color: '#777', WebkitP
 const noteStrongStyle = { color: 'red', fontWeight: 'bold', WebkitPrintColorAdjust: 'exact', colorAdjust: 'exact' };
 const websiteInfoStyle = { marginTop: '8px', fontSize: '0.6em', color: '#777', textAlign: 'center', WebkitPrintColorAdjust: 'exact', colorAdjust: 'exact' };
 const websiteLinkStyle = { color: '#007bff', textDecoration: 'none', WebkitPrintColorAdjust: 'exact', colorAdjust: 'exact' };
-
+const overlappingSignatureStyle = { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '120px', height: 'auto', zIndex: 1 }; // New style for overlapping signature
 // Meticulously Scoped Print Styles (remains unchanged)
 const getPrintStyles = () => `
     body { font-family: Arial, sans-serif; font-size: 10px; color: #333; margin: 0; -webkit-print-color-adjust: exact; color-adjust: exact; }
@@ -503,16 +504,106 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
 
                             </div> {/* End of info-section */}
 
-                            <div className="stamp-signature" style={stampSignatureStyle}>
-                                <div className="stamp-container" style={stampContainerStyle}>STAMP
-                                    <div className="stamp" style={stampStyle}>
-                                        <img src={stampImage} alt="Stamp" style={stampImageStyle} />
+
+                            <div className="stamp-signature" style={{ display: 'flex', gap: '100px', alignItems: 'flex-end' }}>
+                                {/* STAMP + SIGNATURE OVERLAP */}
+                                <div className="stamp-container" style={{ textAlign: 'center', position: 'relative', marginTop: '0' }}>
+                                    <div style={{ position: 'relative', width: '180px', height: '180px' }}>
+
+                                        {/* Stamp Image (40% size, centered) */}
+                                        <img
+                                            src={stampImage}
+                                            alt="Stamp"
+                                            style={{
+                                                width: '40%',
+                                                height: '40%',
+                                                borderRadius: '50%',
+                                                objectFit: 'contain',
+                                                position: 'absolute',
+                                                top: '30%', // centers vertically ( (100% - 40%) / 2 )
+                                                left: '30%', // centers horizontally
+                                                zIndex: 1
+                                            }}
+                                        />
+
+                                        {/* Signature Image (Full size, overlapping) */}
+                                        <img
+                                            src={signatureImg}
+                                            alt="Signature"
+                                            style={{
+                                                width: '80%',
+                                                height: '80%',
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                transform: 'rotate(-10deg)',
+                                                opacity: 0.9,
+                                                zIndex: 2,
+                                                objectFit: 'contain',
+                                                pointerEvents: 'none'
+                                            }}
+                                        />
                                     </div>
                                 </div>
-                                <div className="signature-container" style={signatureContainerStyle}>SIGNATURE
-                                    <div className="signature-line" style={signatureLineStyle}></div>
+
+
+                                <div
+                                    className="stamp-signature"
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        marginTop: '40px',
+                                        alignItems: 'flex-end',
+                                    }}
+                                >
+                                    {/* LEFT BLOCK - optional (STAMP or other content) */}
+                                    <div style={{ width: '200px' }}>
+                                        {/* You can leave this empty or add the stamp block here */}
+                                    </div>
+
+                                    {/* RIGHT BLOCK - Signature Line */}
+                                    <div
+                                        className="signature-container"
+                                        style={{
+                                            textAlign: 'center',
+                                            position: 'relative',
+                                            width: '250px',
+                                        }}
+                                    >
+                                        <div style={{ position: 'relative', height: '60px' }}>
+                                            {/* Line */}
+                                            <div
+                                                style={{
+                                                    borderBottom: '2px solid #000',
+                                                    width: '100%',
+                                                    position: 'absolute',
+                                                    bottom: '0',
+                                                    left: '0',
+                                                }}
+                                            />
+                                            {/* Signature over the line */}
+                                            <img
+                                                src={signatureImg}
+                                                alt="Signature on line"
+                                                style={{
+                                                    position: 'center',
+                                                    bottom: '5px',
+                                                    left: '0',
+                                                    height: '65px',
+                                                    objectFit: 'contain',
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Optional label under the line */}
+                                        <div style={{ marginTop: '2px', fontSize: '8px' }}>
+                                            Admin Signature
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
+
                             <p className="note" style={noteStyle}>
                                 <strong style={noteStrongStyle}>Note:</strong> All types of charges should be payable in advance. In case of not paying on time failure to adhere will be applied upon balance may result in Rs. 50/- no exchange request will be entertain in any case.
                             </p>
@@ -525,7 +616,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                     <DialogActions id="invoice-dialog-actions" sx={{ pt: 2, justifyContent: 'center', width: '100%', maxWidth: '8.5in' }}>
                         <Button onClick={onClose} variant="outlined">Close</Button>
                         <Button onClick={handleShowPrintPreview} color="primary" variant="contained">Print</Button>
-                        <Button onClick={handleDownload} color="secondary" variant="contained">Download Invoice</Button>
+                        {/* <Button onClick={handleDownload} color="secondary" variant="contained">Download Invoice</Button> */}
                     </DialogActions>
                 </Box>
             </Dialog>
