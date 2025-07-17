@@ -165,7 +165,8 @@ const AdminFees = () => {
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/students/search`, payload);
             
             if (response.data?.length > 0) {
-                setState(prev => ({ ...prev, studentData: response.data, filteredData: response.data, error: '', loading: false }));
+                const sortedData = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setState(prev => ({ ...prev, studentData: sortedData, filteredData:sortedData, error: '', loading: false }));
             } else {
                 setState(prev => ({ ...prev, studentData: [], filteredData: [], error: 'No students found matching the criteria.', loading: false }));
             }
@@ -336,10 +337,11 @@ const AdminFees = () => {
         `${process.env.REACT_APP_BASE_URL}/AllStudents/684166055d02df2c8772e55a`
       );
       // debugger // Keep or remove debugger as needed
+       const sortedData = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setState(prev => ({
         ...prev,
-        studentData: response.data,
-        filteredData: response.data,
+        studentData: sortedData,
+        filteredData: sortedData,
         loading: false,
         error: ''
       }));

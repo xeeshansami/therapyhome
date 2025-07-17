@@ -72,7 +72,7 @@ const ShowClasses = () => {
           onClick={() => navigate("/Admin/classes/class/" + row.id)}>
           View
         </BlueButton>
-        <ActionMenu actions={actions} />
+        {/* <ActionMenu actions={actions} /> */}
       </ButtonContainer>
     );
   };
@@ -160,7 +160,8 @@ const ShowClasses = () => {
                 <TableTemplate buttonHaver={SclassButtonHaver} columns={sclassColumns} rows={sclassRows} />
               }
               <SpeedDialTemplate actions={actions} />
-            </>}
+            </>
+            }
         </>
       }
       <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />

@@ -11,13 +11,12 @@ import styled from "styled-components";
 
 const AddClass = () => {
     const [sclassName, setSclassName] = useState("");
-
+    const [isSuccess, setIsSuccess] = useState(false);
     const dispatch = useDispatch()
     const navigate = useNavigate()
 
     const userState = useSelector(state => state.user);
-    const { status, currentUser, response, error, tempDetails } = userState;
-
+    let { status, currentUser, response, error, tempDetails } = userState;
     const adminID = currentUser._id
     const address = "Sclass"
 
@@ -35,19 +34,27 @@ const AddClass = () => {
         setLoader(true)
         dispatch(addStuff(fields, address))
     };
-
+    const handlePopupConfirm = () => {
+        setShowPopup(false);
+        dispatch(underControl()); // ✅ resets the Redux state
+        navigate(-1);
+    };
     useEffect(() => {
+        debugger
         if (status === 'added' && tempDetails) {
-            navigate("/Admin/classes/class/" + tempDetails._id)
-            dispatch(underControl())
+            setIsSuccess(true);
+            setShowPopup(true);
+            setMessage("Class has been added successfully");
             setLoader(false)
         }
         else if (status === 'failed') {
+            setIsSuccess(false);
             setMessage(response)
             setShowPopup(true)
             setLoader(false)
         }
         else if (status === 'error') {
+            setIsSuccess(false);
             setMessage("Network Error")
             setShowPopup(true)
             setLoader(false)
@@ -95,7 +102,17 @@ const AddClass = () => {
                     </form>
                 </StyledBox>
             </StyledContainer>
-            <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+            {showPopup && (
+                <div className="custom-popup-overlay" style={popupOverlayStyle}>
+                    <div className="custom-popup" style={popupStyle}>
+                        <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
+                        <p>{message}</p>
+                        <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
+                            {isSuccess ? "OK" : "Close"}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </>
     )
 }
@@ -118,3 +135,27 @@ const StyledBox = styled(Box)`
   border: 1px solid #ccc;
   border-radius: 4px;
 `;
+
+// Basic styles for the popup (can be moved to a CSS file)
+const popupOverlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1300, // Ensure it's above MUI Dialog by default
+};
+
+const popupStyle = {
+    background: 'white',
+    padding: '20px 40px',
+    borderRadius: '8px',
+    textAlign: 'center',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+    minWidth: '300px',
+    maxWidth: '500px',
+};

@@ -51,7 +51,7 @@ const AdminRegisterPage = () => {
             if (!password) setPasswordError(true);
             return;
         }
-        if (key == "1234") {
+        if (key == "THS78603412030258") {
             const fields = { name, key, email, password, role, schoolName }
             setLoader(true)
             dispatch(registerUser(fields, role))

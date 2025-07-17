@@ -20,7 +20,8 @@ export const getAllSclasses = (id, address) => async (dispatch) => {
         if (result.data.message) {
             dispatch(getFailedTwo(result.data.message));
         } else {
-            dispatch(getSuccess(result.data));
+            const sortedData = result.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            dispatch(getSuccess(sortedData));
         }
     } catch (error) {
         dispatch(getError(error));
