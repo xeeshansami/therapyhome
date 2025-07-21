@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useSelector } from 'react-redux';
 import Homepage from './pages/Homepage';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -13,41 +13,47 @@ const App = () => {
   const { currentRole } = useSelector(state => state.user);
 
   return (
-    <Router>
-      {currentRole === null &&
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/choose" element={<ChooseUser visitor="normal" />} />
-          <Route path="/chooseasguest" element={<ChooseUser visitor="guest" />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Homepage />} />
+      <Route path="/choose" element={<ChooseUser visitor="normal" />} />
+      <Route path="/chooseasguest" element={<ChooseUser visitor="guest" />} />
 
-          <Route path="/Adminlogin" element={<LoginPage role="Admin" />} />
-          <Route path="/Studentlogin" element={<LoginPage role="Student" />} />
-          <Route path="/Teacherlogin" element={<LoginPage role="Teacher" />} />
+      <Route path="/Adminlogin" element={<LoginPage role="Admin" />} />
+      <Route path="/Studentlogin" element={<LoginPage role="Student" />} />
+      <Route path="/Teacherlogin" element={<LoginPage role="Teacher" />} />
 
-          <Route path="/Adminregister" element={<AdminRegisterPage />} />
-         
-          <Route path='*' element={<Navigate to="/" />} />
-        </Routes>}
+      <Route path="/Adminregister" element={<AdminRegisterPage />} />
 
-      {currentRole === "Admin" &&
-        <>
-          <AdminDashboard />
-        </>
-      }
+      {/* Protected Admin Routes */}
+      {/* Any URL starting with /Admin will render the AdminDashboard if the role is Admin */}
+      <Route
+        path="/Admin/*"
+        element={
+          currentRole === "Admin" ? <AdminDashboard /> : <Navigate to="/Adminlogin" />
+        }
+      />
 
-      {currentRole === "Student" &&
-        <>
-          <StudentDashboard />
-        </>
-      }
+      {/* Protected Student Routes (assuming you have a StudentDashboard) */}
+      <Route
+        path="/Student/*"
+        element={
+          currentRole === "Student" ? <StudentDashboard /> : <Navigate to="/Studentlogin" />
+        }
+      />
 
-      {currentRole === "Teacher" &&
-        <>
-          <TeacherDashboard />
-        </>
-      }
-    </Router>
-  )
-}
+      {/* Protected Teacher Routes (assuming you have a TeacherDashboard) */}
+      <Route
+        path="/Teacher/*"
+        element={
+          currentRole === "Teacher" ? <TeacherDashboard /> : <Navigate to="/Teacherlogin" />
+        }
+      />
 
-export default App
+      {/* Fallback route to redirect to home page for any other path */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
+};
+
+export default App;

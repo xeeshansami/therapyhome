@@ -47,6 +47,7 @@ import ShowClasses from './classRelated/ShowClasses';
 import AccountMenu from '../../components/AccountMenu';
 import logo from "../../assets/logo.png";
 import { SpaceBar } from '@mui/icons-material';
+
 const AdminDashboard = () => {
     const [open, setOpen] = useState(false);
     const toggleDrawer = () => {
@@ -106,55 +107,57 @@ const AdminDashboard = () => {
                     <Toolbar />
                     <Routes>
                         <Route path="/" element={<AdminHomePage />} />
-                        <Route path='*' element={<Navigate to="/" />} />
-                        <Route path="/Admin/dashboard" element={<AdminHomePage />} />
-                        <Route path="/Admin/profile" element={<AdminProfile />} />
-                        <Route path="/Admin/complains" element={<SeeComplains />} />
+                        <Route path="/dashboard" element={<AdminHomePage />} />
+                        <Route path="/profile" element={<AdminProfile />} />
+                        <Route path="/complains" element={<SeeComplains />} />
 
                         {/* Notice */}
-                        <Route path="/Admin/addnotice" element={<AddNotice />} />
-                        <Route path="/Admin/notices" element={<ShowNotices />} />
+                        <Route path="/addnotice" element={<AddNotice />} />
+                        <Route path="/notices" element={<ShowNotices />} />
 
                         {/* AdminInvoice */}
-                        <Route path="/Admin/Invoice" element={<AdminInvoice />} />
+                        <Route path="/Invoice" element={<AdminInvoice />} />
 
                         {/* AdminFees */}
-                        <Route path="/Admin/Fees" element={<AdminFees />} />
+                        <Route path="/Fees" element={<AdminFees />} />
                         <Route path="/terms" element={<TermsPage />} />
                         {/* Subject */}
-                        <Route path="/Admin/subjects" element={<ShowSubjects />} />
-                        <Route path="/Admin/subjects/subject/:classID/:subjectID" element={<ViewSubject />} />
-                        <Route path="/Admin/subjects/chooseclass" element={<ChooseClass situation="Subject" />} />
+                        <Route path="/subjects" element={<ShowSubjects />} />
+                        <Route path="/subjects/subject/:classID/:subjectID" element={<ViewSubject />} />
+                        <Route path="/subjects/chooseclass" element={<ChooseClass situation="Subject" />} />
 
-                        <Route path="/Admin/addsubject/:id" element={<SubjectForm />} />
-                        <Route path="/Admin/class/subject/:classID/:subjectID" element={<ViewSubject />} />
+                        <Route path="/addsubject/:id" element={<SubjectForm />} />
+                        <Route path="/class/subject/:classID/:subjectID" element={<ViewSubject />} />
 
-                        <Route path="/Admin/subject/student/attendance/:studentID/:subjectID" element={<StudentAttendance situation="Subject" />} />
-                        <Route path="/Admin/subject/student/marks/:studentID/:subjectID" element={<StudentExamMarks situation="Subject" />} />
+                        <Route path="/subject/student/attendance/:studentID/:subjectID" element={<StudentAttendance situation="Subject" />} />
+                        <Route path="/subject/student/marks/:studentID/:subjectID" element={<StudentExamMarks situation="Subject" />} />
 
                         {/* Class */}
-                        <Route path="/Admin/addclass" element={<AddClass />} />
-                        <Route path="/Admin/classes" element={<ShowClasses />} />
-                        <Route path="/Admin/classes/class/:id" element={<ClassDetails />} />
-                        <Route path="/Admin/class/addstudents/:id" element={<AddStudent situation="Class" />} />
+                        <Route path="/addclass" element={<AddClass />} />
+                        <Route path="/classes" element={<ShowClasses />} />
+                        <Route path="/classes/class/:id" element={<ClassDetails />} />
+                        <Route path="/class/addstudents/:id" element={<AddStudent situation="Class" />} />
 
                         {/* Student */}
-                        <Route path="/Admin/addstudents" element={<AddStudent situation="Student" />} />
-                        <Route path="/Admin/students" element={<ShowStudents />} />
-                        <Route path="/Admin/addConsultancy" element={<AddConsultancy />} />
-                        <Route path="/Admin/students/student/:id" element={<ViewStudent />} />
-                        <Route path="/Admin/students/student/attendance/:id" element={<StudentAttendance situation="Student" />} />
-                        <Route path="/Admin/students/student/marks/:id" element={<StudentExamMarks situation="Student" />} />
+                        <Route path="/addstudents" element={<AddStudent situation="Student" />} />
+                        <Route path="/students" element={<ShowStudents />} />
+                        <Route path="/addConsultancy" element={<AddConsultancy />} />
+                        <Route path="/students/student/:id" element={<ViewStudent />} />
+                        <Route path="/students/student/attendance/:id" element={<StudentAttendance situation="Student" />} />
+                        <Route path="/students/student/marks/:id" element={<StudentExamMarks situation="Student" />} />
 
                         {/* Teacher */}
-                        <Route path="/Admin/teachers" element={<ShowTeachers />} />
-                        <Route path="/Admin/teachers/teacher/:id" element={<TeacherDetails />} />
-                        <Route path="/Admin/teachers/chooseclass" element={<ChooseClass situation="Teacher" />} />
-                        <Route path="/Admin/teachers/choosesubject/:id" element={<ChooseSubject situation="Norm" />} />
-                        <Route path="/Admin/teachers/choosesubject/:classID/:teacherID" element={<ChooseSubject situation="Teacher" />} />
-                        <Route path="/Admin/teachers/addteacher/:id" element={<AddTeacher />} />
+                        <Route path="/teachers" element={<ShowTeachers />} />
+                        <Route path="/teachers/teacher/:id" element={<TeacherDetails />} />
+                        <Route path="/teachers/chooseclass" element={<ChooseClass situation="Teacher" />} />
+                        <Route path="/teachers/choosesubject/:id" element={<ChooseSubject situation="Norm" />} />
+                        <Route path="/teachers/choosesubject/:classID/:teacherID" element={<ChooseSubject situation="Teacher" />} />
+                        <Route path="/teachers/addteacher/:id" element={<AddTeacher />} />
 
                         <Route path="/logout" element={<Logout />} />
+                        
+                        {/* Fallback for any unmatched route within Admin dashboard */}
+                        <Route path='*' element={<Navigate to="/" />} />
                     </Routes>
                 </Box>
             </Box>
@@ -196,31 +199,6 @@ const styles = {
         textAlign: 'center', // Center text
         marginBottom: '2rem', // Space between caption and grid
     },
-    // Other style objects
-    boxStyled: {
-        backgroundColor: (theme) =>
-            theme.palette.mode === 'light'
-                ? theme.palette.grey[100]
-                : theme.palette.grey[900],
-        flexGrow: 1,
-        height: '100vh',
-        overflow: 'auto',
-    },
-    toolBarStyled: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        px: [1],
-    },
-    drawerStyled: {
-        display: "flex",
-    },
-    hideDrawer: {
-        display: 'flex',
-        '@media (max-width: 600px)': {
-            display: 'none',
-        },
-    },
     captionStyledToolbar: {
         fontSize: '1.2rem', // Adjust font size as needed
         color: 'black', // Caption text color
@@ -235,4 +213,3 @@ const styles = {
         objectFit: "contain" // Ensure the image fits within the dimensions while maintaining its aspect ratio
     },
 }
-// Caption styling
