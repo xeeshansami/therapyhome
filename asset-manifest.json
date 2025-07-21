@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/therapyhome/static/css/main.dde23f3b.css",
-    "main.js": "/therapyhome/static/js/main.91b57896.js",
+    "main.js": "/therapyhome/static/js/main.20837fc4.js",
     "static/js/213.892af230.chunk.js": "/therapyhome/static/js/213.892af230.chunk.js",
     "static/js/455.2cd3a5fa.chunk.js": "/therapyhome/static/js/455.2cd3a5fa.chunk.js",
     "static/media/bg_mode.png": "/therapyhome/static/media/bg_mode.9e486c8438a933f2fbe3.png",
@@ -16,12 +16,12 @@
     "static/media/designlogin.jpg": "/therapyhome/static/media/designlogin.3cac939f195a9e698ba4.jpg",
     "index.html": "/therapyhome/index.html",
     "main.dde23f3b.css.map": "/therapyhome/static/css/main.dde23f3b.css.map",
-    "main.91b57896.js.map": "/therapyhome/static/js/main.91b57896.js.map",
+    "main.20837fc4.js.map": "/therapyhome/static/js/main.20837fc4.js.map",
     "213.892af230.chunk.js.map": "/therapyhome/static/js/213.892af230.chunk.js.map",
     "455.2cd3a5fa.chunk.js.map": "/therapyhome/static/js/455.2cd3a5fa.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.dde23f3b.css",
-    "static/js/main.91b57896.js"
+    "static/js/main.20837fc4.js"
   ]
 }
