@@ -1,22 +1,33 @@
 import React, { useState } from 'react';
-import { Box, Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip } from '@mui/material';
+import {
+    Box, Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip
+} from '@mui/material';
 import { Settings, Logout } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 const AccountMenu = () => {
     const [anchorEl, setAnchorEl] = useState(null);
-
     const open = Boolean(anchorEl);
 
     const { currentRole, currentUser } = useSelector(state => state.user);
 
+    const navigate = useNavigate(); // ← Hook for programmatic navigation
+
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
+
     const handleClose = () => {
         setAnchorEl(null);
     };
+
+    const handleLogout = () => {
+        // Optionally: clear auth state here
+        // dispatch(logoutUser()); or localStorage.clear();
+        navigate('/admin/logout'); // ← Navigating to logout page
+    };
+
     return (
         <>
             <Box sx={{ display: 'flex', alignItems: 'center', textAlign: 'center' }}>
@@ -41,40 +52,33 @@ const AccountMenu = () => {
                 open={open}
                 onClose={handleClose}
                 onClick={handleClose}
-                PaperProps={{
-                    elevation: 0,
-                    sx: styles.styledPaper,
-                }}
+                PaperProps={{ elevation: 0, sx: styles.styledPaper }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
                 <MenuItem>
                     <Avatar />
-                    <Link to={`/${currentRole}/profile`}>
-                        Profile
-                    </Link>
+                    <Link to={`/${currentRole}/profile`}>Profile</Link>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleClose}>
+                <MenuItem>
                     <ListItemIcon>
                         <Settings fontSize="small" />
                     </ListItemIcon>
                     Settings
                 </MenuItem>
-                <MenuItem>
+                <MenuItem onClick={handleLogout}>
                     <ListItemIcon>
                         <Logout fontSize="small" />
                     </ListItemIcon>
-                    <Link to="/logout">
-                        Logout
-                    </Link>
+                    Logout
                 </MenuItem>
             </Menu>
         </>
     );
-}
+};
 
-export default AccountMenu
+export default AccountMenu;
 
 const styles = {
     styledPaper: {
@@ -100,4 +104,4 @@ const styles = {
             zIndex: 0,
         },
     }
-}
+};

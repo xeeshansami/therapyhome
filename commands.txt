@@ -1,0 +1,5 @@
+install docker
+make docker file
+copy paste the code
+docker build -t react-app .
+docker run -d -p 3000:80 react-app

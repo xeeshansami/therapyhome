@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -19,36 +19,61 @@ import {
   FormControlLabel,
   Checkbox,
   Box,
-  // Make sure to import FormControl and FormLabel if you use them
   FormControl,
-  FormLabel
+  FormLabel,
+  Divider
 } from '@mui/material';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import InvoiceDialog from '../../components/InvoiceDialog'; // adjust path as needed
+import InvoiceDialog from '../../components/InvoiceDialog'; // Adjust path as needed
+
+// --- Helper Components & Functions ---
+
+const CustomPopup = ({ open, success, message, onConfirm, onClose }) => {
+  if (!open) return null;
+  const popupOverlayStyle = {
+    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex',
+    justifyContent: 'center', alignItems: 'center', zIndex: 1301,
+  };
+  const popupStyle = {
+    background: 'white', padding: '25px 40px', borderRadius: '10px',
+    textAlign: 'center', boxShadow: '0 5px 20px rgba(0,0,0,0.25)',
+    minWidth: '320px', maxWidth: '500px',
+  };
+  return (
+    <div style={popupOverlayStyle}>
+      <div style={popupStyle}>
+        <h2 style={{ color: success ? '#2e7d32' : '#d32f2f', marginTop: 0 }}>{success ? "Success!" : "Error"}</h2>
+        <p>{message}</p>
+        <Button variant="contained" color={success ? 'success' : 'primary'} onClick={success ? onConfirm : onClose}>
+          {success ? "View Invoice" : "Close"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Component ---
 
 const AdminFees = () => {
-  const formatTherapyFee = (amount) => {
-    return amount ? `Rs. ${amount.toLocaleString()}` : 'N/A';
-  };
+  const navigate = useNavigate();
+
+  // UI Control States
   const [showInvoice, setShowInvoice] = useState(false);
   const [invoiceData, setInvoiceData] = useState({});
   const [showPopup, setShowPopup] = useState(false);
-  const [message, setMessage] = useState("");
-  const navigate = useNavigate();
-  const [isMonthlyFee, setIsMonthlyFee] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('Loading...');
-  const [invoiceNoError, setInvoiceNoError] = useState('');
-  const [loader, setLoader] = useState(false);
+  const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('');
+
+  // Main Component State
   const [state, setState] = useState({
+    searchBy: 'Name',
     name: '',
-    rollNum: '',         // Added for Roll Number search
-    parentsContact: '',  // Added for Parents Contact search
-    showNameSearch: true,     // New: Controls visibility of Name search field
-    showRollNumSearch: false, // New: Controls visibility of Roll Number search field
-    showParentsContactSearch: false, // New: Controls visibility of Parents Contact search field
+    rollNum: '',
+    parentsContact: '',
     studentData: [],
     filteredData: [],
     error: '',
@@ -56,559 +81,332 @@ const AdminFees = () => {
     loading: false,
     openModal: false,
     selectedStudent: null,
+    isMonthlyFee: false,
     feeDetails: {
       date: new Date().toISOString().split('T')[0],
       paid: '',
       remark: '',
-      totalFee: '',
-      consultantFee: '',
-      netAmount: '',
-      paidFee: '',
-      balance: ''
-    }
+      netAmount: 0,
+      balance: 0,
+      classFees: [], 
+    },
   });
+
+  // --- API & Data Fetching ---
+
   const fetchNextInvoiceNo = async () => {
     try {
-      setLoader(true);
-      setInvoiceNoError(''); // Clear previous errors
       const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/invoices/next-number`);
-      if (response.data && response.data.invoiceNum) {
-        setGeneratedInvoiceNo(response.data.invoiceNum);
-      } else {
-        setGeneratedInvoiceNo('THS16072025-01'); // Default fallback
-        console.warn("Could not fetch invoice number, defaulting.");
-        setInvoiceNoError('Could not generate invoice number automatically.');
-      }
+      setGeneratedInvoiceNo(response.data?.invoiceNum || `THS${Date.now()}`);
     } catch (error) {
       console.error("Error fetching next invoice number:", error);
-      setGeneratedInvoiceNo('Error');
-      setInvoiceNoError('Failed to fetch invoice number.');
-    } finally {
-      setLoader(false);
+      setGeneratedInvoiceNo(`Error-${Date.now()}`);
     }
   };
-  const handleMonthlyFeeToggle = (event) => {
-    const checked = event.target.checked;
-    setIsMonthlyFee(checked);
 
-    if (checked) {
-      try {
-        const plan = JSON.parse(state.selectedStudent?.therapyPlan || '{}');
-        const perMonthCost = plan?.perMonthCost || 0;
+  const fetchStudents = async (searchPayload = null) => {
+    setState(prev => ({ ...prev, loading: true, error: '' }));
+    try {
+      const url = searchPayload 
+        ? `${process.env.REACT_APP_BASE_URL}/students/search`
+        : `${process.env.REACT_APP_BASE_URL}/AllStudents/68795ab802f2887382d217b0`;
+      const method = searchPayload ? 'post' : 'get';
+      const response = await axios[method](url, searchPayload);
+      
+      const data = response.data?.length > 0 ? response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+      setState(prev => ({ ...prev, studentData: data, filteredData: data, loading: false, error: data.length === 0 ? 'No students found.' : '' }));
+    } catch (err) {
+      setState(prev => ({ ...prev, loading: false, error: 'Error fetching student data.' }));
+    }
+  };
 
-        setState(prev => ({
-          ...prev,
-          feeDetails: {
-            ...prev.feeDetails,
-            netAmount: perMonthCost,
-          },
-        }));
-      } catch (e) {
-        console.error("Invalid therapyPlan JSON", e);
+  // --- Fee Calculation Logic ---
+
+  const calculateNetAmount = (classFees, isMonthly, student) => {
+    // **MODE 1: Admission Fee** (Monthly checkbox is unchecked)
+    // The net amount is simply the student's total admission fee.
+    if (!isMonthly) {
+      return student?.totalFee || 0;
+    }
+
+    // **MODE 2: Monthly Fee** (Monthly checkbox is checked)
+    // The net amount is the sum of the monthly plan and all class fees.
+    let total = 0;
+    
+    // Start with the base monthly fee from the therapy plan
+    const plan = JSON.parse(student?.therapyPlan || '{}');
+    total += plan?.perMonthCost || 0;
+
+    // Add costs from all session and program classes
+    classFees.forEach(item => {
+      if (item.type === 'Session') {
+        total += (item.numberOfSessions * item.fee);
+      } else { // 'Program' or other fixed-fee types
+        total += item.fee;
       }
-    } else {
-      const admissionFee = 0; // replace with your default calculation if needed
+    });
+    
+    return total;
+  };
+
+  // --- Event Handlers ---
+
+  const handleSearch = () => {
+    const { searchBy, name, rollNum, parentsContact } = state;
+    const payload = { id: "68795ab802f2887382d217b0" };
+    let searchValue = '';
+    if (searchBy === 'Name') {
+      payload.name = name;
+      searchValue = name;
+    } else if (searchBy === 'RollNum') {
+      payload.rollNum = rollNum;
+      searchValue = rollNum;
+    } else if (searchBy === 'ParentsContact') {
+      payload.parentsContact = parentsContact;
+      searchValue = parentsContact;
+    }
+    if (!searchValue.trim()) {
+      setState(prev => ({ ...prev, error: 'Please enter a value to search.' }));
+      return;
+    }
+    fetchStudents(payload);
+  };
+  
+  const handleOpenModal = async (student) => {
+    setState(prev => ({ ...prev, loading: true, error: '' }));
+    await fetchNextInvoiceNo();
+    
+    const classIds = student.className || [];
+    if (!classIds || classIds.length === 0) {
+      // If no classes, proceed with only admission fee
       setState(prev => ({
-        ...prev,
+        ...prev, openModal: true, selectedStudent: student, loading: false, isMonthlyFee: false,
         feeDetails: {
           ...prev.feeDetails,
-          netAmount: state.selectedStudent.totalFee,
-        },
+          netAmount: student.totalFee || 0, balance: student.totalFee || 0, classFees: [],
+        }
       }));
-    }
-  };
-
-  // New handler for checkbox changes
-  const handleCheckboxChange = (field) => (event) => {
-    const checked = event.target.checked;
-    setState(prev => {
-      const newState = {
-        ...prev,
-        [`show${field}Search`]: checked // Toggle the visibility state (e.g., showNameSearch)
-      };
-      // If a checkbox is unchecked, clear the corresponding input field's value
-      if (!checked) {
-        if (field === 'Name') newState.name = '';
-        if (field === 'RollNum') newState.rollNum = '';
-        if (field === 'ParentsContact') newState.parentsContact = '';
-      }
-      return newState;
-    });
-  };
-
-  const handleSearch = async () => {
-        setState(prev => ({ ...prev, loading: true, error: '', studentData: [], filteredData: [] }));
-        
-        const { searchBy, name, rollNum, parentsContact } = state;
-        const payload = { id: "684166055d02df2c8772e55a" };
-        let searchValue = '';
-
-        // Determine which value to use based on the selected filter
-        if (searchBy === 'Name') {
-            payload.name = name;
-            searchValue = name;
-        } else if (searchBy === 'RollNum') {
-            payload.rollNum = rollNum;
-            searchValue = rollNum;
-        } else if (searchBy === 'ParentsContact') {
-            payload.parentsContact = parentsContact;
-            searchValue = parentsContact;
-        }
-
-        if (!searchValue.trim()) {
-            setState(prev => ({ ...prev, error: 'Please enter a value to search.', loading: false }));
-            return;
-        }
-
-        try {
-            // Replace mockApi with your actual axios.post call
-            const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/students/search`, payload);
-            
-            if (response.data?.length > 0) {
-                const sortedData = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                setState(prev => ({ ...prev, studentData: sortedData, filteredData:sortedData, error: '', loading: false }));
-            } else {
-                setState(prev => ({ ...prev, studentData: [], filteredData: [], error: 'No students found matching the criteria.', loading: false }));
-            }
-        } catch (err) {
-            setState(prev => ({ ...prev, studentData: [], filteredData: [], error: 'Error fetching student data.', loading: false }));
-        }
-    };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
-
-  const handleOpenModal = async (student) => {
-    await fetchNextInvoiceNo();
-    setState(prev => ({
-      ...prev,
-      openModal: true,
-      selectedStudent: student,
-      feeDetails: {
-        ...prev.feeDetails,
-        date: new Date().toISOString().split('T')[0],
-        totalFee: student.totalFee,
-        netAmount: student.totalFee,
-        balance: student.totalFee
-      }
-    }));
-  };
-
-  const handleCallConsultancy = () => {
-    navigate("/Admin/addConsultancy");
-  };
-
-  const handleSaveFee = async () => {
-    // debugger // Keep or remove debugger as needed
-    const { feeDetails, selectedStudent } = state;
-    const errors = {};
-
-    if (!feeDetails.paid || feeDetails.paid < 0) {
-      errors.paid = 'Paid Fee cannot be empty or negative';
-    }
-    if (feeDetails.paid > feeDetails.netAmount) {
-      errors.paid = 'Paid Fee cannot be greater than Net Amount';
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setState(prev => ({ ...prev, errors }));
       return;
     }
 
-    // debugger // Keep or remove debugger as needed
-    const fields = {
-      address: selectedStudent.address,
-      adminID: '684166055d02df2c8772e55a',
-      parentsName: selectedStudent.parentsName,
-      name: selectedStudent.name,
-      parentsContact: selectedStudent.parentsContact,
-      isPaid: "1",
-      role: 'Student',
-      rollNum: selectedStudent.rollNum,
-      date: feeDetails.date,
-      netTotalFee: feeDetails.netAmount,
-      paidFee: feeDetails.paid,
-      sclassName: selectedStudent.sclassName,
-      studentEmail: selectedStudent.studentEmail,
-      isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee ? '2' : '1',
-      invoiceID: generatedInvoiceNo, // Use the schema's field name 'invoiceID'
-    };
-    debugger
-    axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then(response => {
-        console.log('Fee details saved:', response.data);
-        debugger
-        const registeredStudentRollNum = response.data.rollNum;
-
-        if (registeredStudentRollNum) {
-          axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${registeredStudentRollNum}`)
-            .then(singleStudentResponse => {
-              if (singleStudentResponse.data && singleStudentResponse.data.length > 0) {
-                const fetchedStudentData = singleStudentResponse.data[0];
-                const mergedInvoiceData = {
-                  ...response.data,
-                  ...fetchedStudentData,
-                };
-                // debugger // Keep or remove debugger as needed
-                setInvoiceData(mergedInvoiceData);
-                setShowPopup(true);
-                setIsSuccess(true);
-                setMessage("Fee Invoice Generated, Please Check Invoice Portal");
-                setState(prev => ({ ...prev, errors: {}, openModal: false }));
-
-              } else {
-                console.warn("SingleStudent API found no data for rollNum:", registeredStudentRollNum);
-                setInvoiceData(response.data.data);
-                setShowPopup(true);
-                setIsSuccess(true);
-                setMessage("Fee Invoice Generated (partial data), Please Check Invoice Portal");
-                setState(prev => ({ ...prev, errors: {}, openModal: false }));
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching single student details:', error);
-              setInvoiceData(response.data.data);
-              setShowPopup(true);
-              setIsSuccess(true);
-              setMessage("Fee Invoice Generated (API error for full data), Please Check Invoice Portal");
-              setState(prev => ({ ...prev, errors: {}, openModal: false }));
-            });
-        } else {
-          console.warn("RollNum not available from StudentFeeReg response. Proceeding with limited data.");
-          setInvoiceData(response.data.data);
-          setShowPopup(true);
-          setIsSuccess(true);
-          setMessage("Fee Invoice Generated, Please Check Invoice Portal");
-          setState(prev => ({ ...prev, errors: {}, openModal: false }));
-        }
-      })
-      .catch(error => {
-        setShowPopup(false);
-        setIsSuccess(false);
-        setMessage('Error saving fee details: ' + (error.response?.data?.message || error.message));
-        console.error('Error saving fee details:', error);
-      });
-  };
-
-  const handlePopupConfirm = () => {
-    setShowPopup(false);
-    setShowInvoice(true);
-  };
-  const handleCloseModal = () => {
-    setState(prev => ({ ...prev, error: '', openModal: false }));
-  };
-
-  const handleFeeDetailChange = (e) => {
-    const { name, value } = e.target;
-    const numericValue = parseFloat(value);
-
-    setState(prev => {
-      const updatedFeeDetails = { ...prev.feeDetails, [name]: numericValue };
-
-      if (name === 'paid') {
-        updatedFeeDetails.balance = updatedFeeDetails.netAmount - numericValue;
-      }
-
-      return { ...prev, feeDetails: updatedFeeDetails };
-    });
-  };
- // New handler for the single-select checkbox group
-    const handleFilterChange = (filterName) => {
-        setState(prev => ({
-            ...prev,
-            searchBy: filterName,
-            // Clear input fields when changing filter type for a better UX
-            name: '',
-            rollNum: '',
-            parentsContact: '',
-            error: ''
-        }));
-    };
-    
-  const fetchAllStudents = async () => {
-    setState(prev => ({ ...prev, loading: true }));
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}/AllStudents/684166055d02df2c8772e55a`
-      );
-      // debugger // Keep or remove debugger as needed
-       const sortedData = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      debugger
+      const classDetailPromises = classIds.map(id => axios.get(`${process.env.REACT_APP_BASE_URL}/sclassList2/${id}`));
+      const classDetailResponses = await Promise.all(classDetailPromises);
+      const classDetailsList = classDetailResponses.map(res => res.data);
+
+      const classFees = classDetailsList.map(details => ({
+        classId: details._id,
+        className: details.sclassName,
+        type: details.timingType,
+        fee: parseFloat(details.sclassFee) || 0,
+        numberOfSessions: 1,
+      }));
+
+      // **UPDATED**: Initial net amount is the admission fee
+      const initialNetAmount = student.totalFee || 0;
+
       setState(prev => ({
         ...prev,
-        studentData: sortedData,
-        filteredData: sortedData,
+        openModal: true,
+        selectedStudent: student,
         loading: false,
-        error: ''
+        isMonthlyFee: false, // Start in "Admission Fee" mode
+        feeDetails: {
+          ...prev.feeDetails,
+          date: new Date().toISOString().split('T')[0],
+          paid: '', remark: '',
+          netAmount: initialNetAmount,
+          balance: initialNetAmount,
+          classFees: classFees,
+        },
       }));
+
     } catch (err) {
-      setState(prev => ({ ...prev, loading: false, error: 'Error fetching all students data' }));
+      console.error("Error fetching class details:", err);
+      setState(prev => ({ ...prev, loading: false, error: 'Could not fetch class details.' }));
     }
   };
 
-  const formatFee = (fee) => {
-    if (!fee || fee === 'null' || fee === '') {
-      return <span>0 <span style={{ color: 'green' }}>PKR</span></span>;
-    }
-    return <span>{fee} <span style={{ color: 'green' }}>PKR</span></span>;
+  const handleFeeDetailChange = (e, classIdToUpdate) => {
+    const { name, value } = e.target;
+    setState(prev => {
+      let newFeeDetails = { ...prev.feeDetails };
+
+      if (name === 'numberOfSessions' && classIdToUpdate) {
+        newFeeDetails.classFees = newFeeDetails.classFees.map(item => 
+          item.classId === classIdToUpdate ? { ...item, numberOfSessions: parseInt(value, 10) || 0 } : item
+        );
+      } else {
+        newFeeDetails[name] = value;
+      }
+      
+      const newNetAmount = calculateNetAmount(newFeeDetails.classFees, prev.isMonthlyFee, prev.selectedStudent);
+      const paidAmount = name === 'paid' ? (parseFloat(value) || 0) : (newFeeDetails.paid || 0);
+      const newBalance = newNetAmount - paidAmount;
+
+      return { 
+        ...prev, 
+        feeDetails: { ...newFeeDetails, netAmount: newNetAmount, balance: newBalance },
+        errors: {} 
+      };
+    });
+  };
+  
+  const handleMonthlyFeeToggle = (event) => {
+    const checked = event.target.checked;
+    setState(prev => {
+      const newNetAmount = calculateNetAmount(prev.feeDetails.classFees, checked, prev.selectedStudent);
+      const newBalance = newNetAmount - (prev.feeDetails.paid || 0);
+      return {
+        ...prev,
+        isMonthlyFee: checked,
+        feeDetails: { ...prev.feeDetails, netAmount: newNetAmount, balance: newBalance }
+      };
+    });
   };
 
+  const handleSaveFee = async () => {
+    const { feeDetails, selectedStudent, isMonthlyFee } = state;
+    if (feeDetails.paid === '' || feeDetails.paid < 0 || parseFloat(feeDetails.paid) > feeDetails.netAmount) {
+        setState(prev => ({ ...prev, errors: { paid: 'Paid amount is invalid.' } }));
+        return;
+    }
+    
+    const payload = {
+        adminID: '68795ab802f2887382d217b0',
+        ...selectedStudent,
+        date: feeDetails.date,
+        netTotalFee: feeDetails.netAmount,
+        paidFee: feeDetails.paid,
+        isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee ? '2' : '1', // 2=Monthly, 1=Admission/Other
+        invoiceID: generatedInvoiceNo,
+        classBreakdown: isMonthlyFee ? feeDetails.classFees : [], // Only send breakdown for monthly fees
+    };
+    try {
+        debugger
+        const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, payload);
+        debugger
+        const mergedInvoiceData = { ...payload, ...response.data, balance: feeDetails.balance };
+        setInvoiceData(mergedInvoiceData);
+        setPopupMessage("Fee Invoice Generated Successfully.");
+        setIsSuccess(true);
+        setShowPopup(true);
+        setState(prev => ({ ...prev, openModal: false, errors: {} }));
+    } catch (error) {
+      debugger
+        setPopupMessage('Error saving fee details: ' + (error.response?.data?.message || error.message));
+        setIsSuccess(false);
+        setShowPopup(true);
+    }
+  };
+
+  const handleFilterChange = (filterName) => {
+    setState(prev => ({ ...prev, searchBy: filterName, name: '', rollNum: '', parentsContact: '', error: '' }))
+  };
+  const formatFee = (fee) => fee ? `${Number(fee).toLocaleString()} PKR` : '0 PKR';
+  
+  useEffect(() => { fetchStudents(); }, []);
+
+  // --- Render Method ---
   return (
-    <div style={{ maxWidth: '100%', margin: 'auto', padding: '20px' }}>
-      <Typography variant="h4" gutterBottom>
-        Student Fee Portal
-      </Typography>
-
-      {/* Checkboxes for search criteria - UPDATED */}
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>Student Fee Portal</Typography>
+      
+      {/* Search and Table components */}
       <FormControl component="fieldset" margin="normal">
         <FormLabel component="legend">Search By:</FormLabel>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          <FormControlLabel
-            control={<Checkbox checked={state.searchBy === 'Name'} onChange={() => handleFilterChange('Name')} />}
-            label="Student Name"
-          />
-          <FormControlLabel
-            control={<Checkbox checked={state.searchBy === 'RollNum'} onChange={() => handleFilterChange('RollNum')} />}
-            label="Roll Number"
-          />
-          <FormControlLabel
-            control={<Checkbox checked={state.searchBy === 'ParentsContact'} onChange={() => handleFilterChange('ParentsContact')} />}
-            label="Parent Contact"
-          />
+          {['Name', 'RollNum', 'ParentsContact'].map(filter => (
+            <FormControlLabel key={filter}
+              control={<Checkbox checked={state.searchBy === filter} onChange={() => handleFilterChange(filter)} />}
+              label={filter.replace('Num', ' Number').replace('Contact', ' Contact')}
+            />
+          ))}
         </Box>
       </FormControl>
-
-      {/* Conditional rendering of TextFields - UPDATED */}
-      <Box sx={{ mt: 2, maxWidth: '500px' }}>
-        {state.searchBy === 'Name' && (
-          <TextField
-            label="Enter Student Name"
-            variant="outlined"
-            value={state.name}
-            onChange={(e) => setState(prev => ({ ...prev, name: e.target.value }))}
-            onKeyPress={handleKeyPress}
-            fullWidth
-          />
-        )}
-        {state.searchBy === 'RollNum' && (
-          <TextField
-            label="Enter Roll Number"
-            variant="outlined"
-            value={state.rollNum}
-            onChange={(e) => setState(prev => ({ ...prev, rollNum: e.target.value }))}
-            onKeyPress={handleKeyPress}
-            fullWidth
-          />
-        )}
-        {state.searchBy === 'ParentsContact' && (
-          <TextField
-            label="Enter Parent Contact"
-            variant="outlined"
-            value={state.parentsContact}
-            onChange={(e) => setState(prev => ({ ...prev, parentsContact: e.target.value }))}
-            onKeyPress={handleKeyPress}
-            fullWidth
-          />
-        )}
+      <Box sx={{ mt: 1, maxWidth: '500px' }}>
+        {state.searchBy === 'Name' && <TextField label="Enter Student Name" value={state.name} onChange={e => setState(prev => ({ ...prev, name: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
+        {state.searchBy === 'RollNum' && <TextField label="Enter Roll Number" value={state.rollNum} onChange={e => setState(prev => ({ ...prev, rollNum: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
+        {state.searchBy === 'ParentsContact' && <TextField label="Enter Parent Contact" value={state.parentsContact} onChange={e => setState(prev => ({ ...prev, parentsContact: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
+      </Box>
+      {state.error && <Typography color="error" sx={{ mt: 2 }}>{state.error}</Typography>}
+      <Box sx={{ display: 'flex', gap: 2, my: 3 }}>
+        <Button variant="contained" disabled={state.loading} onClick={handleSearch} startIcon={<SearchIcon />}>Search</Button>
+        <Button variant="outlined" onClick={() => fetchStudents()} startIcon={<VisibilityIcon />}>Show All</Button>
       </Box>
 
-      {state.error && !state.loading && <Typography color="error" sx={{ mt: 2 }}>{state.error}</Typography>}
-
-      <Box sx={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-        <Button variant="contained" disabled={state.loading} onClick={handleSearch} startIcon={<SearchIcon />}>
-          {state.loading ? <CircularProgress size={24} /> : 'Search'}
-        </Button>
-        <Button variant="contained" onClick={fetchAllStudents} startIcon={<VisibilityIcon />}>
-          Show All Students
-        </Button>
-      </Box>
-
-      {/* Outer conditional: Check if it's NOT in consultancy mode OR if there's data to show */}
-      {!state.isConsultancyMode ? (
-        // Case: Not in consultancy mode, display non-consultant students
-        state.filteredData.filter(student => !student.isConsultantStudent).length > 0 ? (
-          <TableContainer component={Paper} style={{ marginTop: '20px', border: '1px solid #ccc' }}>
+      {state.loading ? <CircularProgress sx={{ display: 'block', margin: '40px auto' }} /> : (
+        state.filteredData.length > 0 ? (
+          <TableContainer component={Paper} elevation={3}>
             <Table>
-              <TableHead>
-                <TableRow style={{ backgroundColor: '#f4f4f4' }}>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Roll Number</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Name</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent's Name</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Parent Contact</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Consultancy Date</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Date</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Fee Structure</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Days</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Monthly Fee</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Per Session Fee</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Admission Fees</TableCell>
-                  <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
+              <TableHead><TableRow sx={{ backgroundColor: '#f5f5f5' }}>{['Roll No.', 'Name', 'Parent Contact', 'Admission Date', 'Actions'].map(head => <TableCell key={head} sx={{ fontWeight: 'bold' }}>{head}</TableCell>)}</TableRow></TableHead>
               <TableBody>
-                {state.filteredData.filter(student => !student.isConsultantStudent).map((student) => (
-                  <TableRow key={student._id}>
-                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>{student.rollNum}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.name}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsName}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.parentsContact}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.consultancyDate}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.admissionDate}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.feeStructure.join(', ')}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc' }}>{student.days.join(', ')}</TableCell>
-                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perMonthCost : 'N/A'}
-                    </TableCell>
-                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                      {student.therapyPlan ? JSON.parse(student.therapyPlan).perSessionCost : 'N/A'}
-                    </TableCell>
-                    <TableCell style={{ border: '1px solid #ccc', fontWeight: 'bold' }}>
-                      {formatFee(student.totalFee)}
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={2}>
-                        <Button
-                          variant="contained"
-                          color="success"
-                          onClick={() => handleOpenModal(student)}
-                          disabled={student.status === 'Paid'}
-                        >
-                          Fee Issue
-                        </Button>
-                        {/* The commented-out button is kept as is */}
-                        {/* <Button
-                            variant="contained"
-                            color="success"
-                            onClick={handleCallConsultancy}
-                            disabled={student.status === 'Paid'}
-                          >
-                            Consultancy
-                          </Button> */}
-                      </Box>
-                    </TableCell>
+                {state.filteredData.map((student) => (
+                  <TableRow key={student._id} hover>
+                    <TableCell>{student.rollNum}</TableCell>
+                    <TableCell>{student.name}</TableCell>
+                    <TableCell>{student.parentsContact}</TableCell>
+                    <TableCell>{new Date(student.admissionDate).toLocaleDateString()}</TableCell>
+                    <TableCell><Button variant="contained" color="success" onClick={() => handleOpenModal(student)} disabled={state.loading}>Fee Issue</Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
-        ) : (
-          // Case: No non-consultant students found
-          <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
-            No record found
-          </Typography>
-        )
-      ) : (
-        // Case: state.isConsultancyMode is true (always show "No record found" in this mode)
-        <Typography variant="h6" style={{ marginTop: '20px', textAlign: 'center' }}>
-          No record found
-        </Typography>
+        ) : ( !state.error && <Typography variant="h6" sx={{ mt: 4, textAlign: 'center' }}>No student records to display.</Typography> )
       )}
-
-      <Dialog open={state.openModal} onClose={handleCloseModal} maxWidth="sm" fullWidth>
+      
+      {/* --- Fee Dialog (Updated) --- */}
+      <Dialog open={state.openModal} onClose={() => setState(prev => ({ ...prev, openModal: false }))} maxWidth="sm" fullWidth>
         <DialogTitle>Fee Report for {state.selectedStudent?.name}</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="h6">Student Info</Typography>
-            <TextField label="Name" value={state.selectedStudent?.name || ''} fullWidth disabled />
-            <TextField label="Parent's Name" value={state.selectedStudent?.parentsName || ''} fullWidth disabled />
-            <TextField label="Class" value={state.selectedStudent?.sclassName?.sclassName || ''} fullWidth disabled />
-            <Typography variant="h6" style={{ marginTop: 20 }}>Fee Info</Typography>
-
-            <FormControlLabel
-              control={
-                <Checkbox checked={isMonthlyFee} onChange={handleMonthlyFeeToggle} />
-              }
-              label="Monthly Fee"
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            
+            <FormControlLabel 
+              control={<Checkbox checked={state.isMonthlyFee} onChange={handleMonthlyFeeToggle} />} 
+              label="Generate Monthly Fee Invoice" 
             />
+            <Divider sx={{ my: 1 }} />
 
-            <TextField
-              label="Date"
-              type="date"
-              name="date"
-              value={state.feeDetails.date}
-              onChange={handleFeeDetailChange}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
+            {state.feeDetails.classFees.map((classItem, index) => (
+              <Box key={index} sx={{ p: 2, border: '1px solid #ddd', borderRadius: '4px' }}>
+                <Typography variant="h6" gutterBottom>{classItem.className}</Typography>
+                {classItem.type === 'Session' ? (
+                  <TextField 
+                    label="Number of Sessions" type="number" name="numberOfSessions"
+                    value={classItem.numberOfSessions}
+                    onChange={(e) => handleFeeDetailChange(e, classItem.classId)}
+                    // **UPDATED**: Disabled when in admission fee mode
+                    disabled={!state.isMonthlyFee}
+                    InputProps={{ inputProps: { min: 1 } }} fullWidth
+                  />
+                ) : (
+                  <TextField 
+                    label="Program Fee (PKR)" value={classItem.fee}
+                    disabled fullWidth
+                  />
+                )}
+              </Box>
+            ))}
 
-            <TextField
-              label="Paid Fee"
-              type="number"
-              name="paid"
-              value={state.feeDetails.paid}
-              onChange={handleFeeDetailChange}
-              fullWidth
-              error={!!state.errors.paid}
-              helperText={state.errors.paid}
-            />
-
-
-            <TextField
-              label="Net Amount"
-              variant="outlined"
-              value={state.feeDetails.netAmount}
-              fullWidth
-              disabled
-              style={{ backgroundColor: '#f1f1f1', fontWeight: 'bold' }}
-            />
-
-            <TextField
-              label="Balance"
-              variant="outlined"
-              value={state.feeDetails.balance}
-              fullWidth
-              disabled
-            />
+            <Divider sx={{ my: 1 }} />
+            <TextField label="Date" type="date" name="date" value={state.feeDetails.date} onChange={(e) => handleFeeDetailChange(e, null)} InputLabelProps={{ shrink: true }} />
+            <TextField label="Paid Amount (PKR)" type="number" name="paid" value={state.feeDetails.paid} onChange={(e) => handleFeeDetailChange(e, null)} error={!!state.errors.paid} helperText={state.errors.paid} />
+            <TextField label="Net Amount (PKR)" value={state.feeDetails.netAmount} disabled sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000', backgroundColor: '#f0f0f0' }}} />
+            <TextField label="Balance (PKR)" value={state.feeDetails.balance} disabled sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000', backgroundColor: '#f0f0f0' }}} />
           </Box>
         </DialogContent>
-
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="primary">Cancel</Button>
-          <Button onClick={handleSaveFee} color="primary">Save</Button>
+        <DialogActions sx={{ p: '16px 24px' }}>
+          <Button onClick={() => setState(prev => ({ ...prev, openModal: false }))}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveFee}>Save & Generate</Button>
         </DialogActions>
       </Dialog>
+      
       <InvoiceDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={invoiceData} />
-      {showPopup && (
-        <div className="custom-popup-overlay" style={popupOverlayStyle}>
-          <div className="custom-popup" style={popupStyle}>
-            <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
-            <p>{message}</p>
-            <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
-              {isSuccess ? "Generate Invoice" : "Close"}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
+      <CustomPopup open={showPopup} success={isSuccess} message={popupMessage} onConfirm={() => { setShowPopup(false); setShowInvoice(true); }} onClose={() => setShowPopup(false)} />
+    </Box>
   );
-};
-
-// Basic styles for the popup (can be moved to a CSS file)
-const popupOverlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1300, // Ensure it's above MUI Dialog by default
-};
-
-const popupStyle = {
-  background: 'white',
-  padding: '20px 40px',
-  borderRadius: '8px',
-  textAlign: 'center',
-  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-  minWidth: '300px',
-  maxWidth: '500px',
 };
 
 export default AdminFees;

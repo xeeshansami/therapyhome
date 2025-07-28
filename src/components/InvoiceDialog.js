@@ -149,7 +149,6 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         securityDeposit: 0,
         netTotalFee: 0, // This is the 'totalFee' from the fee record or monthly fee
         paidFee: 0, // This is the 'paidFee' from the fee record
-        therapyPlan: {}, // Empty object for therapyPlan defaults if not provided
 
         // --- Medical History Section ---
         doctorDiagnosisCondition: false, // Boolean
@@ -196,19 +195,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         ...data
     };
 
-    // Helper for safe access to therapyPlan properties
-    const getTherapyPlanValue = (key) => {
-        try {
-            // Attempt to parse therapyPlan if it's a string, otherwise use directly
-            const plan = typeof currentData.therapyPlan === 'string'
-                ? JSON.parse(currentData.therapyPlan || '{}')
-                : currentData.therapyPlan || {};
-            return plan[key] || 0; // Return value or 0 if not found
-        } catch (e) {
-            console.error("Error parsing therapyPlan:", e);
-            return 0;
-        }
-    };
+    
 
 
     const generateMedicalHistoryPageHTML = () => {
@@ -466,7 +453,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="fee-label" style={{ ...feeLabelStyle, }}>Monthly Fee's:</div>
                                     <div className="fee-value" style={feeValueStyle}>
-                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '2' ? JSON.parse(currentData?.therapyPlan || '{}').perMonthCost || 0 : 'N/A'}
+                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '2' ? currentData?.netTotalFee: 'N/A'}
                                     </div>
                                 </div>
                                 <div className="info-row" style={infoRowStyle}>
@@ -474,10 +461,10 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                     <div className="fee-value" style={feeValueStyle}>
                                         {currentData.isConsultancyOrIsRegistrationOrMonthly === '1' ? currentData.admissionFee : 'N/A'}
                                     </div>
-                                    <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Per Session:</div>
+                                    {/* <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Per Session:</div>
                                     <div className="fee-value" style={feeValueStyle}>
-                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '2' ? JSON.parse(currentData?.therapyPlan || '{}').perSessionCost || 0 : 'N/A'}
-                                    </div>
+                                        {currentData.isConsultancyOrIsRegistrationOrMonthly === '2' ? currentData?.netTotalFee:  'N/A'}
+                                    </div> */}
                                 </div>
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="fee-label" style={feeLabelStyle}>Security Deposit:</div>

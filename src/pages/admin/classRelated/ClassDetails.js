@@ -223,9 +223,9 @@ const ClassDetails = () => {
                 <Typography variant="h5" gutterBottom>
                     Class: {sclassDetails && sclassDetails.sclassName}
                 </Typography>
-                {/* <Typography variant="h6" gutterBottom>
-                    Number of Subjects: {numberOfSubjects}
-                </Typography> */}
+                <Typography variant="h6" gutterBottom>
+                    Fee of Session/Program: {sclassDetails && sclassDetails.sclassFee}
+                </Typography>
                 <Typography variant="h6" gutterBottom>
                     Number of Students: {numberOfStudents}
                 </Typography>

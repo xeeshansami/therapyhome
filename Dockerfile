@@ -1,0 +1,9 @@
+# Stage 1
+FROM node:18-alpine AS builder
+# ... rest of stage 1 ...
+
+# Stage 2
+FROM node:18-alpine # Or another image like nginx:stable-alpine
+# ...
+COPY --from=builder /app/build /some/destination
+# ... rest of stage 2 ...

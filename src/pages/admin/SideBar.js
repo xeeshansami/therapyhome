@@ -97,7 +97,7 @@ const SideBar = () => {
                     </ListItemIcon>
                     <ListItemText primary="Profile" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/logout">
+                <ListItemButton component={Link} to="/admin/logout">
                     <ListItemIcon>
                         <ExitToAppIcon color={location.pathname.startsWith("/logout") ? 'primary' : 'inherit'} />
                     </ListItemIcon>

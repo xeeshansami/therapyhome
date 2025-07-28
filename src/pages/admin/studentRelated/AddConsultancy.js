@@ -331,8 +331,9 @@ const AddConsultancy = () => {
             // If you have studentEmail in your form: studentEmail: student.email,
 
             // --- Academic & Schedule Information ---
-            sclassName: "6841d62692080ba4520a3a66",
-            school: "684166055d02df2c8772e55a",
+            className: ["687e03f6ec426d80aa75da28"],
+            sclassName: "687e03f6ec426d80aa75da28",
+            school: "68795ab802f2887382d217b0",
             // If you collect sessionTime, days, feeStructure:
             // sessionTime: student.sessionTime,
             // days: student.days,
@@ -425,7 +426,7 @@ const AddConsultancy = () => {
     const handleSaveFee = (selectedStudent, consultancy, date, rollNum) => {
         debugger
         const fields = {
-            adminID: '684166055d02df2c8772e55a',
+            adminID: '68795ab802f2887382d217b0',
             attendance: [],
             parentsName: selectedStudent.parentsName,
             name: selectedStudent.name,
@@ -470,14 +471,18 @@ const AddConsultancy = () => {
     };
 
     const handleChange = (section, field) => (e) => {
-        const { value, type } = e.target;
-
+        const { type } = e.target;
+        let value = e.target.value;
         if (section === 'parent' && field === 'parentsContact') {
+            value = value.replace(/[^0-9]/g, ''); // Remove non-numeric
+            if (value.length > 11) {
+                value = value.slice(0, 11);
+            }
+
             if (value && !value.startsWith('03')) {
                 setPhoneError('Phone number must start with "03"');
-            } else if (value && value.length > 11) {
-                // Prevent further input if length exceeds 11
-                return;
+            } else if (value.length !== 11) {
+                setPhoneError('Phone number must be exactly 11 digits');
             } else {
                 setPhoneError('');
             }
@@ -671,27 +676,31 @@ const AddConsultancy = () => {
 
                 {/* Student Details */}
                 <Section title="Student Details">
-                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('student', 'name')}
-                        value={formData.student.name} />
-
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
-                        {/* Adjusted grid columns for better spacing. Age and DOB are smaller, Gender is larger. */}
-                        <FormControl fullWidth>
-                            <InputLabel id="gender-select-label">Gender</InputLabel>
-                            <Select
-                                labelId="gender-select-label"
-                                value={formData.student.gender}
-                                label="Gender"
-                                InputLabelProps={{ shrink: true }}
-                                onChange={handleChange('student', 'gender')}
-                            >
-                                <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
-                                <MenuItem value="Male">Male</MenuItem>
-                                <MenuItem value="Female">Female</MenuItem>
-                                <MenuItem value="Other">Other</MenuItem>
-                            </Select>
-                        </FormControl>
-                        <Grid>
+                    <TextField
+                        fullWidth
+                        label="Full Name"
+                        sx={{ mb: 2 }}
+                        onChange={handleChange('student', 'name')}
+                        value={formData.student.name}
+                    />
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={4}>
+                            <FormControl fullWidth>
+                                <InputLabel id="student-gender-select-label">Gender</InputLabel>
+                                <Select
+                                    labelId="student-gender-select-label"
+                                    value={formData.student.gender}
+                                    label="Gender"
+                                    onChange={handleChange('student', 'gender')}
+                                >
+                                    <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
+                                    <MenuItem value="Male">Male</MenuItem>
+                                    <MenuItem value="Female">Female</MenuItem>
+                                    <MenuItem value="Other">Other</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
                             <TextField
                                 fullWidth
                                 label="Age"
@@ -701,7 +710,7 @@ const AddConsultancy = () => {
                                 inputProps={{ maxLength: 2 }}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={2}>
+                        <Grid item xs={12} sm={4}>
                             <TextField
                                 fullWidth
                                 label="Date of Birth"
@@ -711,7 +720,6 @@ const AddConsultancy = () => {
                                 value={formData.student.dob}
                             />
                         </Grid>
-
                     </Grid>
                 </Section>
 
@@ -829,40 +837,49 @@ const AddConsultancy = () => {
                 </Section>
 
                 <Section title="Parent/Guardian Details">
-                    <TextField fullWidth label="Full Name" sx={{ mb: 2 }} onChange={handleChange('parent', 'parentsName')}
-                        value={formData.parent.parentsName} />
+                    <TextField
+                        fullWidth
+                        label="Full Name"
+                        sx={{ mb: 2 }}
+                        onChange={handleChange('parent', 'parentsName')}
+                        value={formData.parent.parentsName}
+                    />
                     <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <FormControl fullWidth>
-                            <InputLabel id="gender-select-label">Gender</InputLabel>
-                            <Select
-                                labelId="gender-select-label"
-                                value={formData.parent.gender}
-                                label="Gender"
-                                InputLabelProps={{ shrink: true }}
-                                onChange={handleChange('parent', 'gender')}
-                            >
-                                <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
-                                <MenuItem value="Male">Male</MenuItem>
-                                <MenuItem value="Female">Female</MenuItem>
-                                <MenuItem value="Other">Other</MenuItem>
-                            </Select>
-                        </FormControl>
-                        <FormControl fullWidth>
-                            <InputLabel id="maritalStatus-select-label">Marital Status</InputLabel>
-                            <Select
-                                labelId="maritalStatus-select-label"
-                                value={formData.parent.maritalStatus}
-                                label="Marital Status"
-                                InputLabelProps={{ shrink: true }}
-                                onChange={handleChange('parent', 'maritalStatus')}
-                            >
-                                <MenuItem value="Male">Single</MenuItem>
-                                <MenuItem value="Married">Married</MenuItem>
-                                <MenuItem value="Widow">Widow</MenuItem>
-                                <MenuItem value="Divorced">Divorced</MenuItem>
-                                <MenuItem value="Other">Other</MenuItem>
-                            </Select>
-                        </FormControl>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel id="parent-gender-select-label">Gender</InputLabel>
+                                <Select
+                                    labelId="parent-gender-select-label"
+                                    value={formData.parent.gender}
+                                    label="Gender"
+                                    onChange={handleChange('parent', 'gender')}
+                                >
+                                    <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
+                                    <MenuItem value="Male">Male</MenuItem>
+                                    <MenuItem value="Female">Female</MenuItem>
+                                    <MenuItem value="Other">Other</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel id="maritalStatus-select-label">Marital Status</InputLabel>
+                                <Select
+                                    labelId="maritalStatus-select-label"
+                                    value={formData.parent.maritalStatus}
+                                    label="Marital Status"
+                                    onChange={handleChange('parent', 'maritalStatus')}
+                                >
+                                    <MenuItem value="Single">Single</MenuItem>
+                                    <MenuItem value="Married">Married</MenuItem>
+                                    <MenuItem value="Widow">Widow</MenuItem>
+                                    <MenuItem value="Divorced">Divorced</MenuItem>
+                                    <MenuItem value="Other">Other</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    </Grid>
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
                         <Grid item xs={12} sm={6} md={4}>
                             <TextField fullWidth required label="Contact"
                                 onChange={handleChange('parent', 'parentsContact')}
@@ -871,7 +888,6 @@ const AddConsultancy = () => {
                                 error={Boolean(phoneError)}
                                 helperText={phoneError} placeholder='03XXXXXXXXX' />
                         </Grid>
-                        {/* CNIC Field with Auto-Formatting */}
                         <Grid item xs={12} sm={6} md={4}>
                             <TextField
                                 fullWidth
@@ -881,7 +897,7 @@ const AddConsultancy = () => {
                                 type="tel"
                                 value={formData.parent.parentsCNIC}
                                 error={Boolean(cnicError)}
-                                inputProps={{ maxLength: 15 }} // 13 digits + 2 hyphens
+                                inputProps={{ maxLength: 15 }}
                                 helperText={cnicError || "A 13-digit CNIC will be auto-formatted."}
                                 onChange={handleCnicChange}
                             />
@@ -895,13 +911,11 @@ const AddConsultancy = () => {
                     <TextField fullWidth multiline rows={3} label="Complete Address" sx={{ mb: 2 }}
                         onChange={handleChange('parent', 'address')} value={formData.parent.address} />
 
-                    {/* Reference Section - Simplified */}
                     <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>Reference (How did you hear about
                         us?)</Typography>
                     <TextField fullWidth label="Reference Details (e.g., Online, Doctor Name, Other)"
                         onChange={handleChange('reference', 'details')} value={formData.reference.details} />
                 </Section>
-
                 <Section title="Consultancy Fee">
                     <Grid container spacing={2}>
                         {/* This is the new fixed fee input box */}
