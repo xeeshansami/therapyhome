@@ -277,6 +277,7 @@ const AdminFees = () => {
         adminID: '68795ab802f2887382d217b0',
         ...selectedStudent,
         date: feeDetails.date,
+        isPaid:'1',
         netTotalFee: feeDetails.netAmount,
         paidFee: feeDetails.paid,
         isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee ? '2' : '1', // 2=Monthly, 1=Admission/Other
