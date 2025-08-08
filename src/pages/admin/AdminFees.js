@@ -73,7 +73,7 @@ const AdminFees = () => {
     searchBy: 'Name',
     name: '',
     rollNum: '',
-    parentsContact: '',
+    parentContact: '',
     studentData: [],
     filteredData: [],
     error: '',
@@ -152,7 +152,7 @@ const AdminFees = () => {
   // --- Event Handlers ---
 
   const handleSearch = () => {
-    const { searchBy, name, rollNum, parentsContact } = state;
+    const { searchBy, name, rollNum, parentContact } = state;
     const payload = { id: "68795ab802f2887382d217b0" };
     let searchValue = '';
     if (searchBy === 'Name') {
@@ -161,9 +161,9 @@ const AdminFees = () => {
     } else if (searchBy === 'RollNum') {
       payload.rollNum = rollNum;
       searchValue = rollNum;
-    } else if (searchBy === 'ParentsContact') {
-      payload.parentsContact = parentsContact;
-      searchValue = parentsContact;
+    } else if (searchBy === 'ParentContact') {
+      payload.parentContact = parentContact;
+      searchValue = parentContact;
     }
     if (!searchValue.trim()) {
       setState(prev => ({ ...prev, error: 'Please enter a value to search.' }));
@@ -303,7 +303,7 @@ const AdminFees = () => {
   };
 
   const handleFilterChange = (filterName) => {
-    setState(prev => ({ ...prev, searchBy: filterName, name: '', rollNum: '', parentsContact: '', error: '' }))
+    setState(prev => ({ ...prev, searchBy: filterName, name: '', rollNum: '', parentContact: '', error: '' }))
   };
   const formatFee = (fee) => fee ? `${Number(fee).toLocaleString()} PKR` : '0 PKR';
   
@@ -318,7 +318,7 @@ const AdminFees = () => {
       <FormControl component="fieldset" margin="normal">
         <FormLabel component="legend">Search By:</FormLabel>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          {['Name', 'RollNum', 'ParentsContact'].map(filter => (
+          {['Name', 'RollNum', 'ParentContact'].map(filter => (
             <FormControlLabel key={filter}
               control={<Checkbox checked={state.searchBy === filter} onChange={() => handleFilterChange(filter)} />}
               label={filter.replace('Num', ' Number').replace('Contact', ' Contact')}
@@ -329,7 +329,7 @@ const AdminFees = () => {
       <Box sx={{ mt: 1, maxWidth: '500px' }}>
         {state.searchBy === 'Name' && <TextField label="Enter Student Name" value={state.name} onChange={e => setState(prev => ({ ...prev, name: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
         {state.searchBy === 'RollNum' && <TextField label="Enter Roll Number" value={state.rollNum} onChange={e => setState(prev => ({ ...prev, rollNum: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
-        {state.searchBy === 'ParentsContact' && <TextField label="Enter Parent Contact" value={state.parentsContact} onChange={e => setState(prev => ({ ...prev, parentsContact: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
+        {state.searchBy === 'ParentContact' && <TextField label="Enter Parent Contact" value={state.parentContact} onChange={e => setState(prev => ({ ...prev, parentContact: e.target.value }))} onKeyPress={e => e.key === 'Enter' && handleSearch()} fullWidth />}
       </Box>
       {state.error && <Typography color="error" sx={{ mt: 2 }}>{state.error}</Typography>}
       <Box sx={{ display: 'flex', gap: 2, my: 3 }}>
@@ -347,7 +347,7 @@ const AdminFees = () => {
                   <TableRow key={student._id} hover>
                     <TableCell>{student.rollNum}</TableCell>
                     <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.parentsContact}</TableCell>
+                    <TableCell>{student.parentContact}</TableCell>
                     <TableCell>{new Date(student.admissionDate).toLocaleDateString()}</TableCell>
                     <TableCell><Button variant="contained" color="success" onClick={() => handleOpenModal(student)} disabled={state.loading}>Fee Issue</Button></TableCell>
                   </TableRow>

@@ -171,12 +171,12 @@ const AddConsultancy = () => {
             details: ''
         },
         parent: {
-            parentsName: '',
-            parentsContact: '', // Field name used in validation and payload
-            parentsCNIC: '',    // Field name used in validation and payload
-            profession: '',
-            gender: '',// Set initial to empty string for placeholder to work
-            maritalStatus: '',
+            parentName: '',
+            parentContact: '', // Field name used in validation and payload
+            parentCNIC: '',    // Field name used in validation and payload
+            parentProfession: '',
+            parentGender: '',// Set initial to empty string for placeholder to work
+            parentMaritalStatus: '',
             address: ''
         },
         reference: { // This section was in initial formData but not used in inputs/payload
@@ -322,10 +322,12 @@ const AddConsultancy = () => {
             // role: "Student", // Default in schema, usually not explicitly sent unless user can change roles
 
             // --- Contact and Address ---
-            parentsContact: parent.parentsContact,
-            parentsName: parent.parentsName,
-            parentsCNIC: parent.parentsCNIC,
-            parentProfession: parent.profession,
+            parentContact: parent.parentContact,
+            parentName: parent.parentName,
+            parentCNIC: parent.parentCNIC,
+            parentProfession: parent.parentProfession,
+            parentMaritalStatus:parent.parentMaritalStatus,
+            parentGender:parent.parentGender,
             parentAddress: parent.address, // Assuming this maps to parentAddress in schema
             // If you have a separate 'address' for the student, add: address: student.address,
             // If you have studentEmail in your form: studentEmail: student.email,
@@ -428,9 +430,9 @@ const AddConsultancy = () => {
         const fields = {
             adminID: '68795ab802f2887382d217b0',
             attendance: [],
-            parentsName: selectedStudent.parentsName,
+            parentName: selectedStudent.parentName,
             name: selectedStudent.name,
-            parentsContact: selectedStudent.parentsContact,
+            parentContact: selectedStudent.parentContact,
             isPaid: "1",
             role: 'Student',
             invoiceID: generatedInvoiceNo,
@@ -473,7 +475,7 @@ const AddConsultancy = () => {
     const handleChange = (section, field) => (e) => {
         const { type } = e.target;
         let value = e.target.value;
-        if (section === 'parent' && field === 'parentsContact') {
+        if (section === 'parent' && field === 'parentContact') {
             value = value.replace(/[^0-9]/g, ''); // Remove non-numeric
             if (value.length > 11) {
                 value = value.slice(0, 11);
@@ -488,7 +490,7 @@ const AddConsultancy = () => {
             }
         }
 
-        if (section === 'parent' && field === 'parentsCNIC') {
+        if (section === 'parent' && field === 'parentCNIC') {
             if (value && value.length > 13) {
                 // Prevent further input if length exceeds 13
                 return;
@@ -542,7 +544,7 @@ const AddConsultancy = () => {
             ...prevState,
             parent: {
                 ...prevState.parent,
-                parentsCNIC: formattedValue,
+                parentCNIC: formattedValue,
             },
         }));
 
@@ -571,18 +573,18 @@ const AddConsultancy = () => {
             alert('Please complete all student details (Name, Age, DOB, Gender).');
             return false;
         }
-        if (isEmpty(parent.parentsName) || isEmpty(parent.parentsContact) || isEmpty(parent.parentsCNIC) || isEmpty(parent.profession) || isEmpty(parent.address) || isEmpty(parent.gender) || isEmpty(parent.maritalStatus)) {
+        if (isEmpty(parent.parentName) || isEmpty(parent.parentContact) || isEmpty(parent.parentCNIC) || isEmpty(parent.parentProfession) || isEmpty(parent.address) || isEmpty(parent.parentGender) || isEmpty(parent.parentMaritalStatus)) {
             alert('Please complete all parent/guardian details.');
             return false;
         }
-        if (!parent.parentsContact.startsWith('03') || parent.parentsContact.length !== 11) {
+        if (!parent.parentContact.startsWith('03') || parent.parentContact.length !== 11) {
             alert('Parent contact must start with 03 and be 11 digits.');
             setPhoneError('Parent contact must start with 03 and be 11 digits.');
             return false;
         } else {
             setPhoneError('');
         }
-        if (parent.parentsCNIC.length < 13) {
+        if (parent.parentCNIC.length < 13) {
             alert('Parent CNIC must be 13 digits.');
             setCNICError('Parent CNIC must be 13 digits.');
             return false;
@@ -841,8 +843,8 @@ const AddConsultancy = () => {
                         fullWidth
                         label="Full Name"
                         sx={{ mb: 2 }}
-                        onChange={handleChange('parent', 'parentsName')}
-                        value={formData.parent.parentsName}
+                        onChange={handleChange('parent', 'parentName')}
+                        value={formData.parent.parentName}
                     />
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                         <Grid item xs={12} sm={6}>
@@ -850,9 +852,9 @@ const AddConsultancy = () => {
                                 <InputLabel id="parent-gender-select-label">Gender</InputLabel>
                                 <Select
                                     labelId="parent-gender-select-label"
-                                    value={formData.parent.gender}
+                                    value={formData.parent.parentGender}
                                     label="Gender"
-                                    onChange={handleChange('parent', 'gender')}
+                                    onChange={handleChange('parent', 'parentGender')}
                                 >
                                     <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
                                     <MenuItem value="Male">Male</MenuItem>
@@ -863,12 +865,12 @@ const AddConsultancy = () => {
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <FormControl fullWidth>
-                                <InputLabel id="maritalStatus-select-label">Marital Status</InputLabel>
+                                <InputLabel id="parentMaritalStatus-select-label">Marital Status</InputLabel>
                                 <Select
-                                    labelId="maritalStatus-select-label"
-                                    value={formData.parent.maritalStatus}
+                                    labelId="parentMaritalStatus-select-label"
+                                    value={formData.parent.parentMaritalStatus}
                                     label="Marital Status"
-                                    onChange={handleChange('parent', 'maritalStatus')}
+                                    onChange={handleChange('parent', 'parentMaritalStatus')}
                                 >
                                     <MenuItem value="Single">Single</MenuItem>
                                     <MenuItem value="Married">Married</MenuItem>
@@ -882,8 +884,8 @@ const AddConsultancy = () => {
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                         <Grid item xs={12} sm={6} md={4}>
                             <TextField fullWidth required label="Contact"
-                                onChange={handleChange('parent', 'parentsContact')}
-                                value={formData.parent.parentsContact}
+                                onChange={handleChange('parent', 'parentContact')}
+                                value={formData.parent.parentContact}
                                 inputProps={{ maxLength: 11, type: "tel" }}
                                 error={Boolean(phoneError)}
                                 helperText={phoneError} placeholder='03XXXXXXXXX' />
@@ -895,7 +897,7 @@ const AddConsultancy = () => {
                                 label="CNIC"
                                 placeholder='XXXXX-XXXXXXX-X'
                                 type="tel"
-                                value={formData.parent.parentsCNIC}
+                                value={formData.parent.parentCNIC}
                                 error={Boolean(cnicError)}
                                 inputProps={{ maxLength: 15 }}
                                 helperText={cnicError || "A 13-digit CNIC will be auto-formatted."}
@@ -903,8 +905,8 @@ const AddConsultancy = () => {
                             />
                         </Grid>
                         <Grid item xs={12} sm={12} md={4}>
-                            <TextField fullWidth label="Profession" onChange={handleChange('parent', 'profession')}
-                                value={formData.parent.profession} />
+                            <TextField fullWidth label="Profession" onChange={handleChange('parent', 'parentProfession')}
+                                value={formData.parent.parentProfession} />
 
                         </Grid>
                     </Grid>

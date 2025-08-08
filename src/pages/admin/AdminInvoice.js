@@ -45,7 +45,7 @@ class AdminInvoice extends Component {
   state = {
     rollNum: '', // Value for Roll Number input
     name: '',    // Value for Name input
-    parentsContact: '', // New: Value for Parents Contact input
+    parentContact: '', // New: Value for Parents Contact input
     invoiceID: '', // New: Value for Invoice ID input
     searchBy: 'rollNum', // Default search option
     feeTypeFilter: 'All', // New: Default secondary filter option
@@ -58,7 +58,7 @@ class AdminInvoice extends Component {
 
   // --- START MODIFIED fetchStudentFee ---
   fetchStudentFee = async () => {
-    const { rollNum, name, parentsContact, invoiceID, searchBy, feeTypeFilter } = this.state;
+    const { rollNum, name, parentContact, invoiceID, searchBy, feeTypeFilter } = this.state;
     this.setState({ loading: true, error: '', feeRecords: [] });
 
     let searchValue = ''; // This will hold the value for the primary search
@@ -71,8 +71,8 @@ class AdminInvoice extends Component {
       case 'name':
         searchValue = name;
         break;
-      case 'parentsContact':
-        searchValue = parentsContact;
+      case 'parentContact':
+        searchValue = parentContact;
         break;
       case 'invoiceID':
         searchValue = invoiceID;
@@ -149,7 +149,7 @@ class AdminInvoice extends Component {
           return;
         }
         break;
-      case 'parentsContact':
+      case 'parentContact':
         // For parentsContact, allow only digits, plus signs, and hyphens, no letters or other symbols
         if (!/^[0-9+-]*$/.test(value)) {
           return;
@@ -209,7 +209,7 @@ class AdminInvoice extends Component {
   };
 
   render() {
-    const { feeRecords, loading, error, searchBy, rollNum, name, parentsContact, feeTypeFilter, invoiceID, showInvoice, invoiceData } = this.state;
+    const { feeRecords, loading, error, searchBy, rollNum, name, parentContact, feeTypeFilter, invoiceID, showInvoice, invoiceData } = this.state;
 
     // Determine the label and value for the single search TextField
     let textFieldLabel = '';
@@ -225,9 +225,9 @@ class AdminInvoice extends Component {
         textFieldLabel = 'Enter Student Name';
         textFieldValue = name;
         break;
-      case 'parentsContact':
+      case 'parentContact':
         textFieldLabel = 'Enter Parent Contact';
-        textFieldValue = parentsContact;
+        textFieldValue = parentContact;
         break;
       case 'invoiceID':
         textFieldLabel = 'Enter Invoice ID';
@@ -253,14 +253,14 @@ class AdminInvoice extends Component {
                 searchBy: e.target.value,
                 rollNum: '',
                 name: '',
-                parentsContact: '',
+                parentContact: '',
                 invoiceID: ''
               });
             }}
           >
             <FormControlLabel value="rollNum" control={<Radio />} label="Roll Number" />
             <FormControlLabel value="name" control={<Radio />} label="Name" />
-            <FormControlLabel value="parentsContact" control={<Radio />} label="Parent Contact" /> {/* New Radio Option */}
+            <FormControlLabel value="parentContact" control={<Radio />} label="Parent Contact" /> {/* New Radio Option */}
             <FormControlLabel value="invoiceID" control={<Radio />} label="Invoice ID" /> {/* New Radio Option */}
           </RadioGroup>
         </FormControl>
@@ -343,8 +343,8 @@ class AdminInvoice extends Component {
                     <TableCell>{feeRecord.invoiceID}</TableCell> {/* Display Invoice ID */}
                     <TableCell>{feeRecord.rollNum}</TableCell>
                     <TableCell>{feeRecord.name}</TableCell>
-                    <TableCell>{feeRecord.parentsName}</TableCell>
-                    <TableCell>{feeRecord.parentsContact}</TableCell>
+                    <TableCell>{feeRecord.parentName}</TableCell>
+                    <TableCell>{feeRecord.parentContact}</TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '2' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '1' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
                     <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '0' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>

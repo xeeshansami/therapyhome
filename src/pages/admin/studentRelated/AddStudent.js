@@ -16,10 +16,7 @@ const AddStudent = ({ situation }) => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [days, setSelectedDays] = useState([]);
-    const [feeStructure, setFeeStructureDays] = useState([]);
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const feeStructureOptions = ['Daily', 'Weekly', 'Monthly'];
-
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const params = useParams();
@@ -29,24 +26,28 @@ const AddStudent = ({ situation }) => {
 
     const [selectedClassTiming, setSelectedClassTiming] = useState('');
     const [daySelectionError, setDaySelectionError] = useState(false);
-    const [feeStructureError, setFeeStructureError] = useState(false);
     const [timeError, setTimeError] = useState(false);
 
     const [name, setName] = useState('');
-    const [parentsName, setparentsName] = useState('');
+    const [parentName, setparentName] = useState('');
 
     const [rollNum, setRollNum] = useState('');
     const [rollNumLoading, setRollNumLoading] = useState(false);
     const [rollNumError, setRollNumError] = useState('');
-     const [phoneError, setPhoneError] = useState('');
+    const [phoneError, setPhoneError] = useState('');
     const [setBtnName, setButtonName] = useState('');
     const [setStdUpdateName, setUpdateName] = useState('');
-    const [parentsContact, setPNum] = useState('');
-    const [address, setAddress] = useState('');
+    const [parentContact, setPNum] = useState('');
+    const [parentCNIC, setPCNIC] = useState('');
+    const [parentMaritalStatus, setPMaritalStatus] = useState('');
+    const [parentGender, setPGender] = useState('');
+    const [parentAddress, setPAddress] = useState('');
+    const [parentProfession, setPProfession] = useState('');
+    const [reference, setReference] = useState('');
     const [selectedClasses, setSelectedClasses] = useState([]);
     const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('Loading...');
     const [invoiceNoError, setInvoiceNoError] = useState('');
-
+    const [cnicError, setCNICError] = useState('');
     const [selectedClassDetails, setSelectedClassDetails] = useState('');
     const [sclassName, setSclassName] = useState('');
 
@@ -63,7 +64,54 @@ const AddStudent = ({ situation }) => {
         otherCharges: 0,
         totalAmount: 10000,
     });
-
+    const [formData, setFormData] = useState({
+        student: {
+            name: '',
+            age: '',
+            dob: '',
+            gender: '' // Set initial to empty string for placeholder to work
+        },
+        medicalHistory: {
+            diagnosis: false,
+            diagnosisDetails: '',
+            therapies: false,
+            therapiesDetails: '',
+            medication: false,
+            medicationDetails: ''
+        },
+        therapiesSeeking: {
+            speech: false,
+            behavior: false,
+            occupational: false,
+            remedial: false,
+            additional: false,
+            specific: ''
+        },
+        school: {
+            attends: false,
+            details: ''
+        },
+        parent: {
+            parentName: '',
+            parentContact: '', // Field name used in validation and payload
+            parentCNIC: '',    // Field name used in validation and payload
+            profession: '',
+            parentGender: '',// Set initial to empty string for placeholder to work
+            parentMaritalStatus: '',
+            parentAddress: ''
+        },
+        reference: { // This section was in initial formData but not used in inputs/payload
+            type: '',
+            details: ''
+        },
+        // Therapy specific questions
+        speechQuestions: { q1: '', q2: '', q3: '' },
+        behaviorQuestions: { q1: '', q2: '', q3: '' },
+        occupationalQuestions: { q1: '', q2: '' },
+        remedialQuestions: { q1: '', q2: '' },
+        additionalQuestions: { q1: '', q2: '' },
+        acceptedTerms: false, // Added for terms and conditions
+    });
     // --- NEW STATE FOR MONTHLY FEE ---
     const [monthlyFee, setMonthlyFee] = useState(0);
     const fetchNextInvoiceNo = async (result, totalAmount, formattedDateTime) => {
@@ -92,10 +140,93 @@ const AddStudent = ({ situation }) => {
             setSclassName(params.id);
         }
     }, [params.id, situation]);
+    const handleCnicChange = (e) => {
+        // 1. Get the raw input value and remove all non-digit characters.
+        let rawValue = e.target.value.replace(/[^0-9]/g, '');
 
+        // 2. Limit the total number of digits to 13.
+        if (rawValue.length > 13) {
+            rawValue = rawValue.slice(0, 13);
+        }
+
+        // 3. Apply the formatting: XXXXX-XXXXXXX-X
+        let formattedValue = rawValue;
+        if (rawValue.length > 5) {
+            // Add hyphen after the 5th digit
+            formattedValue = `${rawValue.slice(0, 5)}-${rawValue.slice(5)}`;
+        }
+        if (rawValue.length > 12) {
+            // Add hyphen after the 12th digit (5 + 7)
+            formattedValue = `${rawValue.slice(0, 5)}-${rawValue.slice(5, 12)}-${rawValue.slice(12)}`;
+        }
+
+        // 4. Update the state directly.
+        setFormData(prevState => ({
+            ...prevState,
+            parent: {
+                ...prevState.parent,
+                parentCNIC: formattedValue,
+            },
+        }));
+
+
+        // 5. Optional: Basic validation for CNIC length.
+        if (formattedValue.length > 0 && formattedValue.length < 15) {
+            setCNICError('CNIC must be 13 digits.');
+        } else {
+            setCNICError('');
+        }
+    };
     const handleChange = (event) => {
         const { target: { value } } = event;
         setSelectedClasses(typeof value === 'string' ? value.split(',') : value);
+    };
+
+    const handleChangeParent = (section, field) => (e) => {
+        const { type } = e.target;
+        let value = e.target.value;
+        if (section === 'parent' && field === 'parentContact') {
+            value = value.replace(/[^0-9]/g, ''); // Remove non-numeric
+            if (value.length > 11) {
+                value = value.slice(0, 11);
+            }
+
+            if (value && !value.startsWith('03')) {
+                setPhoneError('Phone number must start with "03"');
+            } else if (value.length !== 11) {
+                setPhoneError('Phone number must be exactly 11 digits');
+            } else {
+                setPhoneError('');
+            }
+        }
+
+        if (section === 'parent' && field === 'parentCNIC') {
+            if (value && value.length > 13) {
+                // Prevent further input if length exceeds 13
+                return;
+            }
+            if (!value) {
+                setCNICError('CNIC number must be entered');
+            } else {
+                setCNICError('');
+            }
+        }
+
+        // For age field, allow only numbers and max length 2
+        if (section === 'student' && field === 'age') {
+            const numericValue = value.replace(/[^0-9]/g, '');
+            setFormData(prev => ({
+                ...prev,
+                [section]: { ...prev[section], [field]: numericValue.slice(0, 2) }
+            }));
+            return; // Return early after handling age specifically
+        }
+
+
+        setFormData(prev => ({
+            ...prev,
+            [section]: { ...prev[section], [field]: value }
+        }));
     };
 
     useEffect(() => {
@@ -164,9 +295,9 @@ const AddStudent = ({ situation }) => {
 
     const submitHandler = async (event) => {
         event.preventDefault();
-        debugger
-        if (!name || !parentsName || !parentsContact || !address) {
-            setMessage("Please fill all required student and parent fields.");
+
+        if (!name) {
+            setMessage("Please enter student name.");
             setShowPopup(true);
             return;
         }
@@ -176,6 +307,8 @@ const AddStudent = ({ situation }) => {
             setShowPopup(true);
             return;
         }
+        if (!validateForm()) return;
+
         if (selectedClasses.length === 0) {
             setMessage("Please select at least one class.");
             setShowPopup(true);
@@ -187,20 +320,22 @@ const AddStudent = ({ situation }) => {
             setShowPopup(true);
             return;
         }
-        if (feeStructure.length === 0) {
-            setFeeStructureError(true);
-            setMessage("Please select a fee structure.");
-            setShowPopup(true);
-            return;
-        }
+        const {
+            parent,
+            reference
+        } = formData;
         const formattedDateTime = getCurrentDateTimeFormatted();
         const formDataToSubmit = new FormData();
-        debugger
         formDataToSubmit.append('name', name);
-        formDataToSubmit.append('parentsName', parentsName);
+        formDataToSubmit.append('parentName', parentName);
         formDataToSubmit.append('rollNum', rollNum);
-        formDataToSubmit.append('parentsContact', parentsContact);
-        formDataToSubmit.append('parentAddress', address);
+        formDataToSubmit.append('parentContact', parent.parentContact);
+        formDataToSubmit.append('parentAddress', parent.parentAddress);
+        formDataToSubmit.append('parentCNIC', parent.parentCNIC);
+        formDataToSubmit.append('parentProfession', parent.profession);
+        formDataToSubmit.append('parentMaritalStatus', parent.parentMaritalStatus);
+        formDataToSubmit.append('parentGender', parent.parentGender);
+        formDataToSubmit.append('reference', reference.details);
         if (selectedClasses.length > 0) {
             formDataToSubmit.append('sclassName', selectedClasses[0]);
         }
@@ -211,7 +346,6 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('adminID', adminID);
         formDataToSubmit.append('role', role);
         formDataToSubmit.append("days", JSON.stringify(days));
-        formDataToSubmit.append("feeStructure", JSON.stringify(feeStructure));
         formDataToSubmit.append('admissionFee', feeDetails.admissionFee);
         formDataToSubmit.append('securityDeposit', feeDetails.securityDeposit);
         formDataToSubmit.append('otherCharges', feeDetails.otherCharges);
@@ -264,7 +398,7 @@ const AddStudent = ({ situation }) => {
         }
         setSearchLoading(true);
         try {
-            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/getConsStudents`, { parentsContact: searchContact });
+            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/getConsStudents`, { parentContact: searchContact });
             if (result.data && result.data.length > 0) {
                 setSearchResults(result.data);
             } else {
@@ -285,9 +419,9 @@ const AddStudent = ({ situation }) => {
         const fields = {
             adminID: '68795ab802f2887382d217b0',
             attendance: [],
-            parentsName: selectedStudent.parentsName,
+            parentName: selectedStudent.parentName,
             name: selectedStudent.name,
-            parentsContact: selectedStudent.parentsContact,
+            parentContact: selectedStudent.parentContact,
             isPaid: "1",
             role: 'Student',
             invoiceID: invoiceNo,
@@ -316,20 +450,72 @@ const AddStudent = ({ situation }) => {
 
 
     const handleSelectStudent = (student) => {
+        // Populate student-specific fields for context
         setName(student.name || '');
-        setparentsName(student.parentsName || '');
         setRollNum(student.rollNum || '');
-        setPNum(student.parentsContact || '');
-        setAddress(student.parentAddress || '');
+
+        // Note: You have a separate "Father's/Parent's Name" field at the top.
+        // This line ensures it's also populated.
+        setparentName(student.parentName || '');
+
+        // Use setFormData to correctly populate the main "Parent/Guardian Details" section
+        setFormData(prevState => ({
+            ...prevState,
+            parent: {
+                ...prevState.parent,
+                parentName: student.parentName || '',
+                parentContact: student.parentContact || '',
+                parentCNIC: student.parentCNIC || '',
+                // IMPORTANT: Verify that the property names on your 'student' object
+                // match what's used here (e.g., student.parentProfession).
+                // Adjust if your API sends different key names.
+                profession: student.parentProfession || '',
+                parentGender: student.parentGender || '',
+                parentMaritalStatus: student.parentMaritalStatus || '',
+                parentAddress: student.parentAddress || ''
+            },
+            reference: {
+                ...prevState.reference,
+                details: student.reference || ''
+            }
+        }));
+
+        // Update UI text to indicate this is an existing record
         setButtonName("Update Student");
         setUpdateName("Update Student");
+
+        // Clear fields that need new input for this specific registration
         setSelectedDays([]);
-        setFeeStructureDays([]);
         setSelectedClasses([]);
         setSelectedFile(null);
         setRollNumError('');
+        setPhoneError(''); // Clear any previous validation errors
+        setCNICError('');   // Clear any previous validation errors
     };
+    const isEmpty = (value) => value === null || value === undefined || value.toString().trim() === '';
+    const validateForm = () => {
+        const { parent } = formData;
 
+        if (isEmpty(parent.parentName) || isEmpty(parent.parentContact) || isEmpty(parent.parentCNIC) || isEmpty(parent.profession) || isEmpty(parent.parentAddress) || isEmpty(parent.parentGender) || isEmpty(parent.parentMaritalStatus)) {
+            alert('Please complete all parent/guardian details.');
+            return false;
+        }
+        if (!parent.parentContact.startsWith('03') || parent.parentContact.length !== 11) {
+            alert('Parent contact must start with 03 and be 11 digits.');
+            setPhoneError('Parent contact must start with 03 and be 11 digits.');
+            return false;
+        } else {
+            setPhoneError('');
+        }
+        if (parent.parentCNIC.length < 13) {
+            alert('Parent CNIC must be 13 digits.');
+            setCNICError('Parent CNIC must be 13 digits.');
+            return false;
+        } else {
+            setCNICError('');
+        }
+        return true;
+    };
     useEffect(() => {
         if (status === 'added') {
             dispatch(underControl());
@@ -346,12 +532,6 @@ const AddStudent = ({ situation }) => {
         );
         if (day.length > 0) setDaySelectionError(false);
     };
-
-    const handleFeeStructureChange = (feeOption) => {
-        setFeeStructureDays([feeOption]);
-        if (feeOption) setFeeStructureError(false);
-    };
-
     const handleFileChange = (event) => {
         const file = event.target.files[0];
         setSelectedFile(file);
@@ -395,8 +575,8 @@ const AddStudent = ({ situation }) => {
                                     {searchResults.map((student) => (
                                         <TableRow hover key={student._id}>
                                             <TableCell>{student.name}</TableCell>
-                                            <TableCell>{student.parentsName}</TableCell>
-                                            <TableCell>{student.parentsContact}</TableCell>
+                                            <TableCell>{student.parentName}</TableCell>
+                                            <TableCell>{student.parentContact}</TableCell>
                                             <TableCell>{student.rollNum}</TableCell>
                                             <TableCell>
                                                 <Button variant="outlined" size="small" onClick={() => handleSelectStudent(student)}>Select</Button>
@@ -417,7 +597,7 @@ const AddStudent = ({ situation }) => {
                         <Grid container spacing={3}>
                             <Grid item xs={12} md={6}>
                                 <TextField fullWidth required label="Student Name" variant="outlined" value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
-                                <TextField fullWidth required label="Father's/Parent's Name" variant="outlined" value={parentsName} onChange={(e) => setparentsName(e.target.value)} sx={{ mb: 2 }} />
+                                <TextField fullWidth required label="Father's/Parent's Name" variant="outlined" value={parentName} onChange={(e) => setparentName(e.target.value)} sx={{ mb: 2 }} />
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                     <TextField fullWidth required label="Roll Number" variant="outlined" value={rollNum} error={!!rollNumError} helperText={rollNumError || "Click button to generate if new student."} InputProps={{ readOnly: true }} sx={{ mr: 1, flexGrow: 1 }} />
                                     <Button variant="contained" onClick={handleGenerateRollNumClick} disabled={rollNumLoading} startIcon={rollNumLoading ? <CircularProgress size={20} color="inherit" /> : <AutorenewIcon />} sx={{ height: '56px' }}>
@@ -462,24 +642,100 @@ const AddStudent = ({ situation }) => {
                                         )}
                                     </>
                                 )}
-                                <TextField fullWidth required label="Parent Contact" variant="outlined" type="tel" value={parentsContact} onChange={(e) => {
-                                    let value = e.target.value.replace(/[^0-9]/g, ''); // Only numbers
+                                <Section title="Parent/Guardian Details">
+                                    <TextField
+                                        fullWidth
+                                        label="Full Name"
+                                        sx={{ mb: 2 }}
+                                        onChange={handleChangeParent('parent', 'parentName')}
+                                        value={formData.parent.parentName}
+                                    />
+                                    <Grid item xs={12} sx={{ mb: 2 }}>
+                                        <FormControl fullWidth>
+                                            <InputLabel id="parent-gender-select-label">Gender</InputLabel>
+                                            <Select
+                                                labelId="parent-gender-select-label"
+                                                value={formData.parent.parentGender}
+                                                label="Gender"
+                                                onChange={handleChangeParent('parent', 'parentGender')}
+                                            >
+                                                <MenuItem value="" disabled><em>Select Gender</em></MenuItem>
+                                                <MenuItem value="Male">Male</MenuItem>
+                                                <MenuItem value="Female">Female</MenuItem>
+                                                <MenuItem value="Other">Other</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item xs={12} sx={{ mb: 2 }}>
+                                        <FormControl fullWidth>
+                                            <InputLabel id="maritalStatus-select-label">Marital Status</InputLabel>
+                                            <Select
+                                                labelId="maritalStatus-select-label"
+                                                value={formData.parent.parentMaritalStatus}
+                                                label="Marital Status"
+                                                onChange={handleChangeParent('parent', 'parentMaritalStatus')}
+                                            >
+                                                <MenuItem value="Single">Single</MenuItem>
+                                                <MenuItem value="Married">Married</MenuItem>
+                                                <MenuItem value="Widow">Widow</MenuItem>
+                                                <MenuItem value="Divorced">Divorced</MenuItem>
+                                                <MenuItem value="Other">Other</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                                        <Grid item xs={12} sm={6} md={4}>
+                                            <TextField fullWidth required label="Contact"
+                                                onChange={handleChangeParent('parent', 'parentContact')}
+                                                value={formData.parent.parentContact}
+                                                inputProps={{ maxLength: 11, type: "tel" }}
+                                                error={Boolean(phoneError)}
+                                                helperText={phoneError} placeholder='03XXXXXXXXX' />
+                                        </Grid>
+                                        <Grid item xs={12} sm={6} md={4}>
+                                            <TextField
+                                                fullWidth
+                                                required
+                                                label="CNIC"
+                                                placeholder='XXXXX-XXXXXXX-X'
+                                                type="tel"
+                                                value={formData.parent.parentCNIC}
+                                                error={Boolean(cnicError)}
+                                                inputProps={{ maxLength: 15 }}
+                                                helperText={cnicError || "A 13-digit CNIC will be auto-formatted."}
+                                                onChange={handleCnicChange}
+                                            />
+                                        </Grid>
+                                        <Grid item xs={12} sm={12} md={4}>
+                                            <TextField fullWidth label="Profession" onChange={handleChangeParent('parent', 'profession')}
+                                                value={formData.parent.profession} />
 
-                                    if (value.length > 11) {
-                                        value = value.slice(0, 11); // Max 11 digits
-                                    }
+                                        </Grid>
+                                    </Grid>
+                                    <TextField fullWidth multiline rows={3} label="Complete Address" sx={{ mb: 2 }}
+                                        onChange={handleChangeParent('parent', 'parentAddress')} value={formData.parent.parentAddress} />
 
-                                    // Optional: validation logic if you want to show errors
-                                    if (value && !value.startsWith('03')) {
-                                        setPhoneError('Phone number must start with "03"');
-                                    } else if (value.length === 11) {
-                                        setPhoneError('');
-                                    }
-
-                                    setPNum(value); // Update parent contact state
-                                }} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} placeholder="03XXXXXXXXX" />
-                                <TextField fullWidth required label="Address" variant="outlined" multiline rows={3} value={address} onChange={(e) => setAddress(e.target.value)} sx={{ mb: 2 }} />
-
+                                    <Typography variant="subtitle1" sx={{ mt: 2, mb: 1 }}>Reference (How did you hear about
+                                        us?)</Typography>
+                                    <TextField fullWidth label="Reference Details (e.g., Online, Doctor Name, Other)"
+                                        onChange={handleChangeParent('reference', 'details')} value={formData.reference.details} />
+                                </Section>
+                                <Grid item xs={12} md={6}>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Select Days *</Typography>
+                                        <FormGroup row>
+                                            {weekdays.map((day) => (
+                                                <FormControlLabel key={day} control={<Checkbox checked={days.includes(day)} onChange={() => handleCheckboxChange(day)} />} label={day} />
+                                            ))}
+                                        </FormGroup>
+                                        {daySelectionError && <Typography color="error" variant="caption">Please select at least one day.</Typography>}
+                                    </Box>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Upload Student Medical Report (Optional)</Typography>
+                                        <Button variant="contained" component="label" fullWidth>Upload File <input type="file" hidden onChange={handleFileChange} accept="image/*,.pdf,.doc,.docx" /></Button>
+                                        {selectedFile && <Typography variant="body2" sx={{ mt: 1 }}>Selected: {selectedFile.name}</Typography>}
+                                    </Box>
+                                </Grid>
                                 <Section title="Fee Details">
                                     <Grid container spacing={2} sx={{ mb: 2 }}>
                                         <Grid item xs={12} sm={4}>
@@ -497,31 +753,7 @@ const AddStudent = ({ situation }) => {
                                 </Section>
                             </Grid>
 
-                            <Grid item xs={12} md={6}>
-                                <Box sx={{ mb: 2 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Select Days *</Typography>
-                                    <FormGroup row>
-                                        {weekdays.map((day) => (
-                                            <FormControlLabel key={day} control={<Checkbox checked={days.includes(day)} onChange={() => handleCheckboxChange(day)} />} label={day} />
-                                        ))}
-                                    </FormGroup>
-                                    {daySelectionError && <Typography color="error" variant="caption">Please select at least one day.</Typography>}
-                                </Box>
-                                <Box sx={{ mb: 2 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Select Fee Structure *</Typography>
-                                    <FormGroup row>
-                                        {feeStructureOptions.map((option) => (
-                                            <FormControlLabel key={option} control={<Checkbox checked={feeStructure.includes(option)} onChange={() => handleFeeStructureChange(option)} />} label={option} />
-                                        ))}
-                                    </FormGroup>
-                                    {feeStructureError && <Typography color="error" variant="caption">Please select a fee structure.</Typography>}
-                                </Box>
-                                <Box sx={{ mb: 2 }}>
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Upload Student Medical Report (Optional)</Typography>
-                                    <Button variant="contained" component="label" fullWidth>Upload File <input type="file" hidden onChange={handleFileChange} accept="image/*,.pdf,.doc,.docx" /></Button>
-                                    {selectedFile && <Typography variant="body2" sx={{ mt: 1 }}>Selected: {selectedFile.name}</Typography>}
-                                </Box>
-                            </Grid>
+
                         </Grid>
                         <Button fullWidth onClick={submitHandler} type="submit" variant="contained" color="primary" disabled={loader} sx={{ mt: 3, py: 1.5, fontSize: '1.1rem' }}>
                             {loader ? <CircularProgress size={24} color="inherit" /> : setBtnName ? setBtnName : 'Add Student'}
