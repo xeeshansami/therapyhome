@@ -28,7 +28,7 @@ const SideBar = () => {
                     <ListItemIcon>
                         <ClassOutlinedIcon color={location.pathname.startsWith('/Admin/classes') ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Classes" />
+                    <ListItemText primary="All Classes" />
                 </ListItemButton>
                 {/* <ListItemButton component={Link} to="/Admin/subjects">
                     <ListItemIcon>
@@ -40,32 +40,38 @@ const SideBar = () => {
                     <ListItemIcon>
                         <SupervisorAccountOutlinedIcon color={location.pathname.startsWith("/Admin/teachers") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Teachers" />
+                    <ListItemText primary="All Teachers" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/students">
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/students") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="View Students" />
+                    <ListItemText primary="All Students" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/AddConsultancy">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/AddConsultancy") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Consultancy Form" />
+                    <ListItemText primary="Consultancy" />
                 </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/addstudents">
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/addstudents") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Add/Update Students" />
+                    <ListItemText primary="Students Record" />
                 </ListItemButton>
                 
                <ListItemButton component={Link} to="/Admin/Fees">
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Fees") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Fee-Salary Portal" />
+                    <ListItemText primary="Fee Portal" />
+                </ListItemButton>
+                <ListItemButton component={Link} to="/Admin/TeachersSalary">
+                    <ListItemIcon>
+                        <DescriptionIcon  color={location.pathname.startsWith("/Admin/TeachersSalary") ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary="Salary Portal" />
                 </ListItemButton> 
                 <ListItemButton component={Link} to="/Admin/Invoice">
                     <ListItemIcon>

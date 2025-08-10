@@ -4,15 +4,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getClassDetails } from '../../../redux/sclassRelated/sclassHandle';
 import { registerUser } from '../../../redux/userRelated/userHandle';
 import { underControl } from '../../../redux/userRelated/userSlice';
-import { CircularProgress, Box, TextField, InputAdornment, Button, Typography, Paper, Grid, Avatar } from '@mui/material';
+import {
+    CircularProgress, Box, TextField, InputAdornment, Button, Typography, Paper, Grid, Avatar,
+    FormControl, InputLabel, Select, MenuItem // <-- Import new MUI components
+} from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axios from 'axios';
-// --- 1. Import the compression library ---
 import imageCompression from 'browser-image-compression';
 
-
 const AddTeacher = () => {
-    // All other state and useEffect hooks remain the same...
     const params = useParams();
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -28,6 +28,11 @@ const AddTeacher = () => {
     const [salary, setSalary] = useState('');
     const [password, setPassword] = useState('');
     const [photo, setPhoto] = useState('');
+    
+    // --- 1. Add state for new fields ---
+    const [gender, setGender] = useState('');
+    const [maritalStatus, setMaritalStatus] = useState('');
+    const [cnic, setCnic] = useState('');
 
     // State for fetched data and UI control
     const [classDetails, setClassDetails] = useState(null);
@@ -39,6 +44,7 @@ const AddTeacher = () => {
     // Form validation states
     const [phoneError, setPhoneError] = useState('');
     const [emergencyError, setEmergencyError] = useState('');
+    const [cnicError, setCnicError] = useState(''); // <-- State for CNIC validation
 
     // Redux state
     const { status, response, error } = useSelector(state => state.user);
@@ -77,45 +83,34 @@ const AddTeacher = () => {
             setShowPopup(true);
             setLoader(false);
         }
-    }, [status, response, error]);
+    }, [status, response, error, navigate]);
 
 
-    // --- 2. Modify the image handler to compress the image ---
     const handleImageChange = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Compression options
         const options = {
-            maxSizeMB: 0.5, // Target size of 500KB
-            maxWidthOrHeight: 1024, // Resize the image to a max dimension of 1024px
-            useWebWorker: true, // Use a web worker for better performance
+            maxSizeMB: 0.5,
+            maxWidthOrHeight: 1024,
+            useWebWorker: true,
         };
 
         try {
-            console.log(`Original file size: ${file.size / 1024 / 1024} MB`);
-
-            // Compress the image file
             const compressedFile = await imageCompression(file, options);
-            console.log(`Compressed file size: ${compressedFile.size / 1024 / 1024} MB`);
-
-            // Convert the COMPRESSED file to a Base64 string
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPhoto(reader.result);
             };
             reader.readAsDataURL(compressedFile);
-
         } catch (error) {
             console.error("Error during image compression: ", error);
-            // Optionally, show an error message to the user
             setMessage("Failed to compress image. Please try another file.");
             setIsSuccess(false);
             setShowPopup(true);
         }
     };
 
-    // Other handlers (handlePhoneChange, handleEmergencyChange) remain the same...
     const handlePhoneChange = (event) => {
         const newPhone = event.target.value;
         if (newPhone.length <= 11) {
@@ -139,18 +134,59 @@ const AddTeacher = () => {
             setEmergencyError('');
         }
     };
+    
+    // --- 2. Add handler for CNIC input with formatting and validation ---
+    const handleCnicChange = (event) => {
+        const value = event.target.value;
+        const numericValue = value.replace(/[^\d]/g, ''); // Remove non-digit characters
 
+        if (numericValue.length > 13) {
+            return; // Don't allow more than 13 digits
+        }
+
+        let formattedCnic = numericValue;
+        if (numericValue.length > 5) {
+            formattedCnic = `${numericValue.slice(0, 5)}-${numericValue.slice(5)}`;
+        }
+        if (numericValue.length > 12) {
+            formattedCnic = `${numericValue.slice(0, 5)}-${numericValue.slice(5, 12)}-${numericValue.slice(12)}`;
+        }
+
+        setCnic(formattedCnic);
+
+        // Validation
+        if (numericValue.length > 0 && numericValue.length < 13) {
+            setCnicError("CNIC must be 13 digits long.");
+        } else {
+            setCnicError("");
+        }
+    };
+
+    // --- 3. Update form validation logic ---
     const isFormValid = () => {
-        return !phoneError && !emergencyError && phone.length === 11 && emergencyContact.length === 11 && photo;
+        const cnicDigits = cnic.replace(/[^\d]/g, '');
+        return (
+            !phoneError &&
+            !emergencyError &&
+            !cnicError &&
+            phone.length === 11 &&
+            emergencyContact.length === 11 &&
+            cnicDigits.length === 13 &&
+            photo && gender && maritalStatus
+        );
     };
 
     const submitHandler = (event) => {
         event.preventDefault();
         setLoader(true);
 
+        // --- 4. Add new fields to the submission payload ---
         const fields = {
             name, email, password, phone, address, emergencyContact, education, salary,
             photo, // The compressed, Base64 image string
+            gender,
+            maritalStatus,
+            cnic,
             role: "Teacher",
             school: classDetails?.school,
             teachSclass: classDetails?._id,
@@ -158,7 +194,7 @@ const AddTeacher = () => {
 
         dispatch(registerUser(fields, "Teacher"));
     };
-    
+
     const handlePopupConfirm = () => {
         setShowPopup(false);
         dispatch(underControl());
@@ -167,9 +203,6 @@ const AddTeacher = () => {
         }
     };
 
-
-    // The JSX (return statement) remains exactly the same as in the previous answer.
-    // No changes are needed for the UI part.
     return (
         <>
             <Box sx={{ padding: 4 }}>
@@ -206,9 +239,58 @@ const AddTeacher = () => {
                                     {!photo && <Typography color="error" variant="caption" mt={1}>Photo is required</Typography>}
                                 </Box>
 
-                                {/* TextFields */}
+                                {/* --- 5. Add new input fields to the form --- */}
                                 <TextField label="Name" fullWidth required value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Email" type="email" fullWidth required value={email} onChange={(e) => setEmail(e.target.value)} sx={{ mb: 2 }} />
+
+                                {/* Gender Dropdown */}
+                                <FormControl fullWidth required sx={{ mb: 2 }}>
+                                    <InputLabel id="gender-select-label">Gender</InputLabel>
+                                    <Select
+                                        labelId="gender-select-label"
+                                        value={gender}
+                                        label="Gender"
+                                        onChange={(e) => setGender(e.target.value)}
+                                    >
+                                        <MenuItem value="Male">Male</MenuItem>
+                                        <MenuItem value="Female">Female</MenuItem>
+                                        <MenuItem value="Other">Other</MenuItem>
+                                    </Select>
+                                </FormControl>
+                                
+                                {/* Marital Status Dropdown */}
+                                <FormControl fullWidth required sx={{ mb: 2 }}>
+                                    <InputLabel id="marital-status-select-label">Marital Status</InputLabel>
+                                    <Select
+                                        labelId="marital-status-select-label"
+                                        value={maritalStatus}
+                                        label="Marital Status"
+                                        onChange={(e) => setMaritalStatus(e.target.value)}
+                                    >
+                                        <MenuItem value="Single">Single</MenuItem>
+                                        <MenuItem value="Married">Married</MenuItem>
+                                        <MenuItem value="Widow">Widow</MenuItem>
+                                        <MenuItem value="Divorced">Divorced</MenuItem>
+                                        <MenuItem value="Other">Other</MenuItem>
+                                    </Select>
+                                </FormControl>
+                                
+                                {/* CNIC Field */}
+                                <TextField
+                                    label="CNIC"
+                                    placeholder="XXXXX-XXXXXXX-X"
+                                    type="tel"
+                                    fullWidth
+                                    required
+                                    value={cnic}
+                                    onChange={handleCnicChange}
+                                    sx={{ mb: 2 }}
+                                    inputProps={{ maxLength: 15 }}
+                                    error={!!cnicError}
+                                    helperText={cnicError}
+                                />
+                                
+                                {/* Existing Fields */}
                                 <TextField label="Phone#" type="tel" fullWidth required value={phone} onChange={handlePhoneChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!phoneError} helperText={phoneError} />
                                 <TextField label="Emergency Contact#" type="tel" fullWidth required value={emergencyContact} onChange={handleEmergencyChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!emergencyError} helperText={emergencyError} />
                                 <TextField label="Address" fullWidth required value={address} onChange={(e) => setAddress(e.target.value)} sx={{ mb: 2 }} />
@@ -224,7 +306,7 @@ const AddTeacher = () => {
                     </Grid>
                 </Paper>
             </Box>
-             {showPopup && (
+            {showPopup && (
                 <div style={popupOverlayStyle}>
                     <div style={popupStyle}>
                         <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>

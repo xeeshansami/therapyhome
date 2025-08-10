@@ -55,7 +55,7 @@ const ShowTeachers = () => {
     const columns = [
         { id: 'photo', label: 'Photo', minWidth: 70, align: 'center' },
         { id: 'name', label: 'Name', minWidth: 170 },
-        { id: 'teachSubject', label: 'Subject', minWidth: 100 },
+        // { id: 'teachSubject', label: 'Subject', minWidth: 100 },
         { id: 'teachSclass', label: 'Class', minWidth: 170 },
     ];
 
