@@ -71,7 +71,6 @@ const AdminHomePage = () => {
     const handleMonthChange = (event) => {
         const month = event.target.value;
         setSelectedMonth(month);
-        debugger
         fetchTotalFee(month); // Fetch total fee for the selected month
     };
 

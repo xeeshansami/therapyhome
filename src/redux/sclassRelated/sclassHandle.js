@@ -44,7 +44,7 @@ export const getClassStudents = (id) => async (dispatch) => {
 
 export const getClassDetails = (id) => async (dispatch) => {
     dispatch(getRequest());
-    debugger
+    
     try {
         const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/Sclass/${id}`);
         if (result.data) {
@@ -75,7 +75,7 @@ export const getTeacherFreeClassSubjects = (id) => async (dispatch) => {
 
     try {
         const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/FreeSubjectList/${id}`);
-        debugger
+        
         if (result.data.message) {
             dispatch(getFailed(result.data.message));
         } else {

@@ -22,7 +22,7 @@ const ChooseClass = ({ situation }) => {
     }
 
     const navigateHandler = (classID) => {
-        debugger
+        
         // if (situation === "Teacher") {
         //     navigate("/Admin/teachers/choosesubject/" + classID)
         // }

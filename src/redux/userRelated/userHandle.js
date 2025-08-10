@@ -20,7 +20,7 @@ export const loginUser = (fields, role) => async (dispatch) => {
         const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/${role}Login`, fields, {
             headers: { 'Content-Type': 'application/json' },
         });
-        debugger
+        
         if (result.data.role) {
             dispatch(authSuccess(result.data));
         } else {
@@ -36,7 +36,7 @@ export const registerUser = (fields, role) => async (dispatch) => {
 
     try {
         console.log("fields", fields);
-        debugger
+        
         const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/${role}Reg`, fields, {
             // headers: { 'Content-Type': 'application/json' },
         });

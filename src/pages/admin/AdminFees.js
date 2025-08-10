@@ -109,7 +109,7 @@ const AdminFees = () => {
     try {
       const url = searchPayload 
         ? `${process.env.REACT_APP_BASE_URL}/students/search`
-        : `${process.env.REACT_APP_BASE_URL}/AllStudents/68946290703454aaf4bae0de`;
+        : `${process.env.REACT_APP_BASE_URL}/AllStudents/68795ab802f2887382d217b0`;
       const method = searchPayload ? 'post' : 'get';
       const response = await axios[method](url, searchPayload);
       
@@ -153,7 +153,7 @@ const AdminFees = () => {
 
   const handleSearch = () => {
     const { searchBy, name, rollNum, parentContact } = state;
-    const payload = { id: "68946290703454aaf4bae0de" };
+    const payload = { id: "68795ab802f2887382d217b0" };
     let searchValue = '';
     if (searchBy === 'Name') {
       payload.name = name;
@@ -190,7 +190,7 @@ const AdminFees = () => {
     }
 
     try {
-      debugger
+      
       const classDetailPromises = classIds.map(id => axios.get(`${process.env.REACT_APP_BASE_URL}/sclassList2/${id}`));
       const classDetailResponses = await Promise.all(classDetailPromises);
       const classDetailsList = classDetailResponses.map(res => res.data);
@@ -274,7 +274,7 @@ const AdminFees = () => {
     }
     
     const payload = {
-        adminID: '68946290703454aaf4bae0de',
+        adminID: '68795ab802f2887382d217b0',
         ...selectedStudent,
         date: feeDetails.date,
         isPaid:'1',
@@ -285,9 +285,7 @@ const AdminFees = () => {
         classBreakdown: isMonthlyFee ? feeDetails.classFees : [], // Only send breakdown for monthly fees
     };
     try {
-        debugger
         const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, payload);
-        debugger
         const mergedInvoiceData = { ...payload, ...response.data, balance: feeDetails.balance };
         setInvoiceData(mergedInvoiceData);
         setPopupMessage("Fee Invoice Generated Successfully.");
@@ -295,7 +293,6 @@ const AdminFees = () => {
         setShowPopup(true);
         setState(prev => ({ ...prev, openModal: false, errors: {} }));
     } catch (error) {
-      debugger
         setPopupMessage('Error saving fee details: ' + (error.response?.data?.message || error.message));
         setIsSuccess(false);
         setShowPopup(true);

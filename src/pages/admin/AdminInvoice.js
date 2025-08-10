@@ -179,7 +179,6 @@ class AdminInvoice extends Component {
   // Modified generateInvoice function (remains largely the same as previous updates)
   generateInvoice = async (feeRecord) => {
     try {
-      debugger
       const studentResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${feeRecord.rollNum}`);
       if (studentResponse.data && studentResponse.data.length > 0) {
         const fullStudentData = studentResponse.data[0];

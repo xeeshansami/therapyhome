@@ -271,7 +271,7 @@ const AddConsultancy = () => {
             fee => fee.label === selectedTherapy
         );
         const formattedDateTime = getCurrentDateTimeFormatted();
-        debugger
+        
 
         // Helper function to convert 'Yes'/'No' or 'true'/'false' strings to boolean
         const convertToBoolean = (value) => {
@@ -335,7 +335,7 @@ const AddConsultancy = () => {
             // --- Academic & Schedule Information ---
             className: ["687e03f6ec426d80aa75da28"],
             sclassName: "687e03f6ec426d80aa75da28",
-            school: "68946290703454aaf4bae0de",
+            school: "68795ab802f2887382d217b0",
             // If you collect sessionTime, days, feeStructure:
             // sessionTime: student.sessionTime,
             // days: student.days,
@@ -397,14 +397,14 @@ const AddConsultancy = () => {
             acceptedTerms: convertToBoolean(feeDetails.acceptedTerms),
         };
         setLoader(true);
-        debugger
+        
         try {
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentConsultancy`, payload, {
                 headers: { 'Content-Type': 'application/json' },
             });
-            debugger; // Keep for debugging if needed
+            ; // Keep for debugging if needed
             if (result.data.status === "00") {
-                debugger
+                
                 const formattedDateTime = getCurrentDateTimeFormatted();
                 handleSaveFee(result.data.data, feeDetails.consultancy, formattedDateTime, generatedRollNum);
                 setMessage("Student consultancy added successfully! Please generate invoice.");
@@ -416,7 +416,7 @@ const AddConsultancy = () => {
                 setShowPopup(true);
             }
         } catch (error) {
-            debugger
+            
             setMessage("Server Error: " + (error.response?.data?.message || error.message + " Exception" || "Network error."));
             setIsSuccess(false);
             setShowPopup(true);
@@ -426,9 +426,9 @@ const AddConsultancy = () => {
     }
 
     const handleSaveFee = (selectedStudent, consultancy, date, rollNum) => {
-        debugger
+        
         const fields = {
-            adminID: '68946290703454aaf4bae0de',
+            adminID: '68795ab802f2887382d217b0',
             attendance: [],
             parentName: selectedStudent.parentName,
             name: selectedStudent.name,
@@ -449,7 +449,7 @@ const AddConsultancy = () => {
             headers: { 'Content-Type': 'application/json' },
         })
             .then(response => {
-                debugger
+                
                 const mergedInvoiceData = {
                     ...response.data, // Data from fee registration (e.g., receipt ID, fee specific details)
                     ...selectedStudent, // Full student details from SingleStudent API
@@ -464,7 +464,7 @@ const AddConsultancy = () => {
                 console.log(response);
             })
             .catch(error => {
-                debugger
+                
                 setShowPopup(false);
                 setIsSuccess(false);
                 setMessage('Error saving fee details:', error);
