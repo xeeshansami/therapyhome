@@ -335,7 +335,7 @@ const AddConsultancy = () => {
             // --- Academic & Schedule Information ---
             className: ["687e03f6ec426d80aa75da28"],
             sclassName: "687e03f6ec426d80aa75da28",
-            school: "68795ab802f2887382d217b0",
+            school: "68946290703454aaf4bae0de",
             // If you collect sessionTime, days, feeStructure:
             // sessionTime: student.sessionTime,
             // days: student.days,
@@ -428,7 +428,7 @@ const AddConsultancy = () => {
     const handleSaveFee = (selectedStudent, consultancy, date, rollNum) => {
         debugger
         const fields = {
-            adminID: '68795ab802f2887382d217b0',
+            adminID: '68946290703454aaf4bae0de',
             attendance: [],
             parentName: selectedStudent.parentName,
             name: selectedStudent.name,

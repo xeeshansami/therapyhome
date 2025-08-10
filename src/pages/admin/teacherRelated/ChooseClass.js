@@ -22,16 +22,19 @@ const ChooseClass = ({ situation }) => {
     }
 
     const navigateHandler = (classID) => {
-        if (situation === "Teacher") {
-            navigate("/Admin/teachers/choosesubject/" + classID)
-        }
-        else if (situation === "Subject") {
-            navigate("/Admin/addsubject/" + classID)
-        }
+        debugger
+        // if (situation === "Teacher") {
+        //     navigate("/Admin/teachers/choosesubject/" + classID)
+        // }
+        // else if (situation === "Subject") {
+        //     navigate("/Admin/addsubject/" + classID)
+        // }
+        navigate("/Admin/teachers/addteacher/" + classID)
+        // navigate("/Admin/teachers/choosesubject/" + classID)
     }
 
     const sclassColumns = [
-        { id: 'name', label: 'Class Name', minWidth: 170 },
+        { id: 'name', label: 'Class Names', minWidth: 170 },
     ]
 
     const sclassRows = sclassesList && sclassesList.length > 0 && sclassesList.map((sclass) => {

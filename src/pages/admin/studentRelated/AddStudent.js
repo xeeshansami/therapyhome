@@ -417,7 +417,7 @@ const AddStudent = ({ situation }) => {
     const handleSaveFee = (selectedStudent, consultancy, date, invoiceNo) => {
         debugger
         const fields = {
-            adminID: '68795ab802f2887382d217b0',
+            adminID: '68946290703454aaf4bae0de',
             attendance: [],
             parentName: selectedStudent.parentName,
             name: selectedStudent.name,

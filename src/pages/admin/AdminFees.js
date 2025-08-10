@@ -109,7 +109,7 @@ const AdminFees = () => {
     try {
       const url = searchPayload 
         ? `${process.env.REACT_APP_BASE_URL}/students/search`
-        : `${process.env.REACT_APP_BASE_URL}/AllStudents/68795ab802f2887382d217b0`;
+        : `${process.env.REACT_APP_BASE_URL}/AllStudents/68946290703454aaf4bae0de`;
       const method = searchPayload ? 'post' : 'get';
       const response = await axios[method](url, searchPayload);
       
@@ -153,7 +153,7 @@ const AdminFees = () => {
 
   const handleSearch = () => {
     const { searchBy, name, rollNum, parentContact } = state;
-    const payload = { id: "68795ab802f2887382d217b0" };
+    const payload = { id: "68946290703454aaf4bae0de" };
     let searchValue = '';
     if (searchBy === 'Name') {
       payload.name = name;
@@ -274,7 +274,7 @@ const AdminFees = () => {
     }
     
     const payload = {
-        adminID: '68795ab802f2887382d217b0',
+        adminID: '68946290703454aaf4bae0de',
         ...selectedStudent,
         date: feeDetails.date,
         isPaid:'1',

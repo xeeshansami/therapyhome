@@ -14,7 +14,6 @@ import {
 
 export const getAllSclasses = (id, address) => async (dispatch) => {
     dispatch(getRequest());
-
     try {
         const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/${address}List/${id}`);
         if (result.data.message) {
@@ -43,11 +42,11 @@ export const getClassStudents = (id) => async (dispatch) => {
     }
 }
 
-export const getClassDetails = (id, address) => async (dispatch) => {
+export const getClassDetails = (id) => async (dispatch) => {
     dispatch(getRequest());
-
+    debugger
     try {
-        const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/${address}/${id}`);
+        const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/Sclass/${id}`);
         if (result.data) {
             dispatch(detailsSuccess(result.data));
         }
@@ -76,6 +75,7 @@ export const getTeacherFreeClassSubjects = (id) => async (dispatch) => {
 
     try {
         const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/FreeSubjectList/${id}`);
+        debugger
         if (result.data.message) {
             dispatch(getFailed(result.data.message));
         } else {

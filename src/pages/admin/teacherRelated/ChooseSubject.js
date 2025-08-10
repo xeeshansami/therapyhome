@@ -8,6 +8,7 @@ import { GreenButton, PurpleButton } from '../../../components/buttonStyles';
 import { StyledTableCell, StyledTableRow } from '../../../components/styles';
 
 const ChooseSubject = ({ situation }) => {
+    debugger
     const params = useParams();
     const navigate = useNavigate()
     const dispatch = useDispatch();
@@ -49,6 +50,7 @@ const ChooseSubject = ({ situation }) => {
     }
 
     const updateSubjectHandler = (teacherId, teachSubject) => {
+        debugger
         setLoader(true)
         dispatch(updateTeachSubject(teacherId, teachSubject))
         navigate("/Admin/teachers")
