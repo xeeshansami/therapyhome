@@ -1,39 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { deleteUser, getUserDetails, updateUser } from '../../../redux/userRelated/userHandle';
+import { deleteUser, getUserDetails } from '../../../redux/userRelated/userHandle';
 import {
-    Box, Button, Card, CardContent, CircularProgress, Container, Paper, Typography, Grid
+    Box, Button, Card, CardContent, CircularProgress, Container, Paper, Typography, Grid,
+    Accordion, AccordionSummary, AccordionDetails, Chip
 } from '@mui/material';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import Popup from '../../../components/Popup';
 import axios from 'axios';
+
+// Helper component to display key-value pairs cleanly
+const DetailItem = ({ label, value }) => (
+    <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>
+        <Typography variant="body1" gutterBottom>{value || "N/A"}</Typography>
+    </Grid>
+);
 
 const ViewStudent = () => {
     // --- SECTION: Core Component State & Hooks ---
     const navigate = useNavigate();
     const params = useParams();
     const dispatch = useDispatch();
-    const { userDetails, loading, error, response } = useSelector((state) => state.user);
+    const { userDetails, loading, error } = useSelector((state) => state.user);
+
     const studentID = params.id;
-    const address = "Student";
 
     // --- SECTION: State for Asynchronous Class Data ---
     const [classDetails, setClassDetails] = useState([]);
     const [classDetailsLoading, setClassDetailsLoading] = useState(false);
     const [classDetailsError, setClassDetailsError] = useState(null);
 
-    // --- SECTION: UI State & Local Form State ---
+    // --- SECTION: UI State ---
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
-    const [name, setName] = useState('');
-    const [rollNum, setRollNum] = useState('');
-    const [password, setPassword] = useState('');
 
     // --- SECTION: Data Fetching Effects ---
 
     // Effect to fetch the main student details
     useEffect(() => {
-        dispatch(getUserDetails(studentID, address));
+        dispatch(getUserDetails(studentID, "Student"));
     }, [dispatch, studentID]);
 
     // Effect to fetch details for all enrolled classes once student details are available
@@ -43,19 +50,20 @@ const ViewStudent = () => {
                 setClassDetailsLoading(true);
                 setClassDetailsError(null);
 
-                // Create an array of promises for each class ID
-                const promises = userDetails.className.map(id =>
+                // Correctly extract the ID string from each object in the className array
+                const classIDs = userDetails.className.map(c => c.$oid || c);
+
+                const promises = classIDs.map(id =>
                     axios.get(`${process.env.REACT_APP_BASE_URL}/Sclass/${id}`)
                 );
 
                 try {
                     const results = await Promise.all(promises);
-                    // Extract the data from each response
                     const fetchedClasses = results.map(result => result.data);
                     setClassDetails(fetchedClasses);
                 } catch (err) {
                     console.error("Failed to fetch class details", err);
-                    setClassDetailsError("Could not load class details. Please try again.");
+                    setClassDetailsError("Could not load class details.");
                 } finally {
                     setClassDetailsLoading(false);
                 }
@@ -65,13 +73,6 @@ const ViewStudent = () => {
         }
     }, [userDetails]);
 
-    // Effect to populate local form state when userDetails changes
-    useEffect(() => {
-        if (userDetails) {
-            setName(userDetails.name || '');
-            setRollNum(userDetails.rollNum || '');
-        }
-    }, [userDetails]);
 
     // --- SECTION: Event Handlers ---
 
@@ -82,78 +83,134 @@ const ViewStudent = () => {
 
     // --- SECTION: Main Component Render ---
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <CircularProgress />
-            </Box>
-        );
+    if (loading && !userDetails) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
     }
 
     if (error) {
-        console.log(error);
-        return (
-            <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>
-                Error loading student details.
-            </Typography>
-        );
+        return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Error loading student details.</Typography>;
     }
 
-    return (
-        <Container maxWidth="md">
-            <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
-                <Typography variant="h4" gutterBottom>
-                    Student Details
-                </Typography>
-                <Typography variant="h6">Name: {userDetails?.name}</Typography>
-                <Typography variant="body1">Roll Number: {userDetails?.rollNum}</Typography>
-                <Typography variant="body1" sx={{ mb: 4 }}>
-                    School: {userDetails?.school?.schoolName}
-                </Typography>
+    // Helper function to render boolean values as 'Yes' or 'No'
+    const renderBoolean = (value) => (value ? 'Yes' : 'No');
+    
+    // Helper function to format dates
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric'
+        });
+    };
 
+    return (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Paper elevation={3} sx={{ p: 3, mb: 3, bgcolor: 'primary.main', color: 'white' }}>
+                <Typography variant="h4" gutterBottom>{userDetails?.name || 'Student Details'}</Typography>
+                <Typography variant="h6" >Roll No: {userDetails?.rollNum}</Typography>
+            </Paper>
+
+            {/* --- Accordion for Student Profile --- */}
+            <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Student Profile</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Grid container spacing={2}>
+                        <DetailItem label="Age" value={userDetails?.age} />
+                        <DetailItem label="Gender" value={userDetails?.gender} />
+                        <DetailItem label="Date of Birth" value={formatDate(userDetails?.dob?.$date)} />
+                        <DetailItem label="Reference" value={userDetails?.reference} />
+                    </Grid>
+                </AccordionDetails>
+            </Accordion>
+
+            {/* --- Accordion for Parent & Contact Information --- */}
+            <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Parent & Contact Information</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Grid container spacing={2}>
+                        <DetailItem label="Parent's Name" value={userDetails?.parentName} />
+                        <DetailItem label="Parent's Contact" value={userDetails?.parentContact} />
+                        <DetailItem label="Parent's CNIC" value={userDetails?.parentCNIC} />
+                        <DetailItem label="Parent's Profession" value={userDetails?.parentProfession} />
+                        <DetailItem label="Home Address" value={userDetails?.parentAddress} />
+                    </Grid>
+                </AccordionDetails>
+            </Accordion>
+
+            {/* --- Accordion for Enrolled Courses & Schedule --- */}
+            <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Enrolled Courses & Schedule</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Grid container spacing={2}>
+                        <DetailItem label="Consultancy Date" value={userDetails?.consultancyDate} />
+                        <DetailItem label="Scheduled Days" value={userDetails?.days?.join(', ')} />
+                    </Grid>
+                    <Typography variant="subtitle1" sx={{ mt: 3, mb: 2, fontWeight: 'bold' }}>Class Details:</Typography>
+                    {classDetailsLoading ? (
+                        <CircularProgress />
+                    ) : classDetailsError ? (
+                        <Typography color="error">{classDetailsError}</Typography>
+                    ) : (
+                        <Grid container spacing={2}>
+                            {classDetails.map((sClass) => (
+                                <Grid item xs={12} md={6} key={sClass._id}>
+                                    <Card variant="outlined" sx={{ height: '100%' }}>
+                                        <CardContent>
+                                            <Typography variant="h6">{sClass.sclassName}</Typography>
+                                            <DetailItem label="Timing" value={`${sClass.timingSlot} (${sClass.timingType})`} />
+                                            <DetailItem label="Fee" value={`Rs. ${sClass.sclassFee}`} />
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    )}
+                </AccordionDetails>
+            </Accordion>
+
+            {/* --- Accordion for Medical & Academic History --- */}
+            <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Medical & Academic History</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Grid container spacing={2}>
+                        <DetailItem label="Doctor's Diagnosis?" value={renderBoolean(userDetails?.doctorDiagnosisCondition)} />
+                        {userDetails?.doctorDiagnosisCondition && <DetailItem label="Diagnosis Details" value={userDetails?.doctorDiagnosisDetails} />}
+                        <DetailItem label="Taken Therapies Before?" value={renderBoolean(userDetails?.takingTherapiesBefore)} />
+                        {userDetails?.takingTherapiesBefore && <DetailItem label="Previous Therapy Details" value={userDetails?.therapiesBeforeDetails} />}
+                        <DetailItem label="Currently on Medication?" value={renderBoolean(userDetails?.onMedication)} />
+                        {userDetails?.onMedication && <DetailItem label="Medication Details" value={userDetails?.medicationDetails} />}
+                        <DetailItem label="Child Attends School?" value={renderBoolean(userDetails?.childAttendsSchool)} />
+                        {userDetails?.childAttendsSchool && <DetailItem label="School Details" value={userDetails?.schoolDetails} />}
+                    </Grid>
+                </AccordionDetails>
+            </Accordion>
+            
+            {/* --- Accordion for Therapies Seeking --- */}
+            <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="h6">Therapies Seeking</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                        {userDetails?.therapiesSeeking?.map(therapy => <Chip key={therapy} label={therapy} />)}
+                    </Box>
+                    <DetailItem label="Specific Details" value={userDetails?.therapiesSeekingSpecific} />
+                </AccordionDetails>
+            </Accordion>
+
+            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" color="error" onClick={deleteHandler}>
                     Delete Student
                 </Button>
-            </Paper>
+            </Box>
 
-            <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
-                <Typography variant="h5" gutterBottom>
-                    Enrolled Classes
-                </Typography>
-                {classDetailsLoading ? (
-                    <CircularProgress />
-                ) : classDetailsError ? (
-                    <Typography color="error">{classDetailsError}</Typography>
-                ) : (
-                    <Grid container spacing={2}>
-                        {classDetails.map((sClass) => (
-                            <Grid item xs={12} sm={6} key={sClass._id}>
-                                <Card sx={{ height: '100%' }}>
-                                    <CardContent>
-                                        <Typography variant="h6" component="div">
-                                            {sClass.sclassName}
-                                        </Typography>
-                                        <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                                            ID: {sClass._id}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Timing:</strong> {sClass.timingSlot || 'N/A'} ({sClass.timingType || 'N/A'})
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Fee:</strong> Rs. {sClass.sclassFee || 'N/A'}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            <strong>Created On:</strong> {new Date(sClass.createdAt).toLocaleDateString('en-GB', {
-                                                day: '2-digit', month: 'short', year: 'numeric'
-                                            })}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        ))}
-                    </Grid>
-                )}
-            </Paper>
             <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
         </Container>
     );
