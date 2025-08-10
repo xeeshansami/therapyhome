@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 import { getAllTeachers } from '../../../redux/teacherRelated/teacherHandle';
 import {
     Paper, Table, TableBody, TableContainer,
     TableHead, TablePagination, Button, Box, IconButton,
+    // --- 1. Import Avatar ---
+    Avatar,
 } from '@mui/material';
 import { deleteUser } from '../../../redux/userRelated/userHandle';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -45,24 +47,22 @@ const ShowTeachers = () => {
     }
 
     const deleteHandler = (deleteID, address) => {
-        console.log(deleteID);
-        console.log(address);
-        setMessage("Sorry the delete function has been disabled for now.")
-        setShowPopup(true)
-
-        // dispatch(deleteUser(deleteID, address)).then(() => {
-        //     dispatch(getAllTeachers(currentUser._id));
-        // });
+        setMessage("Sorry, the delete function has been disabled for now.");
+        setShowPopup(true);
     };
 
+    // --- 2. Add a 'Photo' column to the table definition ---
     const columns = [
+        { id: 'photo', label: 'Photo', minWidth: 70, align: 'center' },
         { id: 'name', label: 'Name', minWidth: 170 },
         { id: 'teachSubject', label: 'Subject', minWidth: 100 },
         { id: 'teachSclass', label: 'Class', minWidth: 170 },
     ];
 
+    // --- 3. Extract the photo data for each row ---
     const rows = teachersList.map((teacher) => {
         return {
+            photo: teacher.photo, // The Base64 string for the photo
             name: teacher.name,
             teachSubject: teacher.teachSubject?.subName || null,
             teachSclass: teacher.teachSclass.sclassName,
@@ -110,22 +110,33 @@ const ShowTeachers = () => {
                                     <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.id}>
                                         {columns.map((column) => {
                                             const value = row[column.id];
-                                            if (column.id === 'teachSubject') {
+
+                                            // --- 4. Render the Avatar for the 'photo' column ---
+                                            if (column.id === 'photo') {
                                                 return (
                                                     <StyledTableCell key={column.id} align={column.align}>
-                                                        {value ? (
-                                                            value
-                                                        ) : (
-                                                            <Button variant="contained"
-                                                                onClick={() => {
-                                                                    navigate(`/Admin/teachers/choosesubject/${row.teachSclassID}/${row.id}`)
-                                                                }}>
-                                                                Add Subject
-                                                            </Button>
-                                                        )}
+                                                        {/* Use the Base64 string as the src */}
+                                                        <Avatar src={value} />
                                                     </StyledTableCell>
                                                 );
                                             }
+
+                                            // if (column.id === 'teachSubject') {
+                                            //     return (
+                                            //         <StyledTableCell key={column.id} align={column.align}>
+                                            //             {value ? (
+                                            //                 value
+                                            //             ) : (
+                                            //                 <Button variant="contained"
+                                            //                     onClick={() => {
+                                            //                         navigate(`/Admin/teachers/choosesubject/${row.teachSclassID}/${row.id}`)
+                                            //                     }}>
+                                            //                     Add Subject
+                                            //                 </Button>
+                                            //             )}
+                                            //         </StyledTableCell>
+                                            //     );
+                                            // }
                                             return (
                                                 <StyledTableCell key={column.id} align={column.align}>
                                                     {column.format && typeof value === 'number' ? column.format(value) : value}
@@ -166,4 +177,4 @@ const ShowTeachers = () => {
     );
 };
 
-export default ShowTeachers
+export default ShowTeachers;

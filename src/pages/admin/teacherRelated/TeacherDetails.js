@@ -41,7 +41,7 @@ const TeacherDetails = () => {
                     <Typography variant="h6" gutterBottom>
                         Class Name: {teacherDetails?.teachSclass?.sclassName}
                     </Typography>
-                    {isSubjectNamePresent ? (
+                    {/* {isSubjectNamePresent ? (
                         <>
                             <Typography variant="h6" gutterBottom>
                                 Subject Name: {teacherDetails?.teachSubject?.subName}
@@ -54,7 +54,7 @@ const TeacherDetails = () => {
                         <Button variant="contained" onClick={handleAddSubject}>
                             Add Subject
                         </Button>
-                    )}
+                    )} */}
                 </Container>
             )}
         </>
