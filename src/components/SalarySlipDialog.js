@@ -8,9 +8,9 @@ import stampImage from '../assets/stamp.png';
 import signatureImg from '../assets/signofadmin.png';
 import appIcon from '../assets/logo.png';
 
-// --- Style Definitions ---
+// --- Style Definitions (No Changes) ---
 const salarySlipStyle = { fontFamily: 'Arial, sans-serif', fontSize: '10px', color: '#333', padding: '20px', width: '8.5in', margin: '0 auto', backgroundColor: 'white', border: '1px solid #ddd', boxSizing: 'border-box' };
-const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', borderBottom: '2px solid #4CAF50', paddingBottom: '10px' }; // Changed to align-items: flex-start
+const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px', borderBottom: '2px solid #4CAF50', paddingBottom: '10px' };
 const logoContainerStyle = { display: 'flex', alignItems: 'center' };
 const logoStyle = { width: '40px', height: '40px', marginRight: '8px', objectFit: 'contain' };
 const therapyHomeStyle = { fontSize: '1.2em', fontWeight: 'bold', color: '#4CAF50' };
@@ -33,7 +33,7 @@ const signatureLineStyle = { borderTop: '1px solid #333', marginTop: '0px' };
 const websiteInfoStyle = { marginTop: '20px', fontSize: '0.7em', color: '#777', textAlign: 'center' };
 const websiteLinkStyle = { color: '#007bff', textDecoration: 'none' };
 
-// --- Print Styles ---
+// --- Print Styles (No Changes) ---
 const getPrintStyles = () => `
     body { font-family: Arial, sans-serif; font-size: 10px; color: #333; margin: 0; -webkit-print-color-adjust: exact; color-adjust: exact; }
     #printable-salary-slip { background-color: white !important; }
@@ -50,39 +50,39 @@ const getPrintStyles = () => `
 `;
 
 const SalarySlipDialog = ({ open, onClose, data = {} }) => {
-    // State for print preview functionality
     const [showPrintPreview, setShowPrintPreview] = useState(false);
     const [printPreviewHTML, setPrintPreviewHTML] = useState('');
 
-    // Set default values for all expected data fields from the payload
     const currentData = {
-        name: 'N/A',
-        teacherID: 'N/A',
-        phone: 'N/A',
-        email: 'N/A',
-        cnic: 'N/A',
-        date: new Date().toISOString(),
-        baseSalary: 0,
-        bonus: 0,
-        deductions: 0,
-        netSalary: 0,
-        paidAmount: 0,
-        remark: '',
-        invoiceID: 'N/A',
+        name: 'N/A', teacherID: 'N/A', phone: 'N/A', email: 'N/A', cnic: 'N/A',
+        date: new Date().toISOString(), baseSalary: 0, bonus: 0, deductions: 0,
+        netSalary: 0, paidAmount: 0, remark: '', invoiceID: 'N/A',
         ...data,
     };
 
-    // Calculate Gross Salary
+    // ======================= MODIFIED SECTION =======================
+    // This makes the component more flexible. If the incoming data has a 'salary'
+    // field but not a 'baseSalary' field, we use 'salary' for the calculation.
+    if (!currentData.baseSalary && currentData.salary) {
+        currentData.baseSalary = currentData.salary;
+    }
+
+    // Now we calculate deductions if they weren't provided in the data.
     const grossSalary = (parseFloat(currentData.baseSalary) || 0) + (parseFloat(currentData.bonus) || 0);
+    
+    // If deductions are not explicitly provided, calculate them from the difference.
+    if (!data.deductions && data.netSalary) {
+        currentData.deductions = grossSalary - (parseFloat(data.netSalary) || 0);
+    }
+    // ===================== END OF MODIFIED SECTION =====================
+
 
     const preparePrintPreviewHTML = () => {
         const slipElement = document.getElementById('salary-slip-dialog');
         if (!slipElement) return "";
-
         const slipContentClone = slipElement.cloneNode(true);
         slipContentClone.id = "printable-salary-slip";
         slipContentClone.classList.add('salary-slip-print-view');
-
         return slipContentClone.outerHTML;
     };
 
@@ -105,10 +105,8 @@ const SalarySlipDialog = ({ open, onClose, data = {} }) => {
     const handleDownload = () => {
         const slipHTML = preparePrintPreviewHTML();
         if (!slipHTML) return;
-
         const tempRenderDiv = document.createElement('div');
         tempRenderDiv.innerHTML = slipHTML;
-
         const opt = {
             margin: [0.5, 0.2, 0.5, 0.2],
             filename: `salary-slip-${currentData.name.replace(/\s/g, '_')}-${currentData.invoiceID}.pdf`,
@@ -125,7 +123,6 @@ const SalarySlipDialog = ({ open, onClose, data = {} }) => {
                 <Box sx={{ p: 2, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', bgcolor: 'grey.200' }}>
                     <DialogContent sx={{ padding: 0, width: 'auto', maxWidth: 'initial', overflow: 'visible' }}>
                         <div id="salary-slip-dialog" style={salarySlipStyle}>
-                            {/* ======================= MODIFIED SECTION ======================= */}
                             <header style={headerStyle}>
                                 <div style={logoContainerStyle}>
                                     <img src={appIcon} alt="Logo" style={logoStyle} />
@@ -139,17 +136,15 @@ const SalarySlipDialog = ({ open, onClose, data = {} }) => {
                                         })}
                                     </div>
                                     <div style={slipNoStyle}>
-                                        SALARY SLIP# <span style={slipNoSpanStyle}>{currentData.invoiceID}</span>
+                                        Invoice Number# <span style={slipNoSpanStyle}>{currentData.invoiceID}</span>
                                     </div>
                                 </div>
                             </header>
-                            {/* ===================== END OF MODIFIED SECTION ===================== */}
 
-
-                            <div style={{textAlign: 'center', margin: '10px 0 20px 0'}}>
-                                <h3 style={{margin: 0, textTransform: 'uppercase'}}>Salary Slip for the month of {new Date(currentData.date).toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+                            <div style={{ textAlign: 'center', margin: '10px 0 20px 0' }}>
+                                <h3 style={{ margin: 0, textTransform: 'uppercase' }}>Salary Slip for the month of {new Date(currentData.date).toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
                             </div>
-                            
+
                             <section style={infoSectionStyle}>
                                 <div style={infoRowStyle}>
                                     <div style={infoLabelStyle}>Employee Name:</div>
@@ -169,103 +164,71 @@ const SalarySlipDialog = ({ open, onClose, data = {} }) => {
                                 </div>
                             </section>
 
-
                             <section style={earningsSectionStyle}>
                                 <table style={earningsTableStyle}>
                                     <thead>
                                         <tr>
                                             <th style={thStyle}>Earnings</th>
-                                            <th style={{...thStyle, textAlign: 'right'}}>Amount (PKR)</th>
+                                            <th style={{ ...thStyle, textAlign: 'right' }}>Amount (PKR)</th>
                                             <th style={thStyle}>Deductions</th>
-                                            <th style={{...thStyle, textAlign: 'right'}}>Amount (PKR)</th>
+                                            <th style={{ ...thStyle, textAlign: 'right' }}>Amount (PKR)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                             <td style={tdStyle}>Base Salary</td>
-                                            <td style={{...tdStyle, textAlign: 'right'}}>{parseFloat(currentData.baseSalary || 0).toFixed(2)}</td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.baseSalary || 0).toFixed(2)}</td>
                                             <td style={tdStyle}>Deductions</td>
-                                            <td style={{...tdStyle, textAlign: 'right'}}>{parseFloat(currentData.deductions || 0).toFixed(2)}</td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.deductions || 0).toFixed(2)}</td>
                                         </tr>
                                         <tr>
                                             <td style={tdStyle}>Bonus</td>
-                                            <td style={{...tdStyle, textAlign: 'right'}}>{parseFloat(currentData.bonus || 0).toFixed(2)}</td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.bonus || 0).toFixed(2)}</td>
                                             <td style={tdStyle}></td>
-                                            <td style={{...tdStyle, textAlign: 'right'}}></td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}></td>
                                         </tr>
-                                        <tr style={{fontWeight: 'bold'}}>
-                                             <td style={tdStyle}>Gross Salary</td>
-                                             <td style={{...tdStyle, textAlign: 'right'}}>{grossSalary.toFixed(2)}</td>
-                                             <td style={tdStyle}>Total Deductions</td>
-                                             <td style={{...tdStyle, textAlign: 'right'}}>{parseFloat(currentData.deductions || 0).toFixed(2)}</td>
+                                        <tr style={{ fontWeight: 'bold' }}>
+                                            <td style={tdStyle}>Gross Salary</td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{grossSalary.toFixed(2)}</td>
+                                            <td style={tdStyle}>Total Deductions</td>
+                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.deductions || 0).toFixed(2)}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </section>
-                            
+
                             <section style={summarySectionStyle}>
-                                 <div style={summaryRowStyle}>
+                                <div style={summaryRowStyle}>
                                     <span><strong>Paid Amount:</strong></span>
                                     <span>{parseFloat(currentData.paidAmount || 0).toFixed(2)} PKR</span>
-                                 </div>
-                                 <div style={summaryRowStyle}>
+                                </div>
+                                <div style={summaryRowStyle}>
                                     <span><strong>Net Salary Payable:</strong></span>
                                     <span style={netSalaryStyle}>{parseFloat(currentData.netSalary || 0).toFixed(2)} PKR</span>
-                                 </div>
-                                 {currentData.remark && (
-                                     <div style={{...summaryRowStyle, borderTop: '1px solid #ddd', marginTop: '5px', paddingTop: '5px'}}>
+                                </div>
+                                {currentData.remark && (
+                                    <div style={{ ...summaryRowStyle, borderTop: '1px solid #ddd', marginTop: '5px', paddingTop: '5px' }}>
                                         <span><strong>Remarks:</strong></span>
                                         <span>{currentData.remark}</span>
-                                     </div>
-                                 )}
+                                    </div>
+                                )}
                             </section>
-                            
+
                             <footer style={signatureSectionStyle}>
                                 <div style={signatureBlockStyle}>
-                                    {/* Container for the overlapping images */}
                                     <div style={{ position: 'relative', height: '80px', marginBottom: '5px' }}>
-                                        {/* Stamp Image (background) */}
-                                        <img
-                                            src={stampImage}
-                                            alt="Stamp"
-                                            style={{
-                                                position: 'absolute',
-                                                left: '50%',
-                                                top: '50%',
-                                                transform: 'translate(-50%, -50%)',
-                                                width: '70px',
-                                                height: '70px',
-                                                opacity: 0.7,
-                                                zIndex: 1,
-                                            }}
-                                        />
-                                        {/* Signature Image (foreground) */}
-                                        <img
-                                            src={signatureImg}
-                                            alt="Signature"
-                                            style={{
-                                                position: 'absolute',
-                                                left: '50%',
-                                                top: '50%',
-                                                transform: 'translate(-50%, -50%) rotate(-10deg)',
-                                                width: '120px',
-                                                height: 'auto',
-                                                opacity: 0.9,
-                                                zIndex: 2,
-                                            }}
-                                        />
+                                        <img src={stampImage} alt="Stamp" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '70px', height: '70px', opacity: 0.7, zIndex: 1 }} />
+                                        <img src={signatureImg} alt="Signature" style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%) rotate(-10deg)', width: '120px', height: 'auto', opacity: 0.9, zIndex: 2 }} />
                                     </div>
                                     <div style={signatureLineStyle}></div>
                                     Admin Signature
                                 </div>
                                 <div style={signatureBlockStyle}>
-                                    {/* Kept this block empty for employee to sign */}
-                                    <div style={{ height: '85px' }}></div> 
+                                    <div style={{ height: '85px' }}></div>
                                     <div style={signatureLineStyle}></div>
                                     Employee Signature
                                 </div>
                             </footer>
-
 
                             <div style={websiteInfoStyle}>
                                 Website: <a href="http://www.therapyhome.com.pk" target="_blank" rel="noopener noreferrer" style={websiteLinkStyle}>www.therapyhome.com.pk</a> | Email: <a href="mailto:therapyhome@gmail.com" style={websiteLinkStyle}>therapyhome@gmail.com</a>
@@ -280,7 +243,6 @@ const SalarySlipDialog = ({ open, onClose, data = {} }) => {
                 </Box>
             </Dialog>
 
-            {/* Print Preview Dialog */}
             <Dialog open={showPrintPreview} onClose={() => setShowPrintPreview(false)} fullWidth maxWidth="lg">
                 <DialogTitle>Print Preview <Button onClick={handleActualPrintFromPreview} color="primary" variant="contained" sx={{ position: 'absolute', right: 16, top: 12 }} className="no-print" >Print Now</Button></DialogTitle>
                 <DialogContent dividers>

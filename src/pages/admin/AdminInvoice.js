@@ -1,25 +1,15 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import {
-  Button, TextField, CircularProgress, Typography,Radio, Box, RadioGroup, FormControlLabel, FormControl, FormLabel, InputAdornment,
+    Button, TextField, CircularProgress, Typography, Radio, Box, RadioGroup,
+    FormControlLabel, FormControl, FormLabel, Container, Paper, Grid,
+    Select, MenuItem, InputLabel, Divider
 } from '@mui/material';
 import styled from 'styled-components';
-import InvoiceDialog from './../../components/InvoiceDialog'; // adjust path as needed
+import InvoiceDialog from './../../components/InvoiceDialog';
+import SalarySlipDialog from './../../components/SalarySlipDialog';
 
-// Styling components (these remain the same)
-const AdminInvoiceContainer = styled.div`
-  padding: 20px;
-  width: 100%;
-`;
-
-const FeeRecordsContent = styled.div`
-  margin-top: 20px;
-  font-family: Arial, sans-serif;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-`;
-
+// Styled-components for the results table (can be kept as is)
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
@@ -29,365 +19,472 @@ const Table = styled.table`
 
 const TableCell = styled.td`
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 12px;
   text-align: center;
 `;
 
 const TableHeader = styled.th`
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 12px;
   background-color: #f2f2f2;
   text-align: center;
   font-weight: bold;
 `;
 
 class AdminInvoice extends Component {
-  state = {
-    rollNum: '', // Value for Roll Number input
-    name: '',    // Value for Name input
-    parentContact: '', // New: Value for Parents Contact input
-    invoiceID: '', // New: Value for Invoice ID input
-    searchBy: 'rollNum', // Default search option
-    feeTypeFilter: 'All', // New: Default secondary filter option
-    feeRecords: [],
-    loading: false,
-    error: '',
-    showInvoice: false,
-    invoiceData: {},
-  };
+    state = {
+        // --- Primary Target ---
+        searchTarget: 'student', // 'student' or 'teacher'
 
-  // --- START MODIFIED fetchStudentFee ---
-  fetchStudentFee = async () => {
-    const { rollNum, name, parentContact, invoiceID, searchBy, feeTypeFilter } = this.state;
-    this.setState({ loading: true, error: '', feeRecords: [] });
+        // --- Student Search State ---
+        studentSearchBy: 'rollNum',
+        studentRollNum: '',
+        studentName: '',
+        studentParentContact: '',
+        studentInvoiceID: '',
+        studentFeeTypeFilter: 'All',
 
-    let searchValue = ''; // This will hold the value for the primary search
+        // --- Teacher Search State ---
+        teacherSearchBy: 'name',
+        teacherName: '',
+        teacherPhone: '',
+        teacherCnic: '',
+        teacherInvoiceID: '',
 
-    // Determine which input value corresponds to the selected 'searchBy' option
-    switch (searchBy) {
-      case 'rollNum':
-        searchValue = rollNum;
-        break;
-      case 'name':
-        searchValue = name;
-        break;
-      case 'parentContact':
-        searchValue = parentContact;
-        break;
-      case 'invoiceID':
-        searchValue = invoiceID;
-        break;
-      default:
-        // This case should ideally not be reached if radio buttons are properly controlled
-        this.setState({ loading: false, error: 'Invalid search criteria selected.' });
-        return;
-    }
+        // --- General State ---
+        records: [],
+        loading: false,
+        error: '',
 
-    // Ensure a search value is provided for the primary search.
-    // If not, clear the error and prevent API call.
-    // if (!searchValue) {
-    //   this.setState({ loading: false, error: 'Please enter a value to search.' });
-    //   return;
-    // }
-
-    // Define the new POST API endpoint
-    const apiEndpoint = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/filter`;
-
-    // Construct the payload for the POST request
-    const payload = {
-      searchBy: searchBy,       // e.g., 'rollNum', 'name', 'parentsContact', 'invoiceID'
-      searchValue: searchValue, // The actual value from the selected input field
-      feeTypeFilter: feeTypeFilter, // e.g., 'All', 'ConsultancyFees', 'MonthlyFees'
+        // --- Dialog State ---
+        showInvoice: false,
+        invoiceData: {},
+        showSalarySlip: false,
+        salarySlipData: {},
     };
 
-    try {
-      // Make the POST request with the payload
-      const response = await axios.post(apiEndpoint, payload);
+    // --- API Fetching Logic ---
 
-      if (response.data && response.data.length > 0) {
-        this.setState({ feeRecords: response.data, loading: false });
-      } else {
-        this.setState({ feeRecords: [], loading: false, error: 'No fee records found for the given criteria.' });
-      }
-    } catch (err) {
-      console.error("Error fetching student fee data:", err);
-      this.setState({ loading: false, error: 'Error fetching student fee data. Please try again.' });
-    }
-  };
-  // --- END MODIFIED fetchStudentFee ---
-
-  fetchAllStudentFee = async () => {
-    this.setState({ loading: true, error: '', feeRecords: [] });
-
-    try {
-      const url = `${process.env.REACT_APP_BASE_URL}/AllFeeStudents`;
-      const response = await axios.get(url);
-      this.setState({ feeRecords: response.data, loading: false });
-    } catch (err) {
-      console.error("Error fetching all student fee data:", err);
-      this.setState({ loading: false, error: 'Error fetching all student fee data.' });
-    }
-  };
-
-  // New: handleKeyPress for search on Enter
-  handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      this.fetchStudentFee();
-    }
-  };
-
-  // --- MODIFIED handleInputChange ---
-  handleInputChange = (fieldName) => (e) => {
-    let value = e.target.value;
-
-    switch (fieldName) {
-      case 'rollNum':
-        // For rollNum, remove all spaces and restrict to alphanumeric characters
-        value = value.replace(/\s/g, '');
-        if (!/^[0-9a-zA-Z]*$/.test(value)) {
-          // If after removing spaces, it contains invalid chars, don't update state
-          return;
+    handleSearch = () => {
+        if (this.state.searchTarget === 'student') {
+            this.fetchStudentFee();
+        } else {
+            this.fetchTeacherSalaries();
         }
-        break;
-      case 'parentContact':
-        // For parentsContact, allow only digits, plus signs, and hyphens, no letters or other symbols
-        if (!/^[0-9+-]*$/.test(value)) {
-          return;
-        }
-        break;
-      case 'invoiceID':
-        // For invoiceID, remove all spaces and restrict to alphanumeric and hyphens
-        value = value.replace(/\s/g, '');
-        if (!/^[0-9a-zA-Z-]*$/.test(value)) {
-          return;
-        }
-        break;
-      case 'name':
-        // For name, allow letters and spaces, but remove any non-alphabetic/non-space characters
-        value = value.replace(/[^a-zA-Z\s]/g, '');
-        break;
-      default:
-        // Default behavior for any other fieldName not explicitly handled
-        if (!/^[0-9a-zA-Z\s-]*$/.test(value)) {
-          return;
-        }
-    }
+    };
 
-    this.setState({ [fieldName]: value });
-  };
-
-  // Modified generateInvoice function (remains largely the same as previous updates)
-  generateInvoice = async (feeRecord) => {
-    try {
-      const studentResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${feeRecord.rollNum}`);
-      if (studentResponse.data && studentResponse.data.length > 0) {
-        const fullStudentData = studentResponse.data[0];
-        const mergedData = {
-          ...feeRecord,
-          ...fullStudentData,
+    fetchStudentFee = async () => {
+        const { studentRollNum, studentName, studentParentContact, studentInvoiceID, studentSearchBy, studentFeeTypeFilter } = this.state;
+        this.setState({ loading: true, error: '', records: [] });
+        let searchValue = '';
+        switch (studentSearchBy) {
+            case 'rollNum': searchValue = studentRollNum; break;
+            case 'name': searchValue = studentName; break;
+            case 'parentContact': searchValue = studentParentContact; break;
+            case 'invoiceID': searchValue = studentInvoiceID; break;
+            default: break;
+        }
+        const apiEndpoint = `${process.env.REACT_APP_BASE_URL}/fetchStudentFee/filter`;
+        const payload = {
+            searchBy: studentSearchBy,
+            searchValue: searchValue,
+            feeTypeFilter: studentFeeTypeFilter,
         };
-        this.setState({ invoiceData: mergedData, showInvoice: true });
-      } else {
-        console.warn("Could not find full student data for invoice. Using only fee record.");
-        this.setState({ invoiceData: feeRecord, showInvoice: true });
-      }
-    } catch (error) {
-      console.error("Error fetching student data for invoice:", error);
-      this.setState({ invoiceData: feeRecord, showInvoice: true });
+        try {
+            const response = await axios.post(apiEndpoint, payload);
+            if (response.data && response.data.length > 0) {
+                this.setState({ records: response.data, loading: false });
+            } else {
+                this.setState({ records: [], loading: false, error: 'No student fee records found.' });
+            }
+        } catch (err) {
+            this.setState({ loading: false, error: 'Error fetching student fee data.' });
+        }
+    };
+
+    fetchTeacherSalaries = async () => {
+        const { teacherName, teacherPhone, teacherCnic, teacherInvoiceID, teacherSearchBy } = this.state;
+        this.setState({ loading: true, error: '', records: [] });
+        let searchValue = '';
+        switch (teacherSearchBy) {
+            case 'name': searchValue = teacherName; break;
+            case 'phone': searchValue = teacherPhone; break;
+            case 'cnic': searchValue = teacherCnic; break;
+            case 'invoiceID': searchValue = teacherInvoiceID; break;
+            default: break;
+        }
+        const apiEndpoint = `${process.env.REACT_APP_BASE_URL}/fetchTeacherSalaries/filter`;
+        const payload = { searchBy: teacherSearchBy, searchValue: searchValue };
+        try {
+            const response = await axios.post(apiEndpoint, payload);
+            if (response.data && response.data.length > 0) {
+                this.setState({ records: response.data, loading: false });
+            } else {
+                this.setState({ records: [], loading: false, error: 'No teacher salary records found.' });
+            }
+        } catch (err) {
+            this.setState({ loading: false, error: 'Error fetching teacher salary data.' });
+        }
+    };
+
+    // --- Event Handlers ---
+
+    handlePrimaryTargetChange = (e) => {
+        this.setState({
+            searchTarget: e.target.value,
+            records: [],
+            error: '',
+        });
+    };
+
+    handleInputChange = (fieldName) => (e) => {
+        this.setState({ [fieldName]: e.target.value });
+    };
+    
+    handlePhoneInputChange = (fieldName) => (e) => {
+        const value = e.target.value.replace(/[^\d]/g, '');
+        if (value.length <= 13) {
+            this.setState({ [fieldName]: value });
+        }
+    };
+
+    handleCnicInputChange = (e) => {
+        const rawValue = e.target.value;
+        const digitsOnly = rawValue.replace(/\D/g, '');
+
+        if (digitsOnly.length > 13) {
+            return;
+        }
+
+        let formattedCnic = digitsOnly;
+        if (digitsOnly.length > 12) {
+            formattedCnic = `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5, 12)}-${digitsOnly.slice(12)}`;
+        } else if (digitsOnly.length > 5) {
+            formattedCnic = `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5)}`;
+        }
+        
+        this.setState({ teacherCnic: formattedCnic });
+    };
+
+    handleStudentFeeTypeFilterChange = (event) => {
+        this.setState({ studentFeeTypeFilter: event.target.value }, this.fetchStudentFee);
+    };
+
+    handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            this.handleSearch();
+        }
+    };
+
+    // --- Dialog Handlers ---
+
+    generateStudentInvoice = async (feeRecord) => {
+        try {
+            const studentResponse = await axios.get(`${process.env.REACT_APP_BASE_URL}/SingleStudent/${feeRecord.rollNum}`);
+            if (studentResponse.data && studentResponse.data.length > 0) {
+                const fullStudentData = studentResponse.data[0];
+                const mergedData = { ...feeRecord, ...fullStudentData };
+                this.setState({ invoiceData: mergedData, showInvoice: true });
+            } else {
+                this.setState({ invoiceData: feeRecord, showInvoice: true });
+            }
+        } catch (error) {
+            this.setState({ invoiceData: feeRecord, showInvoice: true });
+        }
+    };
+
+    generateTeacherSalarySlip = (salaryRecord) => {
+        this.setState({ salarySlipData: salaryRecord, showSalarySlip: true });
+    };
+
+    handleCloseInvoice = () => this.setState({ showInvoice: false, invoiceData: {} });
+    handleCloseSalarySlip = () => this.setState({ showSalarySlip: false, salarySlipData: {} });
+
+    // --- Render Methods ---
+
+    renderStudentSearch() {
+        const { studentSearchBy, studentRollNum, studentName, studentParentContact, studentInvoiceID, studentFeeTypeFilter } = this.state;
+        let label = '', value = '', onChange = null, type = 'text', inputProps = {};
+
+        switch (studentSearchBy) {
+            case 'rollNum':
+                label = 'Enter Roll Number';
+                value = studentRollNum;
+                onChange = this.handleInputChange('studentRollNum');
+                break;
+            case 'name':
+                label = 'Enter Student Name';
+                value = studentName;
+                onChange = this.handleInputChange('studentName');
+                break;
+            case 'parentContact':
+                label = 'Enter Parent Contact';
+                value = studentParentContact;
+                onChange = this.handlePhoneInputChange('studentParentContact');
+                type = 'tel';
+                inputProps = { maxLength: 13 };
+                break;
+            case 'invoiceID':
+                label = 'Enter Invoice ID';
+                value = studentInvoiceID;
+                onChange = this.handleInputChange('studentInvoiceID');
+                break;
+            default: break;
+        }
+
+        return (
+            <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12}>
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Search Student By</FormLabel>
+                        <RadioGroup row value={studentSearchBy} onChange={this.handleInputChange('studentSearchBy')}>
+                            <FormControlLabel value="rollNum" control={<Radio />} label="Roll Number" />
+                            <FormControlLabel value="name" control={<Radio />} label="Name" />
+                            <FormControlLabel value="parentContact" control={<Radio />} label="Parent Contact" />
+                            <FormControlLabel value="invoiceID" control={<Radio />} label="Invoice ID" />
+                        </RadioGroup>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        label={label}
+                        variant="outlined"
+                        onKeyPress={this.handleKeyPress}
+                        value={value}
+                        onChange={onChange}
+                        type={type}
+                        inputProps={inputProps}
+                        fullWidth
+                    />
+                </Grid>
+                <Grid item xs={12}>
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Filter by Fee Type</FormLabel>
+                        <RadioGroup row value={studentFeeTypeFilter} onChange={this.handleStudentFeeTypeFilterChange}>
+                            <FormControlLabel value="All" control={<Radio />} label="All" />
+                            <FormControlLabel value="ConsultancyFees" control={<Radio />} label="Consultancy" />
+                            <FormControlLabel value="AdmissionsFees" control={<Radio />} label="Admissions" />
+                            <FormControlLabel value="MonthlyFees" control={<Radio />} label="Monthly" />
+                        </RadioGroup>
+                    </FormControl>
+                </Grid>
+            </Grid>
+        );
     }
-  };
 
-  handleCloseInvoice = () => {
-    this.setState({ showInvoice: false, invoiceData: {} });
-  };
-  handleFeeTypeFilterChange = (event) => {
-    this.setState({ feeTypeFilter: event.target.value }, () => {
-      // Re-run the search with the new filter immediately
-      this.fetchStudentFee();
-    });
-  };
+    renderTeacherSearch() {
+        const { teacherSearchBy, teacherName, teacherPhone, teacherCnic, teacherInvoiceID } = this.state;
+        let label = '', value = '', onChange = null, type = 'text', inputProps = {};
 
-  render() {
-    const { feeRecords, loading, error, searchBy, rollNum, name, parentContact, feeTypeFilter, invoiceID, showInvoice, invoiceData } = this.state;
+        // FIX: Changed teacherSearchby to teacherSearchBy
+        switch (teacherSearchBy) {
+            case 'name':
+                label = 'Enter Teacher Name';
+                value = teacherName;
+                onChange = this.handleInputChange('teacherName');
+                break;
+            case 'phone':
+                label = 'Enter Teacher Phone';
+                value = teacherPhone;
+                onChange = this.handlePhoneInputChange('teacherPhone');
+                type = 'tel';
+                inputProps = { maxLength: 13 };
+                break;
+            case 'cnic':
+                label = 'Enter Teacher CNIC';
+                value = teacherCnic;
+                onChange = this.handleCnicInputChange;
+                type = 'tel';
+                inputProps = { maxLength: 15 };
+                break;
+            case 'invoiceID':
+                label = 'Enter Invoice ID';
+                value = teacherInvoiceID;
+                onChange = this.handleInputChange('teacherInvoiceID');
+                break;
+            default: break;
+        }
 
-    // Determine the label and value for the single search TextField
-    let textFieldLabel = '';
-    let textFieldValue = '';
-    let inputAdornment = null; // For the "THS" prefix
-
-    switch (searchBy) {
-      case 'rollNum':
-        textFieldLabel = 'Enter Roll Number';
-        textFieldValue = rollNum;
-        break;
-      case 'name':
-        textFieldLabel = 'Enter Student Name';
-        textFieldValue = name;
-        break;
-      case 'parentContact':
-        textFieldLabel = 'Enter Parent Contact';
-        textFieldValue = parentContact;
-        break;
-      case 'invoiceID':
-        textFieldLabel = 'Enter Invoice ID';
-        textFieldValue = invoiceID;
-        break;
-      default:
-        textFieldLabel = 'Select search type';
+        return (
+            <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12}>
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Search Teacher By</FormLabel>
+                        <RadioGroup row value={teacherSearchBy} onChange={this.handleInputChange('teacherSearchBy')}>
+                            <FormControlLabel value="name" control={<Radio />} label="Name" />
+                            <FormControlLabel value="phone" control={<Radio />} label="Phone" />
+                            <FormControlLabel value="cnic" control={<Radio />} label="CNIC" />
+                            <FormControlLabel value="invoiceID" control={<Radio />} label="Invoice ID" />
+                        </RadioGroup>
+                    </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                    <TextField
+                        label={label}
+                        variant="outlined"
+                        onKeyPress={this.handleKeyPress}
+                        value={value}
+                        onChange={onChange}
+                        type={type}
+                        inputProps={inputProps}
+                        fullWidth
+                    />
+                </Grid>
+            </Grid>
+        );
     }
 
-    return (
-      <AdminInvoiceContainer>
-        <Typography variant="h4" gutterBottom>
-          Invoice's
-        </Typography>
-        <FormControl component="fieldset">
-          <FormLabel component="legend">Search By</FormLabel>
-          <RadioGroup
-            row
-            value={searchBy}
-            onChange={(e) => {
-              // Clear all input values when switching search type
-              this.setState({
-                searchBy: e.target.value,
-                rollNum: '',
-                name: '',
-                parentContact: '',
-                invoiceID: ''
-              });
-            }}
-          >
-            <FormControlLabel value="rollNum" control={<Radio />} label="Roll Number" />
-            <FormControlLabel value="name" control={<Radio />} label="Name" />
-            <FormControlLabel value="parentContact" control={<Radio />} label="Parent Contact" /> {/* New Radio Option */}
-            <FormControlLabel value="invoiceID" control={<Radio />} label="Invoice ID" /> {/* New Radio Option */}
-          </RadioGroup>
-        </FormControl>
+    renderResultsTable() {
+        const { records, searchTarget } = this.state;
+        if (records.length === 0) return null;
 
-        {/* Single TextField for all search types */}
-        <TextField
-          label={textFieldLabel}
-          variant="outlined"
-          onKeyPress={this.handleKeyPress}
-          value={textFieldValue}
-          onChange={this.handleInputChange(searchBy)} // Use searchBy to set correct state field
-          fullWidth
-          style={{ marginTop: '20px' }}
-          InputProps={{ // Apply InputAdornment only for Roll Number
-            startAdornment: inputAdornment,
-          }}
-        />
+        return (
+            <Paper sx={{ width: '100%', overflow: 'hidden', mt: 4 }}>
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="h6" gutterBottom component="div">
+                        {searchTarget === 'student' ? 'Student Fee Records' : 'Teacher Salary Records'}
+                    </Typography>
+                    <div style={{ overflowX: 'auto' }}>
+                        {searchTarget === 'student' ? (
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <TableHeader>Invoice No</TableHeader>
+                                        <TableHeader>Roll No</TableHeader>
+                                        <TableHeader>Name</TableHeader>
+                                        <TableHeader>Parent</TableHeader>
+                                        <TableHeader>Fee Type</TableHeader>
+                                        <TableHeader>Balance</TableHeader>
+                                        <TableHeader>Paid</TableHeader>
+                                        <TableHeader>Status</TableHeader>
+                                        <TableHeader>Action</TableHeader>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {records.map((record) => (
+                                        <tr key={record.invoiceID}>
+                                            <TableCell>{record.invoiceID}</TableCell>
+                                            <TableCell>{record.rollNum}</TableCell>
+                                            <TableCell>{record.name}</TableCell>
+                                            <TableCell>{record.parentName}</TableCell>
+                                            <TableCell>
+                                                {record.isConsultancyOrIsRegistrationOrMonthly === '0' ? 'Consultancy' : record.isConsultancyOrIsRegistrationOrMonthly === '1' ? 'Admission' : 'Monthly'}
+                                            </TableCell>
+                                            <TableCell style={{ color: record.netTotalFee - record.paidFee === 0 ? 'green' : 'red', fontWeight: 'bold' }}>
+                                                {record.netTotalFee - record.paidFee}
+                                            </TableCell>
+                                            <TableCell style={{ color: 'green', fontWeight: 'bold' }}>{record.paidFee}</TableCell>
+                                            <TableCell>
+                                                <span style={{ fontSize: '1.5rem' }}>{record.netTotalFee - record.paidFee === 0 ? '✔️' : '❌'}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="contained" color="secondary" onClick={() => this.generateStudentInvoice(record)}>Invoice</Button>
+                                            </TableCell>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        ) : (
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <TableHeader>Invoice No</TableHeader>
+                                        <TableHeader>Name</TableHeader>
+                                        <TableHeader>Phone</TableHeader>
+                                        <TableHeader>Month</TableHeader>
+                                        <TableHeader>Net Salary</TableHeader>
+                                        <TableHeader>Paid</TableHeader>
+                                        <TableHeader>Status</TableHeader>
+                                        <TableHeader>Action</TableHeader>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {records.map((record) => (
+                                        <tr key={record.invoiceID}>
+                                            <TableCell>{record.invoiceID}</TableCell>
+                                            <TableCell>{record.name}</TableCell>
+                                            <TableCell>{record.phone}</TableCell>
+                                            <TableCell>{new Date(record.date).toLocaleString('default', { month: 'long', year: 'numeric' })}</TableCell>
+                                            <TableCell>{record.netSalary} PKR</TableCell>
+                                            <TableCell style={{ color: 'green', fontWeight: 'bold' }}>{record.paidAmount} PKR</TableCell>
+                                            <TableCell>
+                                                <span style={{ fontSize: '1.5rem' }}>{record.isPaid === "1" ? '✔️' : '❌'}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button variant="contained" color="secondary" onClick={() => this.generateTeacherSalarySlip(record)}>Salary Slip</Button>
+                                            </TableCell>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        )}
+                    </div>
+                </Box>
+            </Paper>
+        );
+    }
 
-        {/* This Box contains the Search and Fetch All Records buttons */}
-        <Box sx={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={this.fetchStudentFee}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Search'}
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={this.fetchAllStudentFee}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Fetch All Records'}
-          </Button>
-        </Box>
+    render() {
+        const { loading, error, searchTarget } = this.state;
 
-        {/* --- Moved Fee Type Filter below the buttons --- */}
-        <FormControl component="fieldset" style={{ marginTop: '20px' }}>
-          <FormLabel component="legend">Filter by Fee Type</FormLabel>
-          <RadioGroup
-            row
-            value={feeTypeFilter}
-            onChange={this.handleFeeTypeFilterChange}
-          >
-            <FormControlLabel value="All" control={<Radio />} label="All" />
-            <FormControlLabel value="ConsultancyFees" control={<Radio />} label="Consultancy Fees" />
-            <FormControlLabel value="AdmissionsFees" control={<Radio />} label="Admissions Fees" />
-            <FormControlLabel value="MonthlyFees" control={<Radio />} label="Monthly Fees" />
-          </RadioGroup>
-        </FormControl>
-        {/* --- End Moved Fee Type Filter --- */}
+        return (
+            <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Typography variant="h4" gutterBottom>
+                    Invoice & Salary Slip Generation
+                </Typography>
 
-        {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
+                <Paper elevation={3} sx={{ p: 3 }}>
+                    <Grid container spacing={4}>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth variant="outlined">
+                                <InputLabel>Select Target</InputLabel>
+                                <Select
+                                    value={searchTarget}
+                                    onChange={this.handlePrimaryTargetChange}
+                                    label="Select Target"
+                                >
+                                    <MenuItem value="student">Student Invoice</MenuItem>
+                                    <MenuItem value="teacher">Teacher Salary Slip</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
 
-        {feeRecords.length > 0 && (
-          <FeeRecordsContent>
-            <h2>Fee Records for Student</h2>
-            <Table>
-              <thead>
-                <tr>
-                  <TableHeader>Invoice No</TableHeader>
-                  <TableHeader>Roll Number</TableHeader>
-                  <TableHeader>Name</TableHeader>
-                  <TableHeader>Parent's Name</TableHeader>
-                  <TableHeader>Parent Contact</TableHeader>
-                  <TableHeader>Monthly Fee's</TableHeader>
-                  <TableHeader>Admission Fee's</TableHeader>
-                  <TableHeader>Consultancy Fee's</TableHeader>
-                  <TableHeader>Balance Due</TableHeader>
-                  <TableHeader>Paid Amount</TableHeader>
-                  <TableHeader>Status</TableHeader>
-                  <TableHeader>Action</TableHeader>
-                </tr>
-              </thead>
-              <tbody>
-                {feeRecords.map((feeRecord) => (
-                  <tr key={feeRecord.id}>
-                    <TableCell>{feeRecord.invoiceID}</TableCell> {/* Display Invoice ID */}
-                    <TableCell>{feeRecord.rollNum}</TableCell>
-                    <TableCell>{feeRecord.name}</TableCell>
-                    <TableCell>{feeRecord.parentName}</TableCell>
-                    <TableCell>{feeRecord.parentContact}</TableCell>
-                    <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '2' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
-                    <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '1' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
-                    <TableCell>{feeRecord.isConsultancyOrIsRegistrationOrMonthly === '0' ? (feeRecord.netTotalFee ? feeRecord.netTotalFee : "N/A") : "N/A"} </TableCell>
-                    <TableCell
-                      style={{
-                        color: feeRecord.netTotalFee - feeRecord.paidFee === 0 ? 'green' : 'red',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {feeRecord.netTotalFee - feeRecord.paidFee} PKR
-                    </TableCell>
-                    <TableCell style={{ color: 'green', fontWeight: 'bold' }}>
-                      {feeRecord.paidFee} PKR
-                    </TableCell>
-                    <TableCell
-                      style={{
-                        color: feeRecord.netTotalFee - feeRecord.paidFee === 0 ? 'green' : 'red',
-                        fontWeight: 'bold',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {feeRecord.netTotalFee - feeRecord.paidFee === 0 ? '✔️' : '❌'}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        color="secondary"
-                        onClick={() => this.generateInvoice(feeRecord)}
-                      >
-                        Generate Invoice
-                      </Button>
-                    </TableCell>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </FeeRecordsContent>
-        )}
+                        <Grid item xs={12}>
+                             <Divider />
+                        </Grid>
 
-        {/* Invoice Dialog */}
-        <InvoiceDialog open={showInvoice} onClose={this.handleCloseInvoice} data={invoiceData} />
-      </AdminInvoiceContainer>
-    );
-  }
+                        <Grid item xs={12}>
+                            {searchTarget === 'student' ? this.renderStudentSearch() : this.renderTeacherSearch()}
+                        </Grid>
+                        
+                        <Grid item xs={12}>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={this.handleSearch}
+                                disabled={loading}
+                                fullWidth
+                                size="large"
+                            >
+                                {loading ? <CircularProgress size={24} color="inherit" /> : 'Search Records'}
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Paper>
+
+                {error && (
+                    <Typography color="error" sx={{ mt: 3, textAlign: 'center' }}>
+                        {error}
+                    </Typography>
+                )}
+                
+                {this.renderResultsTable()}
+
+                <InvoiceDialog open={this.state.showInvoice} onClose={this.handleCloseInvoice} data={this.state.invoiceData} />
+                <SalarySlipDialog open={this.state.showSalarySlip} onClose={this.handleCloseSalarySlip} data={this.state.salarySlipData} />
+            </Container>
+        );
+    }
 }
 
 export default AdminInvoice;

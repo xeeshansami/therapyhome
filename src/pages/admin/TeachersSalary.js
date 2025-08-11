@@ -95,7 +95,7 @@ const TeachersSalary = () => {
   const fetchNextSlipNo = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/salary-slips/next-number`);
-      setGeneratedSlipNo(response.data?.slipNum || `TSAL${Date.now()}`);
+      setGeneratedSlipNo(response.data?.invoiceNum || `TSAL${Date.now()}`);
     } catch (error) {
       console.error("Error fetching next salary slip number:", error);
       setGeneratedSlipNo(`Error-${Date.now()}`);
