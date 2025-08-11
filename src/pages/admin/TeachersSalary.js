@@ -27,6 +27,7 @@ import {
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import SalarySlipDialog from '../../components/SalarySlipDialog';
 
 // --- Helper Components & Functions ---
 const CustomPopup = ({ open, success, message, onConfirm, onClose }) => {
@@ -63,13 +64,13 @@ const TeachersSalary = () => {
   const [popupMessage, setPopupMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [generatedSlipNo, setGeneratedSlipNo] = useState('');
-
+  const [showInvoice, setShowInvoice] = useState(false);
   // --- Main Component State ---
   const [state, setState] = useState({
     searchBy: 'Name',
     name: '',
     phone: '',
-    teacherData: [], 
+    teacherData: [],
     filteredData: [],
     error: '',
     errors: {},
@@ -106,12 +107,12 @@ const TeachersSalary = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/Teachers/${SCHOOL_ID}`);
       const data = response.data?.length > 0 ? response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
-      setState(prev => ({ 
-        ...prev, 
-        teacherData: data, 
+      setState(prev => ({
+        ...prev,
+        teacherData: data,
         filteredData: data,
-        loading: false, 
-        error: data.length === 0 ? 'No teachers found.' : '' 
+        loading: false,
+        error: data.length === 0 ? 'No teachers found.' : ''
       }));
     } catch (err) {
       setState(prev => ({ ...prev, loading: false, error: 'Error fetching teacher data.' }));
@@ -131,11 +132,11 @@ const TeachersSalary = () => {
     const { searchBy, name, phone, teacherData } = state;
     let filtered = [];
     if (searchBy === 'Name' && name.trim()) {
-      filtered = teacherData.filter(teacher => 
+      filtered = teacherData.filter(teacher =>
         teacher.name.toLowerCase().includes(name.trim().toLowerCase())
       );
     } else if (searchBy === 'Phone' && phone.trim()) {
-      filtered = teacherData.filter(teacher => 
+      filtered = teacherData.filter(teacher =>
         teacher.phone.includes(phone.trim())
       );
     } else {
@@ -146,11 +147,11 @@ const TeachersSalary = () => {
 
   const handleShowAll = () => {
     setState(prev => ({
-        ...prev,
-        filteredData: prev.teacherData,
-        name: '',
-        phone: '',
-        error: ''
+      ...prev,
+      filteredData: prev.teacherData,
+      name: '',
+      phone: '',
+      error: ''
     }));
   };
 
@@ -158,31 +159,31 @@ const TeachersSalary = () => {
     setState(prev => ({ ...prev, loading: true }));
     await fetchNextSlipNo();
     try {
-        const response = await axios.get(`${API_BASE_URL}/Teacher/${teacher._id}`);
-        const detailedTeacher = response.data;
-        const baseSalary = parseFloat(detailedTeacher.salary) || 0;
-        setState(prev => ({
-            ...prev,
-            openModal: true,
-            selectedTeacher: detailedTeacher,
-            loading: false,
-            errors: {},
-            salaryDetails: {
-                ...prev.salaryDetails,
-                date: new Date().toISOString().split('T')[0],
-                baseSalary: baseSalary,
-                bonus: '',
-                deductions: '',
-                netSalary: baseSalary,
-                paidAmount: baseSalary,
-                remark: '',
-            },
-        }));
+      const response = await axios.get(`${API_BASE_URL}/Teacher/${teacher._id}`);
+      const detailedTeacher = response.data;
+      const baseSalary = parseFloat(detailedTeacher.salary) || 0;
+      setState(prev => ({
+        ...prev,
+        openModal: true,
+        selectedTeacher: detailedTeacher,
+        loading: false,
+        errors: {},
+        salaryDetails: {
+          ...prev.salaryDetails,
+          date: new Date().toISOString().split('T')[0],
+          baseSalary: baseSalary,
+          bonus: '',
+          deductions: '',
+          netSalary: baseSalary,
+          paidAmount: baseSalary,
+          remark: '',
+        },
+      }));
     } catch (err) {
-        setState(prev => ({ ...prev, loading: false, error: 'Could not fetch teacher details.' }));
+      setState(prev => ({ ...prev, loading: false, error: 'Could not fetch teacher details.' }));
     }
   };
-  
+
   const handleSalaryDetailChange = (e) => {
     const { name, value } = e.target;
     setState(prev => {
@@ -196,38 +197,49 @@ const TeachersSalary = () => {
       };
     });
   };
-  
+
   const handleSaveSalary = async () => {
     const { salaryDetails, selectedTeacher } = state;
     if (salaryDetails.paidAmount === '' || isNaN(parseFloat(salaryDetails.paidAmount))) {
       setState(prev => ({ ...prev, errors: { paidAmount: 'Paid amount is invalid.' } }));
       return;
     }
-    
+
     const payload = {
       adminID: SCHOOL_ID,
+      cnic: selectedTeacher.cnic,
+      email: selectedTeacher.email,
+      teachSclass: selectedTeacher.teachSclass,
+      maritalStatus: selectedTeacher.maritalStatus,
+      gender: selectedTeacher.gender,
       teacherID: selectedTeacher._id,
       name: selectedTeacher.name,
       phone: selectedTeacher.phone,
+      emergencyContact: selectedTeacher.emergencyContact,
       date: salaryDetails.date,
+      salary: selectedTeacher.salary,
       baseSalary: salaryDetails.baseSalary,
       bonus: parseFloat(salaryDetails.bonus) || 0,
       deductions: parseFloat(salaryDetails.deductions) || 0,
       netSalary: salaryDetails.netSalary,
+      isPaid: "1",
       paidAmount: parseFloat(salaryDetails.paidAmount),
       remark: salaryDetails.remark,
-      slipID: generatedSlipNo,
+      invoiceID: generatedSlipNo,
     };
-    
+
     try {
-      const response = await axios.post(`${API_BASE_URL}/TeacherSalaryReg`, payload);
+      const response = await axios.post(`${API_BASE_URL}/teacherSalaryReg`, payload);
+      debugger
       setSalarySlipData({ ...payload, ...response.data });
+      setShowInvoice(true); // Show invoice dialog instead of navigating away immediately
       setPopupMessage("Salary Issued Successfully.");
       setIsSuccess(true);
       setShowPopup(true);
       setState(prev => ({ ...prev, openModal: false, errors: {} }));
       fetchAllTeachers();
     } catch (error) {
+      debugger
       setPopupMessage('Error issuing salary: ' + (error.response?.data?.message || error.message));
       setIsSuccess(false);
       setShowPopup(true);
@@ -237,7 +249,7 @@ const TeachersSalary = () => {
   const handleFilterChange = (filterName) => {
     setState(prev => ({ ...prev, searchBy: filterName, name: '', phone: '', error: '' }))
   };
-  
+
   const formatCurrency = (amount) => amount ? `${Number(amount).toLocaleString()} PKR` : '0 PKR';
 
   useEffect(() => { fetchAllTeachers(); }, []);
@@ -246,7 +258,7 @@ const TeachersSalary = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom>Teachers Salary Portal</Typography>
-      
+
       <FormControl component="fieldset" margin="normal">
         <FormLabel component="legend">Search By:</FormLabel>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -294,19 +306,19 @@ const TeachersSalary = () => {
           </TableContainer>
         ) : (!state.error && <Typography variant="h6" sx={{ mt: 4, textAlign: 'center' }}>No teacher records to display.</Typography>)
       )}
-      
+
       {/* --- Salary Dialog --- */}
       <Dialog open={state.openModal} onClose={() => setState(prev => ({ ...prev, openModal: false }))} maxWidth="sm" fullWidth>
         <DialogTitle>Issue Salary for {state.selectedTeacher?.name}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField label="Date" type="date" name="date" value={state.salaryDetails.date} onChange={handleSalaryDetailChange} InputLabelProps={{ shrink: true }} />
-            <TextField label="Basic Salary" value={state.salaryDetails.baseSalary} disabled InputProps={{startAdornment: <InputAdornment position="start">PKR</InputAdornment>}} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000'}}} />
-            <TextField label="Bonus" type="number" name="bonus" value={state.salaryDetails.bonus} onChange={handleSalaryDetailChange} InputProps={{startAdornment: <InputAdornment position="start">PKR</InputAdornment>}} />
-            <TextField label="Deductions" type="number" name="deductions" value={state.salaryDetails.deductions} onChange={handleSalaryDetailChange} InputProps={{startAdornment: <InputAdornment position="start">PKR</InputAdornment>}} />
+            <TextField label="Basic Salary" value={state.salaryDetails.baseSalary} disabled InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000' } }} />
+            <TextField label="Bonus" type="number" name="bonus" value={state.salaryDetails.bonus} onChange={handleSalaryDetailChange} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} />
+            <TextField label="Deductions" type="number" name="deductions" value={state.salaryDetails.deductions} onChange={handleSalaryDetailChange} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} />
             <Divider sx={{ my: 1 }} />
-            <TextField label="Net Salary" value={state.salaryDetails.netSalary} disabled InputProps={{startAdornment: <InputAdornment position="start">PKR</InputAdornment>}} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000', backgroundColor: '#f0f0f0' }}} />
-            <TextField label="Paid Amount" type="number" name="paidAmount" value={state.salaryDetails.paidAmount} onChange={handleSalaryDetailChange} error={!!state.errors.paidAmount} helperText={state.errors.paidAmount} InputProps={{startAdornment: <InputAdornment position="start">PKR</InputAdornment>}} />
+            <TextField label="Net Salary" value={state.salaryDetails.netSalary} disabled InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000', backgroundColor: '#f0f0f0' } }} />
+            <TextField label="Paid Amount" type="number" name="paidAmount" value={state.salaryDetails.paidAmount} onChange={handleSalaryDetailChange} error={!!state.errors.paidAmount} helperText={state.errors.paidAmount} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} />
             <TextField label="Remark" name="remark" value={state.salaryDetails.remark} onChange={handleSalaryDetailChange} multiline rows={2} />
           </Box>
         </DialogContent>
@@ -315,15 +327,17 @@ const TeachersSalary = () => {
           <Button variant="contained" onClick={handleSaveSalary}>Save & Issue</Button>
         </DialogActions>
       </Dialog>
-      
-      <CustomPopup 
-        open={showPopup} 
-        success={isSuccess} 
-        message={popupMessage} 
-        onConfirm={() => { setShowPopup(false); }} 
-        onClose={() => setShowPopup(false)} 
+
+      <CustomPopup
+        open={showPopup}
+        success={isSuccess}
+        message={popupMessage}
+        onConfirm={() => { setShowPopup(false); }}
+        onClose={() => setShowPopup(false)}
       />
+      <SalarySlipDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={salarySlipData} />
     </Box>
+
   );
 };
 
