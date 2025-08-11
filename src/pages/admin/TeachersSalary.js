@@ -89,7 +89,7 @@ const TeachersSalary = () => {
   });
 
   // --- API & Data Fetching ---
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = process.env.REACT_APP_BASE_URL;
   const SCHOOL_ID = '68795ab802f2887382d217b0';
 
   const fetchNextSlipNo = async () => {
