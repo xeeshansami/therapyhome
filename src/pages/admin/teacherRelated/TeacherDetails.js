@@ -14,8 +14,8 @@ import Popup from '../../../components/Popup';
 import axios from 'axios';
 
 // Helper components remain unchanged...
-const DetailItem = ({ label, value }) => ( <Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography><Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography></Grid> );
-const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => ( <Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? ( <TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type}/> ) : ( <Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography> )}</Grid> );
+const DetailItem = ({ label, value }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography><Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography></Grid>);
+const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? (<TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} />) : (<Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography>)}</Grid>);
 
 const TeacherDetails = () => {
     // --- SECTION: Core Component State & Hooks ---
@@ -44,7 +44,7 @@ const TeacherDetails = () => {
 
     // --- SECTION: Data Fetching & Form Initialization ---
     useEffect(() => { dispatch(getTeacherDetails(teacherID)); }, [dispatch, teacherID]);
-    
+
     useEffect(() => {
         if (teacherDetails) {
             setFormData({
@@ -63,7 +63,7 @@ const TeacherDetails = () => {
 
     // --- SECTION: Event Handlers ---
     const handleInputChange = (event) => setFormData(prev => ({ ...prev, [event.target.name]: event.target.value }));
-    
+
     const handleCancel = () => {
         setIsEditMode(false);
         if (teacherDetails) {
@@ -127,6 +127,7 @@ const TeacherDetails = () => {
                 adminId: currentUser._id,
                 otp: otp,
                 action: actionPayload,
+                actiontype: "teacher",
             });
 
             // Action was successful on the backend
@@ -184,7 +185,7 @@ const TeacherDetails = () => {
                                             <MenuItem value="Other">Other</MenuItem>
                                         </Select>
                                     </FormControl>
-                                ) : ( <Typography variant="body1" gutterBottom>{formData.gender || "N/A"}</Typography> )}
+                                ) : (<Typography variant="body1" gutterBottom>{formData.gender || "N/A"}</Typography>)}
                             </Grid>
                             <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
                                 <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Marital Status</Typography>
@@ -198,7 +199,7 @@ const TeacherDetails = () => {
                                             <MenuItem value="Other">Other</MenuItem>
                                         </Select>
                                     </FormControl>
-                                ) : ( <Typography variant="body1" gutterBottom>{formData.maritalStatus || "N/A"}</Typography> )}
+                                ) : (<Typography variant="body1" gutterBottom>{formData.maritalStatus || "N/A"}</Typography>)}
                             </Grid>
                             <EditableDetailItem label="CNIC" name="cnic" value={formData.cnic || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             <EditableDetailItem label="Address" name="address" value={formData.address || ''} isEditMode={isEditMode} onChange={handleInputChange} />
