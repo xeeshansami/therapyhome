@@ -3,42 +3,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getTeacherDetails } from '../../../redux/teacherRelated/teacherHandle';
 import {
-    Box, Button, Card, CardContent, CircularProgress, Container, Paper, Typography, Grid,
+    Box, Button, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField,
-    FormControl, InputLabel, Select, MenuItem, Avatar
+    FormControl, Select, MenuItem, Avatar,
+    Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Popup from '../../../components/Popup';
 import axios from 'axios';
 
-// Helper component for displaying non-editable details
-const DetailItem = ({ label, value }) => (
-    <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>
-        <Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography>
-    </Grid>
-);
-
-// Helper component for displaying and editing text fields
-const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (
-    <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>
-        {isEditMode ? (
-            <TextField
-                fullWidth
-                variant="outlined"
-                size="small"
-                value={value}
-                onChange={onChange}
-                name={name}
-                type={type}
-            />
-        ) : (
-            <Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography>
-        )}
-    </Grid>
-);
+// Helper components remain unchanged...
+const DetailItem = ({ label, value }) => ( <Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography><Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography></Grid> );
+const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => ( <Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? ( <TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type}/> ) : ( <Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography> )}</Grid> );
 
 const TeacherDetails = () => {
     // --- SECTION: Core Component State & Hooks ---
@@ -46,26 +23,30 @@ const TeacherDetails = () => {
     const params = useParams();
     const dispatch = useDispatch();
     const { teacherDetails, loading, error } = useSelector((state) => state.teacher);
+    const { currentUser } = useSelector((state) => state.user); // Get logged-in admin
     const teacherID = params.id;
 
     // --- SECTION: UI & Form State ---
     const [isEditMode, setIsEditMode] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
-    const [loader, setLoader] = useState(false);
-
-    // State to hold the form data for editing
     const [formData, setFormData] = useState({});
 
-    // --- SECTION: Data Fetching Effect ---
+    // --- NEW: State for Multi-Step Confirmation Dialog ---
+    const [openDialog, setOpenDialog] = useState(false);
+    const [password, setPassword] = useState('');
+    const [otp, setOtp] = useState('');
+    const [actionToConfirm, setActionToConfirm] = useState(null); // 'update' or 'delete'
+    const [dialogStep, setDialogStep] = useState('password'); // 'password', 'otp'
+    const [dialogLoader, setDialogLoader] = useState(false);
+    const [dialogMessage, setDialogMessage] = useState("");
+    const [dialogError, setDialogError] = useState("");
 
-    useEffect(() => {
-        dispatch(getTeacherDetails(teacherID));
-    }, [dispatch, teacherID]);
-
+    // --- SECTION: Data Fetching & Form Initialization ---
+    useEffect(() => { dispatch(getTeacherDetails(teacherID)); }, [dispatch, teacherID]);
+    
     useEffect(() => {
         if (teacherDetails) {
-            // Initialize form data when teacherDetails are loaded or updated
             setFormData({
                 name: teacherDetails.name || '',
                 email: teacherDetails.email || '',
@@ -81,15 +62,10 @@ const TeacherDetails = () => {
     }, [teacherDetails]);
 
     // --- SECTION: Event Handlers ---
-
-    const handleInputChange = (event) => {
-        const { name, value } = event.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
+    const handleInputChange = (event) => setFormData(prev => ({ ...prev, [event.target.name]: event.target.value }));
+    
     const handleCancel = () => {
         setIsEditMode(false);
-        // Reset form data to original teacherDetails
         if (teacherDetails) {
             setFormData({
                 name: teacherDetails.name || '',
@@ -105,54 +81,81 @@ const TeacherDetails = () => {
         }
     };
 
-    const handleUpdate = async (event) => {
-        event.preventDefault();
-        setLoader(true);
+    // --- SECTION: Dialog and Action Logic ---
 
+    const handleOpenDialog = (action) => {
+        setActionToConfirm(action);
+        setDialogStep('password');
+        setDialogMessage("");
+        setDialogError("");
+        setPassword('');
+        setOtp('');
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => setOpenDialog(false);
+
+    // Step 1: Verify Password and Request OTP
+    const handlePasswordConfirm = async () => {
+        setDialogLoader(true);
+        setDialogError("");
         try {
-            // Use a PUT request for updating
-            const result = await axios.put(`${process.env.REACT_APP_BASE_URL}/Teacher/${teacherID}`, formData);
-
-            if (result.status === 200) {
-                setMessage("Teacher details updated successfully!");
-                setShowPopup(true);
-                setIsEditMode(false);
-                dispatch(getTeacherDetails(teacherID)); // Re-fetch data
-            } else {
-                setMessage("Update failed: " + (result.data.message || "Unknown error."));
-                setShowPopup(true);
-            }
+            await axios.post(`${process.env.REACT_APP_BASE_URL}/verify-password-send-otp`, {
+                adminId: currentUser._id,
+                password: password,
+            });
+            setDialogMessage(`OTP sent to ${currentUser.email}. Please check your email.`);
+            setDialogStep('otp'); // Move to next step
         } catch (error) {
-            setMessage("Update failed: " + (error.response?.data?.message || error.message));
-            setShowPopup(true);
+            setDialogError(error.response?.data?.message || "Password verification failed.");
         } finally {
-            setLoader(false);
+            setDialogLoader(false);
         }
     };
 
-    const deleteHandler = () => {
-        setMessage("Sorry, the delete function is not available for teachers at the moment.");
-        setShowPopup(true);
+    // Step 2: Verify OTP and Execute Action
+    const handleOtpConfirm = async () => {
+        setDialogLoader(true);
+        setDialogError("");
+        try {
+            const actionPayload = {
+                type: actionToConfirm,
+                targetId: teacherID,
+                payload: actionToConfirm === 'update' ? formData : null,
+            };
+            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/verify-otp-execute-action`, {
+                adminId: currentUser._id,
+                otp: otp,
+                action: actionPayload,
+            });
+
+            // Action was successful on the backend
+            setMessage(result.data.message);
+            setShowPopup(true);
+            handleCloseDialog();
+
+            if (actionToConfirm === 'delete') {
+                navigate('/Admin/teachers');
+            } else {
+                setIsEditMode(false);
+                dispatch(getTeacherDetails(teacherID)); // Refresh data
+            }
+
+        } catch (error) {
+            setDialogError(error.response?.data?.message || "OTP verification failed.");
+        } finally {
+            setDialogLoader(false);
+        }
     };
 
-    // --- SECTION: Main Component Render ---
-
-    if (loading && !teacherDetails) {
-        return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
-    }
-    if (error) {
-        return <Typography variant="h6" sx={{ textAlign: 'center', mt: 4 }}>Error loading teacher details.</Typography>;
-    }
+    if (loading && !teacherDetails) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
             <Paper elevation={3} sx={{ p: 3, mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <Avatar 
-                        src={teacherDetails?.photo} 
-                        sx={{ width: 80, height: 80, bgcolor: 'primary.main' }}
-                    >
-                         {!teacherDetails?.photo && <AccountCircleIcon sx={{ fontSize: '4rem' }} />}
+                    <Avatar src={teacherDetails?.photo} sx={{ width: 80, height: 80, bgcolor: 'primary.main' }}>
+                        {!teacherDetails?.photo && <AccountCircleIcon sx={{ fontSize: '4rem' }} />}
                     </Avatar>
                     <div>
                         <Typography variant="h4" gutterBottom>{teacherDetails?.name || 'Teacher Details'}</Typography>
@@ -164,12 +167,9 @@ const TeacherDetails = () => {
                 )}
             </Paper>
 
-            <form onSubmit={handleUpdate}>
-                {/* --- Accordion for Personal Information --- */}
+            <form onSubmit={(e) => { e.preventDefault(); handleOpenDialog('update'); }}>
                 <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">Personal Information</Typography>
-                    </AccordionSummary>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Personal Information</Typography></AccordionSummary>
                     <AccordionDetails>
                         <Grid container spacing={2}>
                             <EditableDetailItem label="Name" name="name" value={formData.name || ''} isEditMode={isEditMode} onChange={handleInputChange} />
@@ -184,9 +184,7 @@ const TeacherDetails = () => {
                                             <MenuItem value="Other">Other</MenuItem>
                                         </Select>
                                     </FormControl>
-                                ) : (
-                                    <Typography variant="body1" gutterBottom>{formData.gender || "N/A"}</Typography>
-                                )}
+                                ) : ( <Typography variant="body1" gutterBottom>{formData.gender || "N/A"}</Typography> )}
                             </Grid>
                             <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
                                 <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Marital Status</Typography>
@@ -200,21 +198,16 @@ const TeacherDetails = () => {
                                             <MenuItem value="Other">Other</MenuItem>
                                         </Select>
                                     </FormControl>
-                                ) : (
-                                    <Typography variant="body1" gutterBottom>{formData.maritalStatus || "N/A"}</Typography>
-                                )}
+                                ) : ( <Typography variant="body1" gutterBottom>{formData.maritalStatus || "N/A"}</Typography> )}
                             </Grid>
-                             <EditableDetailItem label="CNIC" name="cnic" value={formData.cnic || ''} isEditMode={isEditMode} onChange={handleInputChange} />
-                             <EditableDetailItem label="Address" name="address" value={formData.address || ''} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <EditableDetailItem label="CNIC" name="cnic" value={formData.cnic || ''} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <EditableDetailItem label="Address" name="address" value={formData.address || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                         </Grid>
                     </AccordionDetails>
                 </Accordion>
-                
-                {/* --- Accordion for Contact & Professional Info --- */}
+
                 <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">Contact & Professional Information</Typography>
-                    </AccordionSummary>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Contact & Professional Information</Typography></AccordionSummary>
                     <AccordionDetails>
                         <Grid container spacing={2}>
                             <EditableDetailItem label="Phone" name="phone" value={formData.phone || ''} isEditMode={isEditMode} onChange={handleInputChange} />
@@ -225,24 +218,50 @@ const TeacherDetails = () => {
                     </AccordionDetails>
                 </Accordion>
 
-
                 {isEditMode && (
                     <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                         <Button variant="outlined" color="secondary" onClick={handleCancel}>Cancel</Button>
-                        <Button type="submit" variant="contained" color="primary" disabled={loader}>
-                            {loader ? <CircularProgress size={24} color="inherit" /> : 'Update Details'}
-                        </Button>
+                        <Button type="submit" variant="contained" color="primary">Update Details</Button>
                     </Box>
                 )}
             </form>
 
             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="contained" color="error" onClick={deleteHandler}>
-                    Delete Teacher
-                </Button>
+                <Button variant="contained" color="error" onClick={() => handleOpenDialog('delete')}>Delete Teacher</Button>
             </Box>
-
             <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+
+            <Dialog open={openDialog} onClose={handleCloseDialog}>
+                <DialogTitle>Confirm Action</DialogTitle>
+                <DialogContent>
+                    {dialogStep === 'password' && (
+                        <>
+                            <DialogContentText>To proceed, please enter your admin password for verification.</DialogContentText>
+                            <TextField autoFocus margin="dense" id="password" label="Password" type="password" fullWidth value={password} onChange={(e) => setPassword(e.target.value)} error={!!dialogError} helperText={dialogError} onKeyPress={(e) => e.key === 'Enter' && handlePasswordConfirm()} />
+                        </>
+                    )}
+                    {dialogStep === 'otp' && (
+                        <>
+                            <DialogContentText sx={{ color: 'green', mb: 2 }}>{dialogMessage}</DialogContentText>
+                            <DialogContentText>Enter the OTP you received in your email.</DialogContentText>
+                            <TextField autoFocus margin="dense" id="otp" label="Enter OTP" type="text" fullWidth value={otp} onChange={(e) => setOtp(e.target.value)} error={!!dialogError} helperText={dialogError} onKeyPress={(e) => e.key === 'Enter' && handleOtpConfirm()} />
+                        </>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog} color="secondary">Cancel</Button>
+                    {dialogStep === 'password' && (
+                        <Button onClick={handlePasswordConfirm} color="primary" disabled={dialogLoader}>
+                            {dialogLoader ? <CircularProgress size={24} /> : 'Verify & Send OTP'}
+                        </Button>
+                    )}
+                    {dialogStep === 'otp' && (
+                        <Button onClick={handleOtpConfirm} color="primary" disabled={dialogLoader}>
+                            {dialogLoader ? <CircularProgress size={24} /> : 'Verify & Confirm Action'}
+                        </Button>
+                    )}
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 };
