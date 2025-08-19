@@ -18,7 +18,7 @@ const AddTeacher = () => {
     const navigate = useNavigate();
     const classID = params.id;
 
-    // --- 1. Add state for the new Designation field ---
+    // State for new Designation field
     const [designation, setDesignation] = useState('');
     const [designations, setDesignations] = useState([]);
     const [designationLoader, setDesignationLoader] = useState(true);
@@ -31,7 +31,7 @@ const AddTeacher = () => {
     const [emergencyContact, setEmergencyContact] = useState('');
     const [education, setEducation] = useState('');
     const [salary, setSalary] = useState('');
-    const [password, setPassword] = useState('');
+    // const [password, setPassword] = useState(''); // --- 1. Removed password state ---
     const [photo, setPhoto] = useState('');
     const [gender, setGender] = useState('');
     const [maritalStatus, setMaritalStatus] = useState('');
@@ -52,11 +52,9 @@ const AddTeacher = () => {
     // Redux state
     const { status, response, error } = useSelector(state => state.user);
 
-    // --- 2. useEffect to fetch designations from API on component mount ---
     useEffect(() => {
         const fetchDesignations = async () => {
             try {
-                // IMPORTANT: Replace with your actual API endpoint for designations
                 const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/designations`);
                 if (result.data) {
                     setDesignations(result.data);
@@ -71,7 +69,6 @@ const AddTeacher = () => {
         };
         fetchDesignations();
     }, []);
-
 
     useEffect(() => {
         const fetchClassDetails = async () => {
@@ -90,19 +87,16 @@ const AddTeacher = () => {
         fetchClassDetails();
     }, [classID, dispatch]);
 
+    // --- 2. Fixed useEffect logic to prevent popup on load ---
     useEffect(() => {
-        if (classDetails) {
-            setMessage("Teacher has been added successfully!");
+        // This effect now only runs when the 'status' changes to success or error after a submission
+        if (status === 'succeeded') {
+            setMessage(response || "Teacher has been added successfully!");
             setIsSuccess(true);
             setShowPopup(true);
             setLoader(false);
-        } else if (!classDetails) {
-            setMessage(response);
-            setIsSuccess(false);
-            setShowPopup(true);
-            setLoader(false);
         } else if (status === 'error') {
-            setMessage("Network Error. Please try again.");
+            setMessage(response || error || "An error occurred. Please try again.");
             setIsSuccess(false);
             setShowPopup(true);
             setLoader(false);
@@ -184,7 +178,6 @@ const AddTeacher = () => {
         }
     };
 
-    // --- 3. Update form validation to include the new designation field ---
     const isFormValid = () => {
         const cnicDigits = cnic.replace(/[^\d]/g, '');
         return (
@@ -194,7 +187,7 @@ const AddTeacher = () => {
             phone.length === 11 &&
             emergencyContact.length === 11 &&
             cnicDigits.length === 13 &&
-            photo && gender && maritalStatus && designation // <-- Check if designation is selected
+            photo && gender && maritalStatus && designation
         );
     };
 
@@ -202,14 +195,13 @@ const AddTeacher = () => {
         event.preventDefault();
         setLoader(true);
 
-        // --- 4. Add the new designation field to the submission payload ---
         const fields = {
-            name, email, password, phone, address, emergencyContact, education, salary,
+            name, email, phone, address, emergencyContact, education, salary, // Removed password
             photo,
             gender,
             maritalStatus,
             cnic,
-            designation, // <-- Add selected designation
+            designation,
             role: "Teacher",
             school: classDetails?.school,
             teachSclass: classDetails?._id,
@@ -262,7 +254,6 @@ const AddTeacher = () => {
                                     {!photo && <Typography color="error" variant="caption" mt={1}>Photo is required</Typography>}
                                 </Box>
 
-                                {/* --- 5. Add the new Designation dropdown field here --- */}
                                 <FormControl fullWidth required sx={{ mb: 2 }}>
                                     <InputLabel id="designation-select-label">Designation</InputLabel>
                                     <Select
@@ -276,9 +267,8 @@ const AddTeacher = () => {
                                             <MenuItem disabled value=""><em>Loading...</em></MenuItem>
                                         ) : (
                                             designations.map((des) => (
-                                                // Assuming the API returns objects with _id and title
                                                 <MenuItem key={des._id} value={des._id}>
-                                                    {des.title} 
+                                                    {des.title}
                                                 </MenuItem>
                                             ))
                                         )}
@@ -288,7 +278,6 @@ const AddTeacher = () => {
                                 <TextField label="Name" fullWidth required value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Email" type="email" fullWidth required value={email} onChange={(e) => setEmail(e.target.value)} sx={{ mb: 2 }} />
 
-                                {/* Gender Dropdown */}
                                 <FormControl fullWidth required sx={{ mb: 2 }}>
                                     <InputLabel id="gender-select-label">Gender</InputLabel>
                                     <Select
@@ -303,7 +292,6 @@ const AddTeacher = () => {
                                     </Select>
                                 </FormControl>
                                 
-                                {/* Marital Status Dropdown */}
                                 <FormControl fullWidth required sx={{ mb: 2 }}>
                                     <InputLabel id="marital-status-select-label">Marital Status</InputLabel>
                                     <Select
@@ -320,7 +308,6 @@ const AddTeacher = () => {
                                     </Select>
                                 </FormControl>
                                 
-                                {/* CNIC Field */}
                                 <TextField
                                     label="CNIC"
                                     placeholder="XXXXX-XXXXXXX-X"
@@ -335,13 +322,14 @@ const AddTeacher = () => {
                                     helperText={cnicError}
                                 />
                                 
-                                {/* Existing Fields */}
                                 <TextField label="Phone#" type="tel" fullWidth required value={phone} onChange={handlePhoneChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!phoneError} helperText={phoneError} />
                                 <TextField label="Emergency Contact#" type="tel" fullWidth required value={emergencyContact} onChange={handleEmergencyChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!emergencyError} helperText={emergencyError} />
                                 <TextField label="Address" fullWidth required value={address} onChange={(e) => setAddress(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Education" fullWidth required value={education} onChange={(e) => setEducation(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Salary" type="number" fullWidth required value={salary} onChange={(e) => setSalary(e.target.value)} sx={{ mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start">Rs:</InputAdornment>, endAdornment: <InputAdornment position="end">PKR</InputAdornment> }} />
-                                <TextField label="Password" type="password" fullWidth required value={password} onChange={(e) => setPassword(e.target.value)} sx={{ mb: 2 }} />
+                                
+                                {/* --- 3. Removed password TextField from the form --- */}
+                                {/* <TextField label="Password" type="password" fullWidth required value={password} onChange={(e) => setPassword(e.target.value)} sx={{ mb: 2 }} /> */}
 
                                 <Button className="registerButton" type="submit" disabled={!isFormValid() || loader} variant="contained" color="primary" fullWidth>
                                     {loader ? <CircularProgress size={24} color="inherit" /> : 'Add Teacher'}
