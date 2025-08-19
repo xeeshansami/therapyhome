@@ -83,9 +83,9 @@ const ChooseUser = ({ visitor }) => {
                     <Group fontSize="large" />
                   </Box>
                   <StyledTypography>
-                    Teachers
+                    Staff
                   </StyledTypography>
-                  Login as a teacher to create courses, sessions, and track student records.
+                  Login as a staff to create courses, sessions, and track student records.
                 </div>
               </StyledPaper>
             </Grid>

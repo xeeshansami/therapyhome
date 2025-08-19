@@ -279,12 +279,12 @@ class AdminInvoice extends Component {
         // FIX: Changed teacherSearchby to teacherSearchBy
         switch (teacherSearchBy) {
             case 'name':
-                label = 'Enter Teacher Name';
+                label = 'Enter Staff Name';
                 value = teacherName;
                 onChange = this.handleInputChange('teacherName');
                 break;
             case 'phone':
-                label = 'Enter Teacher Phone';
+                label = 'Enter Staff Phone';
                 value = teacherPhone;
                 onChange = this.handlePhoneInputChange('teacherPhone');
                 type = 'tel';

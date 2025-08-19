@@ -112,7 +112,7 @@ const TeachersSalary = () => {
         teacherData: data,
         filteredData: data,
         loading: false,
-        error: data.length === 0 ? 'No teachers found.' : ''
+        error: data.length === 0 ? 'No Staff found.' : ''
       }));
     } catch (err) {
       setState(prev => ({ ...prev, loading: false, error: 'Error fetching teacher data.' }));
@@ -142,7 +142,7 @@ const TeachersSalary = () => {
     } else {
       filtered = teacherData;
     }
-    setState(prev => ({ ...prev, filteredData: filtered, error: filtered.length === 0 ? 'No matching teachers found.' : '' }));
+    setState(prev => ({ ...prev, filteredData: filtered, error: filtered.length === 0 ? 'No matching Staff found.' : '' }));
   };
 
   const handleShowAll = () => {

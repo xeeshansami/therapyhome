@@ -119,8 +119,8 @@ const AdminHomePage = () => {
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
                             <StyledPaper>
-                                <img src={Teachers} alt="Teachers" />
-                                <Title>Total Teachers</Title>
+                                <img src={Teachers} alt="Staff" />
+                                <Title>Total Staff</Title>
                                 <Data start={0} end={numberOfTeachers} duration={2.5} />
                             </StyledPaper>
                         </Grid>

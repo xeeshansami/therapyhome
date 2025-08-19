@@ -6,7 +6,7 @@ import { registerUser } from '../../../redux/userRelated/userHandle';
 import { underControl } from '../../../redux/userRelated/userSlice';
 import {
     CircularProgress, Box, TextField, InputAdornment, Button, Typography, Paper, Grid, Avatar,
-    FormControl, InputLabel, Select, MenuItem // <-- Import new MUI components
+    FormControl, InputLabel, Select, MenuItem
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axios from 'axios';
@@ -18,6 +18,11 @@ const AddTeacher = () => {
     const navigate = useNavigate();
     const classID = params.id;
 
+    // --- 1. Add state for the new Designation field ---
+    const [designation, setDesignation] = useState('');
+    const [designations, setDesignations] = useState([]);
+    const [designationLoader, setDesignationLoader] = useState(true);
+
     // Form input states
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -28,8 +33,6 @@ const AddTeacher = () => {
     const [salary, setSalary] = useState('');
     const [password, setPassword] = useState('');
     const [photo, setPhoto] = useState('');
-    
-    // --- 1. Add state for new fields ---
     const [gender, setGender] = useState('');
     const [maritalStatus, setMaritalStatus] = useState('');
     const [cnic, setCnic] = useState('');
@@ -44,10 +47,31 @@ const AddTeacher = () => {
     // Form validation states
     const [phoneError, setPhoneError] = useState('');
     const [emergencyError, setEmergencyError] = useState('');
-    const [cnicError, setCnicError] = useState(''); // <-- State for CNIC validation
+    const [cnicError, setCnicError] = useState('');
 
     // Redux state
     const { status, response, error } = useSelector(state => state.user);
+
+    // --- 2. useEffect to fetch designations from API on component mount ---
+    useEffect(() => {
+        const fetchDesignations = async () => {
+            try {
+                // IMPORTANT: Replace with your actual API endpoint for designations
+                const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/designations`);
+                if (result.data) {
+                    setDesignations(result.data);
+                }
+            } catch (err) {
+                setMessage("Error: Could not load designations. " + err.message);
+                setIsSuccess(false);
+                setShowPopup(true);
+            } finally {
+                setDesignationLoader(false);
+            }
+        };
+        fetchDesignations();
+    }, []);
+
 
     useEffect(() => {
         const fetchClassDetails = async () => {
@@ -134,14 +158,13 @@ const AddTeacher = () => {
             setEmergencyError('');
         }
     };
-    
-    // --- 2. Add handler for CNIC input with formatting and validation ---
+
     const handleCnicChange = (event) => {
         const value = event.target.value;
-        const numericValue = value.replace(/[^\d]/g, ''); // Remove non-digit characters
+        const numericValue = value.replace(/[^\d]/g, '');
 
         if (numericValue.length > 13) {
-            return; // Don't allow more than 13 digits
+            return;
         }
 
         let formattedCnic = numericValue;
@@ -154,7 +177,6 @@ const AddTeacher = () => {
 
         setCnic(formattedCnic);
 
-        // Validation
         if (numericValue.length > 0 && numericValue.length < 13) {
             setCnicError("CNIC must be 13 digits long.");
         } else {
@@ -162,7 +184,7 @@ const AddTeacher = () => {
         }
     };
 
-    // --- 3. Update form validation logic ---
+    // --- 3. Update form validation to include the new designation field ---
     const isFormValid = () => {
         const cnicDigits = cnic.replace(/[^\d]/g, '');
         return (
@@ -172,7 +194,7 @@ const AddTeacher = () => {
             phone.length === 11 &&
             emergencyContact.length === 11 &&
             cnicDigits.length === 13 &&
-            photo && gender && maritalStatus
+            photo && gender && maritalStatus && designation // <-- Check if designation is selected
         );
     };
 
@@ -180,13 +202,14 @@ const AddTeacher = () => {
         event.preventDefault();
         setLoader(true);
 
-        // --- 4. Add new fields to the submission payload ---
+        // --- 4. Add the new designation field to the submission payload ---
         const fields = {
             name, email, password, phone, address, emergencyContact, education, salary,
-            photo, // The compressed, Base64 image string
+            photo,
             gender,
             maritalStatus,
             cnic,
+            designation, // <-- Add selected designation
             role: "Teacher",
             school: classDetails?.school,
             teachSclass: classDetails?._id,
@@ -239,7 +262,29 @@ const AddTeacher = () => {
                                     {!photo && <Typography color="error" variant="caption" mt={1}>Photo is required</Typography>}
                                 </Box>
 
-                                {/* --- 5. Add new input fields to the form --- */}
+                                {/* --- 5. Add the new Designation dropdown field here --- */}
+                                <FormControl fullWidth required sx={{ mb: 2 }}>
+                                    <InputLabel id="designation-select-label">Designation</InputLabel>
+                                    <Select
+                                        labelId="designation-select-label"
+                                        value={designation}
+                                        label="Designation"
+                                        onChange={(e) => setDesignation(e.target.value)}
+                                        disabled={designationLoader}
+                                    >
+                                        {designationLoader ? (
+                                            <MenuItem disabled value=""><em>Loading...</em></MenuItem>
+                                        ) : (
+                                            designations.map((des) => (
+                                                // Assuming the API returns objects with _id and title
+                                                <MenuItem key={des._id} value={des._id}>
+                                                    {des.title} 
+                                                </MenuItem>
+                                            ))
+                                        )}
+                                    </Select>
+                                </FormControl>
+                                
                                 <TextField label="Name" fullWidth required value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Email" type="email" fullWidth required value={email} onChange={(e) => setEmail(e.target.value)} sx={{ mb: 2 }} />
 
