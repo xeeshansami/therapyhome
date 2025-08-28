@@ -22,7 +22,8 @@ const AddTeacher = () => {
     const [designation, setDesignation] = useState('');
     const [designations, setDesignations] = useState([]);
     const [designationLoader, setDesignationLoader] = useState(true);
-
+    const [fatherName, setFatherName] = useState('');
+    const [occupation, setOccupation] = useState('');
     // Form input states
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -43,7 +44,9 @@ const AddTeacher = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
     const [isSuccess, setIsSuccess] = useState(false);
-
+    const [timing, setTiming] = useState('');
+    const [timings, setTimings] = useState([]);
+    const [timingLoader, setTimingLoader] = useState(true);
     // Form validation states
     const [phoneError, setPhoneError] = useState('');
     const [emergencyError, setEmergencyError] = useState('');
@@ -51,7 +54,24 @@ const AddTeacher = () => {
 
     // Redux state
     const { status, response, error } = useSelector(state => state.user);
-
+    // Effect to fetch Timings
+    useEffect(() => {
+        const fetchTimings = async () => {
+            try {
+                // --- FIX 1: Corrected the API endpoint from '/teacherstimings' to '/timings' ---
+                const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/teacherstimings`);
+                if (result.data) {
+                    setTimings(result.data);
+                }
+            } catch (err) {
+                console.error("Timings fetch error:", err.message);
+                // Avoid showing a popup on load for a better user experience.
+            } finally {
+                setTimingLoader(false);
+            }
+        };
+        fetchTimings();
+    }, []);
     useEffect(() => {
         const fetchDesignations = async () => {
             try {
@@ -87,9 +107,7 @@ const AddTeacher = () => {
         fetchClassDetails();
     }, [classID, dispatch]);
 
-    // --- 2. Fixed useEffect logic to prevent popup on load ---
     useEffect(() => {
-        // This effect now only runs when the 'status' changes to success or error after a submission
         if (status === 'succeeded') {
             setMessage(response || "Teacher has been added successfully!");
             setIsSuccess(true);
@@ -187,7 +205,8 @@ const AddTeacher = () => {
             phone.length === 11 &&
             emergencyContact.length === 11 &&
             cnicDigits.length === 13 &&
-            photo && gender && maritalStatus && designation
+            photo && gender && maritalStatus && designation &&
+            education && fatherName && occupation && timing
         );
     };
 
@@ -200,7 +219,7 @@ const AddTeacher = () => {
             photo,
             gender,
             maritalStatus,
-            cnic,
+            cnic, fatherName, occupation, timing,
             designation,
             role: "Teacher",
             school: classDetails?.school,
@@ -274,8 +293,23 @@ const AddTeacher = () => {
                                         )}
                                     </Select>
                                 </FormControl>
-                                
+                                {/* Timings Dropdown */}
+                                <FormControl fullWidth required sx={{ mb: 2 }}>
+                                    <InputLabel>Timing</InputLabel>
+                                    <Select label="Timing" value={timing} onChange={(e) => setTiming(e.target.value)} disabled={timingLoader}>
+                                        {timingLoader ? (
+                                            <MenuItem disabled value=""><em>Loading...</em></MenuItem>
+                                        ) : (
+                                            timings.map((t) => (
+                                                <MenuItem key={t._id} value={t._id}>{t.name} ({t.startTime} - {t.endTime})</MenuItem>
+                                            ))
+                                        )}
+                                    </Select>
+                                </FormControl>
                                 <TextField label="Name" fullWidth required value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
+                                <TextField label="Father's Name" fullWidth required value={fatherName} onChange={(e) => setFatherName(e.target.value)} sx={{ mb: 2 }} />
+                                <TextField label="Father's Occupation" fullWidth required value={occupation} onChange={(e) => setOccupation(e.target.value)} sx={{ mb: 2 }} />
+
                                 <TextField label="Email" type="email" fullWidth required value={email} onChange={(e) => setEmail(e.target.value)} sx={{ mb: 2 }} />
 
                                 <FormControl fullWidth required sx={{ mb: 2 }}>
@@ -291,7 +325,7 @@ const AddTeacher = () => {
                                         <MenuItem value="Other">Other</MenuItem>
                                     </Select>
                                 </FormControl>
-                                
+
                                 <FormControl fullWidth required sx={{ mb: 2 }}>
                                     <InputLabel id="marital-status-select-label">Marital Status</InputLabel>
                                     <Select
@@ -307,7 +341,7 @@ const AddTeacher = () => {
                                         <MenuItem value="Other">Other</MenuItem>
                                     </Select>
                                 </FormControl>
-                                
+
                                 <TextField
                                     label="CNIC"
                                     placeholder="XXXXX-XXXXXXX-X"
@@ -321,13 +355,13 @@ const AddTeacher = () => {
                                     error={!!cnicError}
                                     helperText={cnicError}
                                 />
-                                
+
                                 <TextField label="Phone#" type="tel" fullWidth required value={phone} onChange={handlePhoneChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!phoneError} helperText={phoneError} />
                                 <TextField label="Emergency Contact#" type="tel" fullWidth required value={emergencyContact} onChange={handleEmergencyChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!emergencyError} helperText={emergencyError} />
                                 <TextField label="Address" fullWidth required value={address} onChange={(e) => setAddress(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Education" fullWidth required value={education} onChange={(e) => setEducation(e.target.value)} sx={{ mb: 2 }} />
                                 <TextField label="Salary" type="number" fullWidth required value={salary} onChange={(e) => setSalary(e.target.value)} sx={{ mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start">Rs:</InputAdornment>, endAdornment: <InputAdornment position="end">PKR</InputAdornment> }} />
-                                
+
                                 {/* --- 3. Removed password TextField from the form --- */}
                                 {/* <TextField label="Password" type="password" fullWidth required value={password} onChange={(e) => setPassword(e.target.value)} sx={{ mb: 2 }} /> */}
 
