@@ -5,10 +5,10 @@ import { getTeacherDetails } from '../../../redux/teacherRelated/teacherHandle';
 import {
     Box, Button, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField,
-    FormControl, Select, MenuItem, Avatar,
+    FormControl, Select, MenuItem, Avatar, InputLabel,
     Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Popup from '../../../components/Popup';
 import axios from 'axios';
@@ -23,7 +23,7 @@ const TeacherDetails = () => {
     const params = useParams();
     const dispatch = useDispatch();
     const { teacherDetails, loading, error } = useSelector((state) => state.teacher);
-    const { currentUser } = useSelector((state) => state.user); // Get logged-in admin
+    const { currentUser } = useSelector((state) => state.user);
     const teacherID = params.id;
 
     // --- SECTION: UI & Form State ---
@@ -32,12 +32,18 @@ const TeacherDetails = () => {
     const [message, setMessage] = useState("");
     const [formData, setFormData] = useState({});
 
-    // --- NEW: State for Multi-Step Confirmation Dialog ---
+    // --- State for Timings ---
+    const [timings, setTimings] = useState([]);
+    const [timingLoader, setTimingLoader] = useState(true);
+    // ✅ NEW: State to hold the full timing object for display purposes.
+    const [timingDetails, setTimingDetails] = useState(null);
+
+    // --- State for Multi-Step Confirmation Dialog ---
     const [openDialog, setOpenDialog] = useState(false);
     const [password, setPassword] = useState('');
     const [otp, setOtp] = useState('');
-    const [actionToConfirm, setActionToConfirm] = useState(null); // 'update' or 'delete'
-    const [dialogStep, setDialogStep] = useState('password'); // 'password', 'otp'
+    const [actionToConfirm, setActionToConfirm] = useState(null);
+    const [dialogStep, setDialogStep] = useState('password');
     const [dialogLoader, setDialogLoader] = useState(false);
     const [dialogMessage, setDialogMessage] = useState("");
     const [dialogError, setDialogError] = useState("");
@@ -46,7 +52,31 @@ const TeacherDetails = () => {
     useEffect(() => { dispatch(getTeacherDetails(teacherID)); }, [dispatch, teacherID]);
 
     useEffect(() => {
-        if (teacherDetails) {
+        const fetchTimings = async () => {
+            try {
+                const result = await axios.get(`${process.env.REACT_APP_BASE_URL}/teacherstimings`);
+                if (result.data) {
+                    setTimings(result.data);
+                }
+            } catch (err) {
+                console.error("Timings fetch error:", err.message);
+            } finally {
+                setTimingLoader(false);
+            }
+        };
+        fetchTimings();
+    }, []);
+
+    // ✅ UPDATED: This effect now populates the form AND finds the full timing object for display.
+    useEffect(() => {
+        if (teacherDetails && timings.length > 0) {
+            // This handles if teacherDetails.timing is an object or just an ID string
+            const timingId = teacherDetails.timing?._id || teacherDetails.timing;
+
+            // Find the full timing object from the timings list
+            const currentTimingObject = timings.find(t => t._id === timingId);
+            setTimingDetails(currentTimingObject);
+
             setFormData({
                 name: teacherDetails.name || '',
                 email: teacherDetails.email || '',
@@ -57,9 +87,13 @@ const TeacherDetails = () => {
                 gender: teacherDetails.gender || '',
                 maritalStatus: teacherDetails.maritalStatus || '',
                 cnic: teacherDetails.cnic || '',
+                education: teacherDetails.education || '',
+                fatherName: teacherDetails.fatherName || '',
+                occupation: teacherDetails.occupation || '',
+                timing: timingId || '', // Ensure the ID is stored in formData for the dropdown
             });
         }
-    }, [teacherDetails]);
+    }, [teacherDetails, timings]); // Reruns when either teacher details or the timings list is ready
 
     // --- SECTION: Event Handlers ---
     const handleInputChange = (event) => setFormData(prev => ({ ...prev, [event.target.name]: event.target.value }));
@@ -67,6 +101,7 @@ const TeacherDetails = () => {
     const handleCancel = () => {
         setIsEditMode(false);
         if (teacherDetails) {
+            const timingId = teacherDetails.timing?._id || teacherDetails.timing;
             setFormData({
                 name: teacherDetails.name || '',
                 email: teacherDetails.email || '',
@@ -77,12 +112,15 @@ const TeacherDetails = () => {
                 gender: teacherDetails.gender || '',
                 maritalStatus: teacherDetails.maritalStatus || '',
                 cnic: teacherDetails.cnic || '',
+                education: teacherDetails.education || '',
+                fatherName: teacherDetails.fatherName || '',
+                occupation: teacherDetails.occupation || '',
+                timing: timingId || '',
             });
         }
     };
 
-    // --- SECTION: Dialog and Action Logic ---
-
+    // --- SECTION: Dialog and Action Logic (Unchanged) ---
     const handleOpenDialog = (action) => {
         setActionToConfirm(action);
         setDialogStep('password');
@@ -95,7 +133,6 @@ const TeacherDetails = () => {
 
     const handleCloseDialog = () => setOpenDialog(false);
 
-    // Step 1: Verify Password and Request OTP
     const handlePasswordConfirm = async () => {
         setDialogLoader(true);
         setDialogError("");
@@ -105,7 +142,7 @@ const TeacherDetails = () => {
                 password: password,
             });
             setDialogMessage(`OTP sent to ${currentUser.email}. Please check your email.`);
-            setDialogStep('otp'); // Move to next step
+            setDialogStep('otp');
         } catch (error) {
             setDialogError(error.response?.data?.message || "Password verification failed.");
         } finally {
@@ -113,7 +150,6 @@ const TeacherDetails = () => {
         }
     };
 
-    // Step 2: Verify OTP and Execute Action
     const handleOtpConfirm = async () => {
         setDialogLoader(true);
         setDialogError("");
@@ -130,7 +166,6 @@ const TeacherDetails = () => {
                 actiontype: "teacher",
             });
 
-            // Action was successful on the backend
             setMessage(result.data.message);
             setShowPopup(true);
             handleCloseDialog();
@@ -139,7 +174,7 @@ const TeacherDetails = () => {
                 navigate('/Admin/teachers');
             } else {
                 setIsEditMode(false);
-                dispatch(getTeacherDetails(teacherID)); // Refresh data
+                dispatch(getTeacherDetails(teacherID));
             }
 
         } catch (error) {
@@ -175,6 +210,8 @@ const TeacherDetails = () => {
                         <Grid container spacing={2}>
                             <EditableDetailItem label="Name" name="name" value={formData.name || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             <EditableDetailItem label="Email" name="email" value={formData.email || ''} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <EditableDetailItem label="Father's Name" name="fatherName" value={formData.fatherName || ''} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <EditableDetailItem label="Father's Occupation" name="occupation" value={formData.occupation || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
                                 <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Gender</Typography>
                                 {isEditMode ? (
@@ -214,6 +251,31 @@ const TeacherDetails = () => {
                             <EditableDetailItem label="Phone" name="phone" value={formData.phone || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             <EditableDetailItem label="Emergency Contact" name="emergencyContact" value={formData.emergencyContact || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             <EditableDetailItem label="Salary" name="salary" value={formData.salary || ''} isEditMode={isEditMode} onChange={handleInputChange} type="number" />
+                            <EditableDetailItem label="Education" name="education" value={formData.education || ''} isEditMode={isEditMode} onChange={handleInputChange} />
+                            
+                            <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Timing</Typography>
+                                {isEditMode ? (
+                                    <FormControl fullWidth size="small">
+                                        <InputLabel>Timing</InputLabel>
+                                        <Select name="timing" label="Timing" value={formData.timing || ''} onChange={handleInputChange} disabled={timingLoader}>
+                                            {timingLoader ? (
+                                                <MenuItem disabled value=""><em>Loading...</em></MenuItem>
+                                            ) : (
+                                                timings.map((t) => (
+                                                    <MenuItem key={t._id} value={t._id}>{t.name} ({t.startTime} - {t.endTime})</MenuItem>
+                                                ))
+                                            )}
+                                        </Select>
+                                    </FormControl>
+                                ) : (
+                                    // ✅ UPDATED: Display timing details from the resolved state object.
+                                    <Typography variant="body1" gutterBottom>
+                                        {timingDetails ? `${timingDetails.name} (${timingDetails.startTime} - ${timingDetails.endTime})` : "N/A"}
+                                    </Typography>
+                                )}
+                            </Grid>
+                            
                             <DetailItem label="Assigned Class" value={teacherDetails?.teachSclass?.sclassName} />
                         </Grid>
                     </AccordionDetails>
