@@ -144,9 +144,9 @@ const ShowTeachers = () => {
                                             );
                                         })}
                                         <StyledTableCell align="center">
-                                            <IconButton onClick={() => deleteHandler(row.id, "Teacher")}>
+                                            {/* <IconButton onClick={() => deleteHandler(row.id, "Teacher")}>
                                                 <PersonRemoveIcon color="error" />
-                                            </IconButton>
+                                            </IconButton> */}
                                             <BlueButton variant="contained"
                                                 onClick={() => navigate("/Admin/teachers/teacher/" + row.id)}>
                                                 View
