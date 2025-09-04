@@ -5,8 +5,9 @@ import { getAllTeachers } from '../../../redux/teacherRelated/teacherHandle';
 import {
     Paper, Table, TableBody, TableContainer,
     TableHead, TablePagination, Button, Box, IconButton,
-    // --- 1. Import Avatar ---
     Avatar,
+    // ✅ 1. IMPORT CircularProgress
+    CircularProgress,
 } from '@mui/material';
 import { deleteUser } from '../../../redux/userRelated/userHandle';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
@@ -32,8 +33,13 @@ const ShowTeachers = () => {
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
 
+    // ✅ 2. UPDATE THE LOADING BLOCK TO SHOW THE SPINNER
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <CircularProgress />
+            </Box>
+        );
     } else if (response) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
@@ -51,18 +57,15 @@ const ShowTeachers = () => {
         setShowPopup(true);
     };
 
-    // --- 2. Add a 'Photo' column to the table definition ---
     const columns = [
         { id: 'photo', label: 'Photo', minWidth: 70, align: 'center' },
         { id: 'name', label: 'Name', minWidth: 170 },
-        // { id: 'teachSubject', label: 'Subject', minWidth: 100 },
         { id: 'teachSclass', label: 'Class', minWidth: 170 },
     ];
 
-    // --- 3. Extract the photo data for each row ---
     const rows = teachersList.map((teacher) => {
         return {
-            photo: teacher.photo, // The Base64 string for the photo
+            photo: teacher.photo,
             name: teacher.name,
             teachSubject: teacher.teachSubject?.subName || null,
             teachSclass: teacher.teachSclass.sclassName,
@@ -76,11 +79,6 @@ const ShowTeachers = () => {
             icon: <PersonAddAlt1Icon color="primary" />, name: 'Add New Staff',
             action: () => navigate("/Admin/teachers/chooseclass")
         }
-        // ,
-        // {
-        //     icon: <PersonRemoveIcon color="error" />, name: 'Delete All Staff',
-        //     action: () => deleteHandler(currentUser._id, "Teachers")
-        // },
     ];
 
     return (
@@ -112,32 +110,14 @@ const ShowTeachers = () => {
                                         {columns.map((column) => {
                                             const value = row[column.id];
 
-                                            // --- 4. Render the Avatar for the 'photo' column ---
                                             if (column.id === 'photo') {
                                                 return (
                                                     <StyledTableCell key={column.id} align={column.align}>
-                                                        {/* Use the Base64 string as the src */}
                                                         <Avatar src={value} />
                                                     </StyledTableCell>
                                                 );
                                             }
-
-                                            // if (column.id === 'teachSubject') {
-                                            //     return (
-                                            //         <StyledTableCell key={column.id} align={column.align}>
-                                            //             {value ? (
-                                            //                 value
-                                            //             ) : (
-                                            //                 <Button variant="contained"
-                                            //                     onClick={() => {
-                                            //                         navigate(`/Admin/teachers/choosesubject/${row.teachSclassID}/${row.id}`)
-                                            //                     }}>
-                                            //                     Add Subject
-                                            //                 </Button>
-                                            //             )}
-                                            //         </StyledTableCell>
-                                            //     );
-                                            // }
+                                            
                                             return (
                                                 <StyledTableCell key={column.id} align={column.align}>
                                                     {column.format && typeof value === 'number' ? column.format(value) : value}
@@ -145,9 +125,6 @@ const ShowTeachers = () => {
                                             );
                                         })}
                                         <StyledTableCell align="center">
-                                            {/* <IconButton onClick={() => deleteHandler(row.id, "Teacher")}>
-                                                <PersonRemoveIcon color="error" />
-                                            </IconButton> */}
                                             <BlueButton variant="contained"
                                                 onClick={() => navigate("/Admin/teachers/teacher/" + row.id)}>
                                                 View

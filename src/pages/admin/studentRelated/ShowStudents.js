@@ -138,9 +138,6 @@ const ShowStudents = () => {
 
     const StudentButtonHaver = ({ row }) => (
         <>
-            {/* <IconButton onClick={() => deleteHandler(row.id, "Student")}>
-                <PersonRemoveIcon color="error" />
-            </IconButton> */}
             <BlueButton variant="contained" onClick={() => navigate("/Admin/students/student/" + row.id)}>
                 View
             </BlueButton>
@@ -164,7 +161,12 @@ const ShowStudents = () => {
 
     return (
         <>
-            {loading ? <div>Loading...</div> : (
+            {/* ✅ UPDATED: Replaced "Loading..." text with a centered CircularProgress spinner */}
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <CircularProgress />
+                </Box>
+            ) : (
                 <Paper sx={{ width: '100%', overflow: 'hidden' }}>
                     {Array.isArray(studentsList) && studentsList.length > 0 ? (
                         <TableTemplate buttonHaver={StudentButtonHaver} columns={studentColumns} rows={studentRows} />
