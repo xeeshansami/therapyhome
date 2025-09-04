@@ -15,7 +15,7 @@ import axios from 'axios';
 
 // Helper components remain unchanged...
 const DetailItem = ({ label, value }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography><Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography></Grid>);
-const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? (<TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} />) : (<Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography>)}</Grid>);
+const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? (<TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} InputLabelProps={type === 'time' ? { shrink: true } : {}} />) : (<Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography>)}</Grid>);
 
 const TeacherDetails = () => {
     // --- SECTION: Core Component State & Hooks ---
@@ -35,7 +35,6 @@ const TeacherDetails = () => {
     // --- State for Timings ---
     const [timings, setTimings] = useState([]);
     const [timingLoader, setTimingLoader] = useState(true);
-    // ✅ NEW: State to hold the full timing object for display purposes.
     const [timingDetails, setTimingDetails] = useState(null);
 
     // --- State for Multi-Step Confirmation Dialog ---
@@ -67,13 +66,9 @@ const TeacherDetails = () => {
         fetchTimings();
     }, []);
 
-    // ✅ UPDATED: This effect now populates the form AND finds the full timing object for display.
     useEffect(() => {
         if (teacherDetails && timings.length > 0) {
-            // This handles if teacherDetails.timing is an object or just an ID string
             const timingId = teacherDetails.timing?._id || teacherDetails.timing;
-
-            // Find the full timing object from the timings list
             const currentTimingObject = timings.find(t => t._id === timingId);
             setTimingDetails(currentTimingObject);
 
@@ -90,10 +85,12 @@ const TeacherDetails = () => {
                 education: teacherDetails.education || '',
                 fatherName: teacherDetails.fatherName || '',
                 occupation: teacherDetails.occupation || '',
-                timing: timingId || '', // Ensure the ID is stored in formData for the dropdown
+                timing: timingId || '',
+                // ✅ 1. INITIALIZE teacherDateTime IN THE FORM STATE
+                teacherDateTime: teacherDetails.teacherDateTime || '',
             });
         }
-    }, [teacherDetails, timings]); // Reruns when either teacher details or the timings list is ready
+    }, [teacherDetails, timings]);
 
     // --- SECTION: Event Handlers ---
     const handleInputChange = (event) => setFormData(prev => ({ ...prev, [event.target.name]: event.target.value }));
@@ -116,6 +113,8 @@ const TeacherDetails = () => {
                 fatherName: teacherDetails.fatherName || '',
                 occupation: teacherDetails.occupation || '',
                 timing: timingId || '',
+                // ✅ 2. RESET teacherDateTime ON CANCEL
+                teacherDateTime: teacherDetails.teacherDateTime || '',
             });
         }
     };
@@ -263,19 +262,28 @@ const TeacherDetails = () => {
                                                 <MenuItem disabled value=""><em>Loading...</em></MenuItem>
                                             ) : (
                                                 timings.map((t) => (
-                                                    <MenuItem key={t._id} value={t._id}>{t.name} ({t.startTime} - {t.endTime})</MenuItem>
+                                                    <MenuItem key={t._id} value={t._id}>{t.name} </MenuItem>
                                                 ))
                                             )}
                                         </Select>
                                     </FormControl>
                                 ) : (
-                                    // ✅ UPDATED: Display timing details from the resolved state object.
                                     <Typography variant="body1" gutterBottom>
-                                        {timingDetails ? `${timingDetails.name} (${timingDetails.startTime} - ${timingDetails.endTime})` : "N/A"}
+                                        {timingDetails ? `${timingDetails.name}` : "N/A"}
                                     </Typography>
                                 )}
                             </Grid>
                             
+                            {/* ✅ 3. ADD THE NEW EDITABLE ITEM FOR teacherDateTime */}
+                            <EditableDetailItem
+                                label="Specific Time"
+                                name="teacherDateTime"
+                                value={formData.teacherDateTime || ''}
+                                isEditMode={isEditMode}
+                                onChange={handleInputChange}
+                                type="time"
+                            />
+
                             <DetailItem label="Assigned Class" value={teacherDetails?.teachSclass?.sclassName} />
                         </Grid>
                     </AccordionDetails>

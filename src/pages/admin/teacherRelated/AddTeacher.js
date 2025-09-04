@@ -11,7 +11,6 @@ import {
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axios from 'axios';
 import imageCompression from 'browser-image-compression';
-import Popup from '../../../components/Popup'; // 1. POPUP COMPONENT IS IMPORTED
 
 const AddTeacher = () => {
     const dispatch = useDispatch();
@@ -48,6 +47,10 @@ const AddTeacher = () => {
     const [timing, setTiming] = useState('');
     const [timings, setTimings] = useState([]);
     const [timingLoader, setTimingLoader] = useState(true);
+    
+    // 1. ADD NEW STATE FOR THE TIME PICKER
+    const [selectedTime, setSelectedTime] = useState('');
+
     const { currentUser } = useSelector(state => state.user);
     // Form validation states
     const [phoneError, setPhoneError] = useState('');
@@ -94,7 +97,6 @@ const AddTeacher = () => {
         }
     }, [classID, dispatch]);
 
-    // 2. USE EFFECT HOOK IS REFINED
     useEffect(() => {
         if (status === 'succeeded') {
             setMessage(response.message);
@@ -152,7 +154,8 @@ const AddTeacher = () => {
             !phoneError && !emergencyError && !cnicError &&
             phone.length === 11 && emergencyContact.length === 11 && cnicDigits.length === 13 &&
             photo && gender && maritalStatus && designationID &&
-            education && fatherName && occupation && timing
+            education && fatherName && occupation && timing &&
+            selectedTime
         );
     };
 
@@ -165,7 +168,8 @@ const AddTeacher = () => {
             designation: designationID,
             role: designationTitle,
             school: currentUser?._id,
-            teachSclass: classID??"68b7dbc567099ec00b0cd82e", // Will be null if no class was chosen
+            teachSclass: classID ?? "68b7dbc567099ec00b0cd82e",
+            teacherDateTime: selectedTime,
         };
         dispatch(registerUser(fields, "Teacher"));
     };
@@ -218,6 +222,21 @@ const AddTeacher = () => {
                                     )}
                                 </Select>
                             </FormControl>
+                            
+                            {/* 2. ADD THE TIME PICKER TEXTFIELD */}
+                            <TextField
+                                label="Select Time"
+                                type="time"
+                                fullWidth
+                                required
+                                value={selectedTime}
+                                onChange={(e) => setSelectedTime(e.target.value)}
+                                sx={{ mb: 2 }}
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                            />
+
                             <TextField label="Name" fullWidth required value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
                             <TextField label="Father's Name" fullWidth required value={fatherName} onChange={(e) => setFatherName(e.target.value)} sx={{ mb: 2 }} />
                             <TextField label="Father's Occupation" fullWidth required value={occupation} onChange={(e) => setOccupation(e.target.value)} sx={{ mb: 2 }} />
@@ -255,23 +274,20 @@ const AddTeacher = () => {
                 </form>
             </Paper>
 
-            {/* 3. POPUP COMPONENT IS RENDERED HERE */}
             {showPopup && (
-                            <div className="custom-popup-overlay" style={popupOverlayStyle}>
-                                <div className="custom-popup" style={popupStyle}>
-                                    <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
-                                    <p>{message}</p>
-                                    <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
-                                        {isSuccess ? "Done" : "Close"}
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
+                <div className="custom-popup-overlay" style={popupOverlayStyle}>
+                    <div className="custom-popup" style={popupStyle}>
+                        <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
+                        <p>{message}</p>
+                        <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
+                            {isSuccess ? "Done" : "Close"}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </Box>
     );
 };
-
-
 
 // Basic styles for the popup (can be moved to a CSS file)
 const popupOverlayStyle = {
@@ -284,7 +300,7 @@ const popupOverlayStyle = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1300, // Ensure it's above MUI Dialog by default
+    zIndex: 1300,
 };
 
 const popupStyle = {
@@ -296,6 +312,5 @@ const popupStyle = {
     minWidth: '300px',
     maxWidth: '500px',
 };
-
 
 export default AddTeacher;
