@@ -75,11 +75,12 @@ const ShowTeachers = () => {
         {
             icon: <PersonAddAlt1Icon color="primary" />, name: 'Add New Staff',
             action: () => navigate("/Admin/teachers/chooseclass")
-        },
-        {
-            icon: <PersonRemoveIcon color="error" />, name: 'Delete All Staff',
-            action: () => deleteHandler(currentUser._id, "Teachers")
-        },
+        }
+        // ,
+        // {
+        //     icon: <PersonRemoveIcon color="error" />, name: 'Delete All Staff',
+        //     action: () => deleteHandler(currentUser._id, "Teachers")
+        // },
     ];
 
     return (

@@ -1,12 +1,9 @@
 import * as React from 'react';
-import { useDispatch } from 'react-redux';
-import { underControl } from '../redux/userRelated/userSlice';
-import { underStudentControl } from '../redux/studentRelated/studentSlice';
 import MuiAlert from '@mui/material/Alert';
 import { Snackbar } from '@mui/material';
 
-const Popup = ({ message, setShowPopup, showPopup }) => {
-    const dispatch = useDispatch();
+// Use standard, descriptive prop names
+const Popup = ({ open, message, success, onClose }) => {
 
     const vertical = "top"
     const horizontal = "right"
@@ -15,24 +12,16 @@ const Popup = ({ message, setShowPopup, showPopup }) => {
         if (reason === 'clickaway') {
             return;
         }
-        setShowPopup(false);
-        dispatch(underControl())
-        dispatch(underStudentControl())
+        onClose(); // Call the onClose function passed from the parent
     };
 
     return (
         <>
-            <Snackbar open={showPopup} autoHideDuration={2000} onClose={handleClose} anchorOrigin={{ vertical, horizontal }} key={vertical + horizontal}>
-                {
-                    (message === "Done Successfully") ?
-                        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-                            {message}
-                        </Alert>
-                        :
-                        <Alert onClose={handleClose} severity="error" sx={{ width: '100%' }}>
-                            {message}
-                        </Alert>
-                }
+            <Snackbar open={open} autoHideDuration={2000} onClose={handleClose} anchorOrigin={{ vertical, horizontal }} key={vertical + horizontal}>
+                {/* Use the 'success' prop to determine severity */}
+                <Alert onClose={handleClose} severity={success ? "success" : "error"} sx={{ width: '100%' }}>
+                    {message}
+                </Alert>
             </Snackbar>
         </>
     );
