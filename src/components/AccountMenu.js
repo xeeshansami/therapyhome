@@ -1,14 +1,25 @@
 import React, { useState } from 'react';
 import {
-    Box, Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip
+    Box, Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip,
+    Typography, Badge, Stack,
 } from '@mui/material';
 import { Settings, Logout } from '@mui/icons-material';
+import { Bell, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+
+// Presentation-only enhancements. All original logic preserved: anchor state,
+// handleClick/handleClose/handleLogout, role-based profile link, and the exact
+// navigate('/admin/logout') target. Added: a notification bell (with its own
+// empty-state menu) and a richer profile header inside the account menu.
 
 const AccountMenu = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+
+    // Notification menu (presentational — no backend wiring changed).
+    const [notifAnchor, setNotifAnchor] = useState(null);
+    const notifOpen = Boolean(notifAnchor);
 
     const { currentRole, currentUser } = useSelector(state => state.user);
 
@@ -28,24 +39,72 @@ const AccountMenu = () => {
         navigate('/admin/logout'); // ← Navigating to logout page
     };
 
+    const displayName = currentUser && currentUser.name ? String(currentUser.name) : 'User';
+    const initial = displayName.charAt(0).toUpperCase();
+    const email = (currentUser && (currentUser.email || currentUser.rollNum)) || '';
+
     return (
         <>
-            <Box sx={{ display: 'flex', alignItems: 'center', textAlign: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', textAlign: 'center', gap: 0.5 }}>
+                <Tooltip title="Notifications">
+                    <IconButton
+                        onClick={(e) => setNotifAnchor(e.currentTarget)}
+                        size="small"
+                        aria-label="notifications"
+                        sx={{ color: 'text.secondary' }}
+                    >
+                        <Badge color="error" variant="dot" overlap="circular">
+                            <Bell size={20} />
+                        </Badge>
+                    </IconButton>
+                </Tooltip>
+
                 <Tooltip title="Account settings">
                     <IconButton
                         onClick={handleClick}
                         size="small"
-                        sx={{ ml: 2 }}
+                        sx={{ ml: 0.5 }}
                         aria-controls={open ? 'account-menu' : undefined}
                         aria-haspopup="true"
                         aria-expanded={open ? 'true' : undefined}
                     >
-                        <Avatar sx={{ width: 32, height: 32 }}>
-                            {String(currentUser.name).charAt(0)}
+                        <Avatar
+                            sx={{
+                                width: 34,
+                                height: 34,
+                                fontSize: 15,
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
+                            }}
+                        >
+                            {initial}
                         </Avatar>
                     </IconButton>
                 </Tooltip>
             </Box>
+
+            {/* Notifications menu (empty state) */}
+            <Menu
+                anchorEl={notifAnchor}
+                open={notifOpen}
+                onClose={() => setNotifAnchor(null)}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                PaperProps={{ sx: { width: 300, p: 1 } }}
+            >
+                <Typography variant="subtitle2" sx={{ px: 1.5, py: 1, fontWeight: 700 }}>
+                    Notifications
+                </Typography>
+                <Divider />
+                <Box sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
+                    <Bell size={26} style={{ opacity: 0.5 }} />
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                        You're all caught up
+                    </Typography>
+                </Box>
+            </Menu>
+
+            {/* Account menu */}
             <Menu
                 anchorEl={anchorEl}
                 id="account-menu"
@@ -56,20 +115,45 @@ const AccountMenu = () => {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                <MenuItem>
-                    <Avatar />
-                    <Link to={`/${currentRole}/profile`}>Profile</Link>
-                </MenuItem>
+                <Box sx={{ px: 2, py: 1.5 }}>
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Avatar
+                            sx={{
+                                width: 40,
+                                height: 40,
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
+                            }}
+                        >
+                            {initial}
+                        </Avatar>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2 }} noWrap>
+                                {displayName}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }} noWrap>
+                                {email || currentRole}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                </Box>
                 <Divider />
+                <MenuItem component={Link} to={`/${currentRole}/profile`}>
+                    <ListItemIcon>
+                        <UserRound size={18} />
+                    </ListItemIcon>
+                    Profile
+                </MenuItem>
                 <MenuItem>
                     <ListItemIcon>
                         <Settings fontSize="small" />
                     </ListItemIcon>
                     Settings
                 </MenuItem>
-                <MenuItem onClick={handleLogout}>
+                <Divider />
+                <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                     <ListItemIcon>
-                        <Logout fontSize="small" />
+                        <Logout fontSize="small" sx={{ color: 'error.main' }} />
                     </ListItemIcon>
                     Logout
                 </MenuItem>
@@ -83,8 +167,8 @@ export default AccountMenu;
 const styles = {
     styledPaper: {
         overflow: 'visible',
-        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
         mt: 1.5,
+        minWidth: 240,
         '& .MuiAvatar-root': {
             width: 32,
             height: 32,

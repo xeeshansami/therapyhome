@@ -1,7 +1,11 @@
 * {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Inter', 'Plus Jakarta Sans', 'Poppins', sans-serif;
   margin: 0;
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 a {
@@ -25,48 +29,53 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(77, 68, 224, 0.25);
+  background-color: rgba(37, 99, 235, 0.28);
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(77, 68, 224, 0.45);
+  background-color: rgba(37, 99, 235, 0.5);
 }
 
 :root {
-  /* EduMin design tokens (light) */
-  --color-primary: #4d44e0;
-  --color-primary-light: #6a5cff;
-  --color-primary-dark: #3a32b5;
-  --color-bg-app: #f4f5fa;
-  --color-surface: #ffffff;
-  --color-surface-2: #f6f7fb;
-  --color-text: #2f3349;
-  --color-text-muted: #6b7280;
-  --color-border: #eceef5;
-  --color-amber: #ff9800;
-  --color-purple: #7b2ff7;
-  --color-red: #f5365c;
-  --color-teal: #11b3a4;
-  --radius-card: 14px;
-  --shadow-card: 0 2px 12px rgba(45, 55, 99, 0.06);
+  /* Enterprise design tokens (light) */
+  --color-primary: #2563EB;
+  --color-primary-light: #3b82f6;
+  --color-primary-dark: #1d4ed8;
+  --color-secondary: #4F46E5;
+  --color-bg-app: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F1F5F9;
+  --color-text: #0F172A;
+  --color-text-muted: #64748B;
+  --color-border: #E9EDF3;
+  --color-success: #10B981;
+  --color-amber: #F59E0B;
+  --color-warning: #F59E0B;
+  --color-purple: #7C3AED;
+  --color-red: #EF4444;
+  --color-danger: #EF4444;
+  --color-teal: #10B981;
+  --color-info: #0EA5E9;
+  --radius-card: 16px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
 
   /* Legacy aliases kept so existing references still resolve */
-  --color-bg: #1f1f38;
-  --color-bg-variant: #2c2c6c;
-  --color-primary-variant: rgba(77, 68, 224, 0.4);
+  --color-bg: #0B1120;
+  --color-bg-variant: #1e293b;
+  --color-primary-variant: rgba(37, 99, 235, 0.4);
   --color-light: rgba(255, 255, 255, 0.6);
 }
 
 /* Dark mode tokens (toggled via <html data-theme="dark">) */
 :root[data-theme='dark'] {
-  --color-bg-app: #151b2d;
-  --color-surface: #1d2640;
-  --color-surface-2: #232d4a;
-  --color-text: #e7e9f6;
-  --color-text-muted: #9aa3c0;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --color-bg-app: #0B1120;
+  --color-surface: #111a2e;
+  --color-surface-2: #1e293b;
+  --color-text: #E6EAF2;
+  --color-text-muted: #94A3B8;
+  --color-border: rgba(148, 163, 184, 0.16);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 /* FORM */

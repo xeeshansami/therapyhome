@@ -1,38 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Grid,
-  Paper,
   Box,
   Container,
+  Typography,
+  Stack,
   CircularProgress,
   Backdrop,
+  useTheme,
 } from '@mui/material';
-import { AccountCircle, School, Group } from '@mui/icons-material';
-import styled from 'styled-components';
+import { motion } from 'framer-motion';
+import { ShieldCheck, Users, ArrowRight } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../redux/userRelated/userHandle';
 import Popup from '../components/Popup';
-import background from "../assets/background_web.png";
-import logo from "../assets/logo.png"; // Assuming you have a logo image
+import logo from '../assets/logo.png';
+
+// ---------------------------------------------------------------------------
+// Role selection screen. All logic preserved verbatim: the auth-redirect
+// effect, navigateHandler, loader + Popup. Only the presentation is new.
+// ---------------------------------------------------------------------------
+
+const MotionDiv = motion.div;
+
+const roles = [
+  {
+    key: 'Admin',
+    title: 'Admin',
+    desc: 'Login as an administrator to access and manage TherapyHome.',
+    icon: ShieldCheck,
+    gradient: 'linear-gradient(135deg, #4d44e0, #7b2ff7)',
+  },
+  {
+    key: 'Teacher',
+    title: 'Staff',
+    desc: 'Login as staff to create courses, sessions, and track student records.',
+    icon: Users,
+    gradient: 'linear-gradient(135deg, #11b3a4, #2f6fed)',
+  },
+];
 
 const ChooseUser = ({ visitor }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const password = "zxc";
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
-  const { status, currentUser, currentRole } = useSelector(state => state.user);
+  const { status, currentUser, currentRole } = useSelector((state) => state.user);
 
   const [loader, setLoader] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
 
   const navigateHandler = (user) => {
-    if (user === "Admin") {
+    if (user === 'Admin') {
       navigate('/Adminlogin');
-    } else if (user === "Student") {
+    } else if (user === 'Student') {
       navigate('/Studentlogin');
-    } else if (user === "Teacher") {
+    } else if (user === 'Teacher') {
       navigate('/Teacherlogin');
     }
   };
@@ -48,153 +73,129 @@ const ChooseUser = ({ visitor }) => {
       }
     } else if (status === 'error') {
       setLoader(false);
-      setMessage("Network Error");
+      setMessage('Network Error');
       setShowPopup(true);
     }
   }, [status, currentRole, navigate, currentUser]);
 
+  const pageBg = isDark
+    ? 'radial-gradient(1000px 500px at 50% -10%, rgba(122,110,255,0.22), transparent 60%), #0f1526'
+    : 'radial-gradient(1000px 500px at 50% -10%, rgba(122,110,255,0.18), transparent 60%), #f6f7fc';
+
   return (
-    <StyledContainerBackground>
-      <StyledContainer>
-        <StyledContent>
-           {/* Logo at the top */}
-           <StyledLogo src={logo} alt="Logo" />
-           <StyledCaption>TherapyHome</StyledCaption>
-          <Grid container
-            spacing={2} justifyContent="center" alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
-              <div onClick={() => navigateHandler("Admin")}>
-                <StyledPaper elevation={3}>
-                  <Box mb={2}>
-                    <AccountCircle fontSize="large" />
-                  </Box>
-                  <StyledTypography>
-                    Admin
-                  </StyledTypography>
-                  Login as an administrator to access the TherapyHome.
-                </StyledPaper>
-              </div>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <StyledPaper elevation={3}>
-                <div onClick={() => navigateHandler("Teacher")}>
-                  <Box mb={2}>
-                    <Group fontSize="large" />
-                  </Box>
-                  <StyledTypography>
-                    Teachers
-                  </StyledTypography>
-                  Login as a teacher to create courses, sessions, and track student records.
-                </div>
-              </StyledPaper>
-            </Grid>
-            {/* <Grid item xs={12} sm={6} md={4}>
-              <StyledPaper elevation={3}>
-                <div onClick={() => navigateHandler("Student")}>
-                  <Box mb={2}>
-                    <School fontSize="large" />
-                  </Box>
-                  <StyledTypography>
-                    Receptionist
-                  </StyledTypography>
-                  Login as a receptionist to explore sessions, student fees & invoices
-                </div>
-              </StyledPaper>
-            </Grid> */}
-          </Grid>
-        </StyledContent>
-        <Backdrop
-          sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={loader}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: pageBg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        px: 2,
+        py: 6,
+        overflowX: 'hidden',
+      }}
+    >
+      <Container maxWidth="md">
+        <MotionDiv
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
+          <Stack alignItems="center" spacing={2} sx={{ mb: 5, textAlign: 'center' }}>
+            <Box
+              component="img"
+              src={logo}
+              alt="TherapyHome"
+              sx={{ height: 72, filter: 'drop-shadow(0 16px 30px rgba(77,68,224,0.3))' }}
+            />
+            <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+              Welcome to TherapyHome
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 460 }}>
+              Choose how you'd like to sign in and we'll take you to your workspace.
+            </Typography>
+          </Stack>
+
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={3}
+            justifyContent="center"
+            alignItems="stretch"
+          >
+            {roles.map((r, i) => {
+              const Icon = r.icon;
+              return (
+                <MotionDiv
+                  key={r.key}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ y: -8 }}
+                  style={{ flex: 1, maxWidth: 340, cursor: 'pointer' }}
+                  onClick={() => navigateHandler(r.key)}
+                >
+                  <Box
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigateHandler(r.key)}
+                    sx={{
+                      height: '100%',
+                      borderRadius: 5,
+                      p: 4,
+                      textAlign: 'center',
+                      border: `1px solid ${theme.palette.divider}`,
+                      backgroundColor: isDark ? 'rgba(29,38,64,0.6)' : 'rgba(255,255,255,0.8)',
+                      backdropFilter: 'blur(14px)',
+                      boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.4)' : '0 20px 50px rgba(45,55,99,0.12)',
+                      transition: 'box-shadow .25s ease, border-color .25s ease',
+                      '&:hover': { borderColor: theme.palette.primary.main },
+                      outline: 'none',
+                      '&:focus-visible': { boxShadow: `0 0 0 3px ${theme.palette.primary.main}55` },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 68,
+                        height: 68,
+                        mx: 'auto',
+                        mb: 2.5,
+                        borderRadius: '20px',
+                        display: 'grid',
+                        placeItems: 'center',
+                        color: '#fff',
+                        background: r.gradient,
+                        boxShadow: '0 14px 30px rgba(77,68,224,0.35)',
+                      }}
+                    >
+                      <Icon size={30} />
+                    </Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                      {r.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
+                      {r.desc}
+                    </Typography>
+                    <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" sx={{ color: 'primary.main' }}>
+                      <Typography variant="button" sx={{ fontWeight: 700 }}>
+                        Continue
+                      </Typography>
+                      <ArrowRight size={17} />
+                    </Stack>
+                  </Box>
+                </MotionDiv>
+              );
+            })}
+          </Stack>
+        </MotionDiv>
+
+        <Backdrop sx={{ color: '#fff', zIndex: (t) => t.zIndex.drawer + 1 }} open={loader}>
           <CircularProgress color="inherit" />
-          Please Wait
+          &nbsp;Please Wait
         </Backdrop>
         <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
-      </StyledContainer>
-    </StyledContainerBackground>
+      </Container>
+    </Box>
   );
 };
 
 export default ChooseUser;
-
-// Logo styling
-const StyledLogo = styled.img`
-  width: 200px; /* Adjust size as needed */
-  height: auto; /* Maintain aspect ratio */
-  margin-bottom: 2rem; /* Space between logo and grid */
-  display: block; /* Block display to center horizontally */
-  margin-left: auto; /* Center horizontally */
-  margin-right: auto; /* Center horizontally */
-`;
-
-const StyledContainer = styled.div`
-  // background: linear-gradient(to bottom, #411d70, #19118b);
-  height: 100vh; /* Changed to full viewport height */
-  display: flex;
-  justify-content: center;
-  align-items: center; /* Center items vertically */
-  padding: 2rem;
-`;
-
-const StyledContent = styled(Container)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: auto;
-`;
-
-const StyledPaper = styled.div`
-  padding: 28px 22px;
-  text-align: center;
-  background-color: #ffffff;
-  color: #2f3349;
-  cursor: pointer;
-  border: 1px solid #eceef5;
-  border-radius: 16px;
-  box-shadow: 0 10px 28px rgba(45, 55, 99, 0.10);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  flex: 1; /* Ensures that all grid items have the same size */
-  min-width: 250px; /* Optional: ensures minimum width */
-  height: 100%; /* Optional: ensures full height */
-
-  & .MuiSvgIcon-root {
-    color: #4d44e0;
-    font-size: 2.6rem;
-  }
-
-  &:hover {
-    transform: translateY(-6px);
-    border-color: #4d44e0;
-    box-shadow: 0 16px 36px rgba(77, 68, 224, 0.22);
-  }
-`;
-
-const StyledTypography = styled.h2`
-  margin-bottom: 10px;
-  color: #2f3349;
-`;
-
-const StyledContainerBackground = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-family: "Josefin Sans", sans-serif;
-  color: white;
-  background-image: url(${background}); /* Use template literal to apply the imported image */
-  background-size: cover; /* Optional: ensures the background image covers the entire container */
-  background-position: center; /* Optional: centers the background image */
-`;
-
-// Caption styling
-const StyledCaption = styled.p`
-  font-size: 2.2rem; /* Adjust font size as needed */
-  color: white; /* Caption text color */
-  margin: 0; /* Remove default margins */
-  text-align: center; /* Center text */
-  margin-bottom: 2rem; /* Space between caption and grid */
-`;
-// export default StyledContainerBackground;

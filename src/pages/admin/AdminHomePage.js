@@ -5,6 +5,7 @@ import Classes from "../../assets/img2.png";
 import Teachers from "../../assets/img3.png";
 import Fees from "../../assets/img4.png";
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
@@ -71,7 +72,6 @@ const AdminHomePage = () => {
     const handleMonthChange = (event) => {
         const month = event.target.value;
         setSelectedMonth(month);
-        debugger
         fetchTotalFee(month); // Fetch total fee for the selected month
     };
 
@@ -105,35 +105,35 @@ const AdminHomePage = () => {
 
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper $gradient={tokens.gradients.indigo}>
+                            <MotionCard $gradient={tokens.gradients.indigo} {...cardMotion(0)}>
                                 <img src={Students} alt="Students" />
                                 <Title>Total Students</Title>
                                 <Data start={0} end={numberOfStudents} duration={2.5} />
-                            </StyledPaper>
+                            </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper $gradient={tokens.gradients.amber}>
+                            <MotionCard $gradient={tokens.gradients.amber} {...cardMotion(1)}>
                                 <img src={Classes} alt="Classes" />
                                 <Title>Total Classes</Title>
                                 <Data start={0} end={numberOfClasses} duration={5} />
-                            </StyledPaper>
+                            </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper $gradient={tokens.gradients.purple}>
+                            <MotionCard $gradient={tokens.gradients.purple} {...cardMotion(2)}>
                                 <img src={Teachers} alt="Teachers" />
                                 <Title>Total Teachers</Title>
                                 <Data start={0} end={numberOfTeachers} duration={2.5} />
-                            </StyledPaper>
+                            </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper $gradient={tokens.gradients.teal}>
+                            <MotionCard $gradient={tokens.gradients.teal} {...cardMotion(3)}>
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Daily</Title>
                                 <Data start={0} end={totalDailyFee} duration={2.5} prefix="PKR " />
-                            </StyledPaper>
+                            </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper $gradient={tokens.gradients.red}>
+                            <MotionCard $gradient={tokens.gradients.red} {...cardMotion(4)}>
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Monthly</Title>
 
@@ -141,7 +141,7 @@ const AdminHomePage = () => {
                                     <Data start={0} end={totalFee} duration={2.5} prefix="PKR " />
                                 </Typography>
 
-                            </StyledPaper>
+                            </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={12} lg={12}>
                             <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
@@ -191,6 +191,18 @@ const StyledPaper = styled(Paper)`
     border-radius: 50%;
   }
 `;
+
+// Motion-enabled stat card: keeps all StyledPaper visuals, adds a soft
+// entrance + hover lift. Transient $gradient prop is consumed by styled().
+const MotionCard = motion(StyledPaper);
+
+const cardMotion = (i) => ({
+  initial: { opacity: 0, y: 22 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.3 },
+  whileHover: { y: -6 },
+  transition: { duration: 0.45, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
+});
 
 const Title = styled.p`
   font-size: 0.95rem;
