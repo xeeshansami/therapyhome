@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { getAllSclasses } from '../../redux/sclassRelated/sclassHandle';
 import { getAllStudents } from '../../redux/studentRelated/studentHandle';
 import { getAllTeachers } from '../../redux/teacherRelated/teacherHandle';
-import background from "../../assets/background2.jpg";
+import { tokens } from '../../theme';
 import axios from 'axios';
 
 const AdminHomePage = () => {
@@ -105,39 +105,39 @@ const AdminHomePage = () => {
 
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper>
+                            <StyledPaper $gradient={tokens.gradients.indigo}>
                                 <img src={Students} alt="Students" />
                                 <Title>Total Students</Title>
                                 <Data start={0} end={numberOfStudents} duration={2.5} />
                             </StyledPaper>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper>
+                            <StyledPaper $gradient={tokens.gradients.amber}>
                                 <img src={Classes} alt="Classes" />
                                 <Title>Total Classes</Title>
                                 <Data start={0} end={numberOfClasses} duration={5} />
                             </StyledPaper>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper>
+                            <StyledPaper $gradient={tokens.gradients.purple}>
                                 <img src={Teachers} alt="Teachers" />
                                 <Title>Total Teachers</Title>
                                 <Data start={0} end={numberOfTeachers} duration={2.5} />
                             </StyledPaper>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper>
+                            <StyledPaper $gradient={tokens.gradients.teal}>
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Daily</Title>
                                 <Data start={0} end={totalDailyFee} duration={2.5} prefix="PKR " />
                             </StyledPaper>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <StyledPaper>
+                            <StyledPaper $gradient={tokens.gradients.red}>
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Monthly</Title>
 
-                                <Typography variant="h6" style={{ color: 'red', fontWeight: 'bold' }}>
+                                <Typography variant="h6" style={{ color: '#ffffff', fontWeight: 'bold' }}>
                                     <Data start={0} end={totalFee} duration={2.5} prefix="PKR " />
                                 </Typography>
 
@@ -156,31 +156,59 @@ const AdminHomePage = () => {
 };
 
 const StyledPaper = styled(Paper)`
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  height: 200px;
-  justify-content: space-between;
-  align-items: center;
-  text-align: center;
+  && {
+    position: relative;
+    padding: 22px 20px;
+    display: flex;
+    flex-direction: column;
+    height: 200px;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-align: left;
+    color: #ffffff;
+    border-radius: 16px;
+    overflow: hidden;
+    background: ${(props) => props.$gradient || tokens.gradients.indigo};
+    box-shadow: 0 10px 24px rgba(45, 55, 99, 0.12);
+  }
+  && img {
+    width: 56px;
+    height: 56px;
+    padding: 12px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 14px;
+    object-fit: contain;
+  }
+  &&::after {
+    content: "";
+    position: absolute;
+    right: -28px;
+    bottom: -28px;
+    width: 110px;
+    height: 110px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+  }
 `;
 
 const Title = styled.p`
-  font-size: 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  opacity: 0.95;
+  margin: 0;
 `;
 
 const Data = styled(CountUp)`
-  font-size: calc(1.3rem + .6vw);
-  color: green;
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #ffffff;
 `;
 
 const StyledContainerBackground = styled.div`
   display: flex;
-  height: 100vh;
-  font-family: "Josefin Sans", sans-serif;
-  color: white;
-  background-image: url(${background});
-  background-size: cover;
+  min-height: 100%;
+  background: var(--color-bg-app);
 `;
 
 export default AdminHomePage;

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button, Grid, Box, Typography, Paper, Checkbox, FormControlLabel, TextField, CssBaseline, IconButton, InputAdornment, CircularProgress, Backdrop } from '@mui/material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import bgpic from "../assets/designlogin.jpg"
 import { LightPurpleButton } from '../components/buttonStyles';
@@ -11,7 +11,8 @@ import { loginUser } from '../redux/userRelated/userHandle';
 import Popup from '../components/Popup';
 import logo from "../assets/logo.png";
 import background from "../assets/background_web.png";
-const defaultTheme = createTheme();
+import theme from '../theme';
+const defaultTheme = theme;
 
 const LoginPage = ({ role }) => {
 
@@ -299,7 +300,7 @@ export default LoginPage
 const StyledLink = styled(Link)`
   margin-top: 9px;
   text-decoration: none;
-  color: #7f56da;
+  color: #4d44e0;
 `;
 const StyledLogo = styled.img`
     height: 50%;

@@ -18,13 +18,13 @@ const SideBar = () => {
     return (
         <>
             <React.Fragment>
-                <ListItemButton component={Link} to="/">
+                <ListItemButton component={Link} to="/" selected={location.pathname === ("/" || "/Admin/dashboard")}>
                     <ListItemIcon>
                         <HomeIcon color={location.pathname === ("/" || "/Admin/dashboard") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Home" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/Admin/classes">
+                <ListItemButton component={Link} to="/Admin/classes" selected={location.pathname.startsWith('/Admin/classes')}>
                     <ListItemIcon>
                         <ClassOutlinedIcon color={location.pathname.startsWith('/Admin/classes') ? 'primary' : 'inherit'} />
                     </ListItemIcon>
@@ -36,50 +36,50 @@ const SideBar = () => {
                     </ListItemIcon>
                     <ListItemText primary="Subjects" />
                 </ListItemButton> */}
-                <ListItemButton component={Link} to="/Admin/teachers">
+                <ListItemButton component={Link} to="/Admin/teachers" selected={location.pathname.startsWith("/Admin/teachers")}>
                     <ListItemIcon>
                         <SupervisorAccountOutlinedIcon color={location.pathname.startsWith("/Admin/teachers") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Teachers" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/Admin/students">
+                <ListItemButton component={Link} to="/Admin/students" selected={location.pathname.startsWith("/Admin/students")}>
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/students") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="View Students" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/Admin/AddConsultancy">
+                <ListItemButton component={Link} to="/Admin/AddConsultancy" selected={location.pathname.startsWith("/Admin/AddConsultancy")}>
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/AddConsultancy") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Consultancy Form" />
-                </ListItemButton> 
-                <ListItemButton component={Link} to="/Admin/addstudents">
+                </ListItemButton>
+                <ListItemButton component={Link} to="/Admin/addstudents" selected={location.pathname.startsWith("/Admin/addstudents")}>
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/addstudents") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Add/Update Students" />
                 </ListItemButton>
-                
-               <ListItemButton component={Link} to="/Admin/Fees">
+
+               <ListItemButton component={Link} to="/Admin/Fees" selected={location.pathname.startsWith("/Admin/Fees")}>
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Fees") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Fee-Salary Portal" />
-                </ListItemButton> 
-                <ListItemButton component={Link} to="/Admin/Invoice">
+                </ListItemButton>
+                <ListItemButton component={Link} to="/Admin/Invoice" selected={location.pathname.startsWith("/Admin/Invoice")}>
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Invoice") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Invoice's" />
-                </ListItemButton> 
-                <ListItemButton component={Link} to="/Admin/complains">
+                </ListItemButton>
+                <ListItemButton component={Link} to="/Admin/complains" selected={location.pathname.startsWith("/Admin/complains")}>
                     <ListItemIcon>
                         <ReportIcon color={location.pathname.startsWith("/Admin/complains") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Complains" />
                 </ListItemButton>
-                 <ListItemButton component={Link} to="/Admin/notices">
+                 <ListItemButton component={Link} to="/Admin/notices" selected={location.pathname.startsWith("/Admin/notices")}>
                     <ListItemIcon>
                         <AnnouncementOutlinedIcon color={location.pathname.startsWith("/Admin/notices") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
@@ -91,13 +91,13 @@ const SideBar = () => {
                 <ListSubheader component="div" inset>
                     User
                 </ListSubheader>
-                <ListItemButton component={Link} to="/Admin/profile">
+                <ListItemButton component={Link} to="/Admin/profile" selected={location.pathname.startsWith("/Admin/profile")}>
                     <ListItemIcon>
                         <AccountCircleOutlinedIcon color={location.pathname.startsWith("/Admin/profile") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Profile" />
                 </ListItemButton>
-                <ListItemButton component={Link} to="/admin/logout">
+                <ListItemButton component={Link} to="/admin/logout" selected={location.pathname.startsWith("/logout")}>
                     <ListItemIcon>
                         <ExitToAppIcon color={location.pathname.startsWith("/logout") ? 'primary' : 'inherit'} />
                     </ListItemIcon>

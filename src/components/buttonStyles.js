@@ -1,14 +1,17 @@
 import styled from 'styled-components';
 import { Button } from '@mui/material';
 
+// EduMin palette (UI only). Export names kept identical so all
+// existing imports/usages continue to work unchanged.
+
 export const RedButton = styled(Button)`
   && {
-    background-color: #f00;
+    background-color: #f5365c;
     color: white;
     margin-left: 4px;
     &:hover {
-      background-color: #eb7979;
-      border-color: #f26767;
+      background-color: #e21b45;
+      border-color: #e21b45;
       box-shadow: none;
     }
   }
@@ -16,12 +19,12 @@ export const RedButton = styled(Button)`
 
 export const BlackButton = styled(Button)`
   && {
-    background-color: #000000;
+    background-color: #2f3349;
     color: white;
     margin-left: 4px;
     &:hover {
-      background-color: #212020;
-      border-color: #212020;
+      background-color: #1f2335;
+      border-color: #1f2335;
       box-shadow: none;
     }
   }
@@ -29,11 +32,11 @@ export const BlackButton = styled(Button)`
 
 export const DarkRedButton = styled(Button)`
   && {
-    background-color: #650909;
+    background-color: #c81e3a;
     color: white;
     &:hover {
-      background-color: #eb7979;
-      border-color: #f26767;
+      background-color: #a9152e;
+      border-color: #a9152e;
       box-shadow: none;
     }
   }
@@ -41,38 +44,38 @@ export const DarkRedButton = styled(Button)`
 
 export const BlueButton = styled(Button)`
   && {
-    background-color: #080a43;
+    background-color: #2f6fed;
     color: #fff;
     &:hover {
-      background-color: #0a1e82;
+      background-color: #1f57c9;
     }
   }
 `;
 
 export const PurpleButton = styled(Button)`
   && {
-    background-color: #270843;
+    background-color: #7b2ff7;
     color: #fff;
     &:hover {
-      background-color: #3f1068;
+      background-color: #6420d6;
     }
   }
 `;
 
 export const LightPurpleButton = styled(Button)`
   && {
-    background-color: #7f56da;
+    background-color: #4d44e0;
     color: #fff;
     width: 200px; // Set the desired width here
     &:hover {
-      background-color: #7a1ccb;
+      background-color: #3a32b5;
     }
   }
 `;
 
 export const LightPurpleButtonCricle = styled(Button)`
   && {
-    background-color: #7f56da;
+    background-color: #4d44e0;
     color: #fff;
     width: 100px;  // Set width and height to the same value for a circle
     height: 100px; // Set height to be equal to width
@@ -81,30 +84,31 @@ export const LightPurpleButtonCricle = styled(Button)`
     align-items: center; // Center text vertically
     justify-content: center; // Center text horizontally
     text-align: center; // Center text alignment
+    box-shadow: 0 8px 20px rgba(77, 68, 224, 0.35);
 
     &:hover {
-      background-color: #7a1ccb;
+      background-color: #3a32b5;
     }
   }
 `;
 
 export const GreenButton = styled(Button)`
   && {
-    background-color: #133104;
+    background-color: #16a34a;
     color: #fff;
     &:hover {
-      background-color: #266810;
+      background-color: #128a3e;
     }
   }
 `;
 
 export const BrownButton = styled(Button)`
   && {
-    background-color: #2c1006;
+    background-color: #8d6e63;
     color: white;
     &:hover {
-      background-color: #40220c;
-      border-color: #40220c;
+      background-color: #75584e;
+      border-color: #75584e;
       box-shadow: none;
     }
   }
@@ -112,11 +116,11 @@ export const BrownButton = styled(Button)`
 
 export const IndigoButton = styled(Button)`
   && {
-    background-color: #2f2b80;
+    background-color: #4d44e0;
     color: white;
     &:hover {
-      background-color: #534ea6;
-      border-color: #473d90;
+      background-color: #3a32b5;
+      border-color: #3a32b5;
       box-shadow: none;
     }
   }

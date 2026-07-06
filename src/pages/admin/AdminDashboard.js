@@ -10,8 +10,10 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import SearchIcon from '@mui/icons-material/Search';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AppBar, Drawer } from '../../components/styles';
+import { AppBar, Drawer, Search, SearchInput } from '../../components/styles';
+import SettingsLauncher from '../../components/SettingsLauncher';
 import Logout from '../Logout';
 import SideBar from './SideBar';
 import AdminProfile from './AdminProfile';
@@ -81,10 +83,16 @@ const AdminDashboard = () => {
                             variant="h6"
                             color="inherit"
                             noWrap
-                            sx={{ flexGrow: 1, ml: 2 }}
+                            sx={{ ml: 2, mr: 3, display: { xs: 'none', md: 'block' } }}
                         >
                             Admin Dashboard
                         </Typography>
+                        <Search>
+                            <SearchIcon fontSize="small" color="action" />
+                            <SearchInput placeholder="Search..." inputProps={{ 'aria-label': 'search' }} />
+                        </Search>
+                        <Box sx={{ flexGrow: 1 }} />
+                        <SettingsLauncher />
                         <AccountMenu />
                     </Toolbar>
                 </AppBar>

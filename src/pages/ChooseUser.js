@@ -14,7 +14,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loginUser } from '../redux/userRelated/userHandle';
 import Popup from '../components/Popup';
 import background from "../assets/background_web.png";
-import backgroundHover from "../assets/bg_mode.png";
 import logo from "../assets/logo.png"; // Assuming you have a logo image
 
 const ChooseUser = ({ visitor }) => {
@@ -148,32 +147,34 @@ const StyledContent = styled(Container)`
 `;
 
 const StyledPaper = styled.div`
-  padding: 20px;
+  padding: 28px 22px;
   text-align: center;
-  background-color: #1f1f38;
-  color: rgba(255, 255, 255, 0.6);
+  background-color: #ffffff;
+  color: #2f3349;
   cursor: pointer;
-  border: 2px solid #21618c; /* Add a border */
-  border-radius: 8px; /* Optional: rounded corners */
-  background-image: url(${backgroundHover}); /* Add background image */
-  background-size: cover; /* Ensure the image covers the component */
-  background-position: center; /* Center the background image */
-  box-shadow: 4px 4px 8px rgba(33, 97, 140, 0.3); /* Add shadow with color #21618c */
-  transition: background-color 0.3s, color 0.3s, box-shadow 0.3s; /* Smooth transition for hover effects */
+  border: 1px solid #eceef5;
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(45, 55, 99, 0.10);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   flex: 1; /* Ensures that all grid items have the same size */
   min-width: 250px; /* Optional: ensures minimum width */
   height: 100%; /* Optional: ensures full height */
-  
+
+  & .MuiSvgIcon-root {
+    color: #4d44e0;
+    font-size: 2.6rem;
+  }
+
   &:hover {
-    background-color: rgba(25, 28, 36, 0.8); /* Semi-transparent background color on hover */
-    color: white; /* Change text color on hover */
-    border-color: #ffffff; /* Optional: Change border color on hover */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); /* Enhanced shadow on hover */
+    transform: translateY(-6px);
+    border-color: #4d44e0;
+    box-shadow: 0 16px 36px rgba(77, 68, 224, 0.22);
   }
 `;
 
 const StyledTypography = styled.h2`
   margin-bottom: 10px;
+  color: #2f3349;
 `;
 
 const StyledContainerBackground = styled.div`

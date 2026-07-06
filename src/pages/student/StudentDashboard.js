@@ -10,8 +10,11 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import SearchIcon from '@mui/icons-material/Search';
 import StudentSideBar from './StudentSideBar';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Search, SearchInput } from '../../components/styles';
+import SettingsLauncher from '../../components/SettingsLauncher';
 import StudentHomePage from './StudentHomePage';
 import StudentProfile from './StudentProfile';
 import StudentSubjects from './StudentSubjects';
@@ -50,10 +53,16 @@ const StudentDashboard = () => {
                             variant="h6"
                             color="inherit"
                             noWrap
-                            sx={{ flexGrow: 1 }}
+                            sx={{ mr: 3, display: { xs: 'none', md: 'block' } }}
                         >
                             Receptionlist Dashboard
                         </Typography>
+                        <Search>
+                            <SearchIcon fontSize="small" color="action" />
+                            <SearchInput placeholder="Search..." inputProps={{ 'aria-label': 'search' }} />
+                        </Search>
+                        <Box sx={{ flexGrow: 1 }} />
+                        <SettingsLauncher />
                         <AccountMenu />
                     </Toolbar>
                 </AppBar>

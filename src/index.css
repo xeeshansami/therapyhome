@@ -1,6 +1,7 @@
 * {
   font-family: 'Poppins', sans-serif;
   margin: 0;
+  box-sizing: border-box;
 }
 
 a {
@@ -8,16 +9,64 @@ a {
   color: inherit;
 }
 
+body {
+  background-color: var(--color-bg-app);
+  color: var(--color-text);
+}
+
+/* Slim, modern scrollbar (EduMin style) */
 ::-webkit-scrollbar {
-  display: none;
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(77, 68, 224, 0.25);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(77, 68, 224, 0.45);
 }
 
 :root {
+  /* EduMin design tokens (light) */
+  --color-primary: #4d44e0;
+  --color-primary-light: #6a5cff;
+  --color-primary-dark: #3a32b5;
+  --color-bg-app: #f4f5fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f6f7fb;
+  --color-text: #2f3349;
+  --color-text-muted: #6b7280;
+  --color-border: #eceef5;
+  --color-amber: #ff9800;
+  --color-purple: #7b2ff7;
+  --color-red: #f5365c;
+  --color-teal: #11b3a4;
+  --radius-card: 14px;
+  --shadow-card: 0 2px 12px rgba(45, 55, 99, 0.06);
+
+  /* Legacy aliases kept so existing references still resolve */
   --color-bg: #1f1f38;
   --color-bg-variant: #2c2c6c;
-  --color-primary: #4db5ff;
-  --color-primary-variant: rgba(77, 181, 255, 0.4);
+  --color-primary-variant: rgba(77, 68, 224, 0.4);
   --color-light: rgba(255, 255, 255, 0.6);
+}
+
+/* Dark mode tokens (toggled via <html data-theme="dark">) */
+:root[data-theme='dark'] {
+  --color-bg-app: #151b2d;
+  --color-surface: #1d2640;
+  --color-surface-2: #232d4a;
+  --color-text: #e7e9f6;
+  --color-text-muted: #9aa3c0;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 /* FORM */
@@ -58,8 +107,8 @@ a {
 .custom-popup {
   background-color: #fff;
   padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(45, 55, 99, 0.22);
   max-width: 400px;
   text-align: center;
   animation: fadeIn 0.3s ease-in-out;
@@ -67,27 +116,27 @@ a {
 
 .custom-popup h2 {
   margin-bottom: 15px;
-  color: #2e7d32; /* green tone for success */
+  color: var(--color-primary);
 }
 
 .custom-popup p {
   margin-bottom: 20px;
-  color: #333;
+  color: var(--color-text);
 }
 
 .custom-popup button {
-  background-color: #2e7d32;
+  background-color: var(--color-primary);
   color: white;
   border: none;
-  padding: 10px 20px;
-  font-weight: bold;
-  border-radius: 6px;
+  padding: 10px 22px;
+  font-weight: 600;
+  border-radius: 10px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .custom-popup button:hover {
-  background-color: #1b5e20;
+  background-color: var(--color-primary-dark);
 }
 
 /* Optional: fade-in animation */
@@ -113,9 +162,9 @@ a {
 }
 
 .registerInput {
-  padding: 10px;
+  padding: 12px;
   background-color: white;
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: 10px;
 }
 
@@ -133,16 +182,18 @@ a {
 .registerButton {
   margin-top: 20px;
   cursor: pointer;
-  background-color: #000000;
+  background-color: var(--color-primary);
   color: white;
-  padding: 10px;
+  padding: 12px;
   border: none;
   border-radius: 10px;
   text-align: center;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
 }
 
 .registerButton:hover {
-  background-color: #313131;
+  background-color: var(--color-primary-dark);
 }
 
 @media screen and (max-width: 480px) {

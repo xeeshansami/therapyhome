@@ -16,6 +16,7 @@ export default class HeaderComponent extends Component{
                 <td><span >101138</span></td>
               </tr>
               <tr>
+                
                 <th><span >Date</span></th>
                 <td><span >January 1, 2012</span></td>
               </tr>

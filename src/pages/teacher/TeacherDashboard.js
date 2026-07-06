@@ -10,11 +10,13 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import SearchIcon from '@mui/icons-material/Search';
 import TeacherSideBar from './TeacherSideBar';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Logout from '../Logout'
 import AccountMenu from '../../components/AccountMenu';
-import { AppBar, Drawer } from '../../components/styles';
+import { AppBar, Drawer, Search, SearchInput } from '../../components/styles';
+import SettingsLauncher from '../../components/SettingsLauncher';
 import StudentAttendance from '../admin/studentRelated/StudentAttendance';
 
 import TeacherClassDetails from './TeacherClassDetails';
@@ -53,10 +55,16 @@ const TeacherDashboard = () => {
                             variant="h6"
                             color="inherit"
                             noWrap
-                            sx={{ flexGrow: 1 }}
+                            sx={{ mr: 3, display: { xs: 'none', md: 'block' } }}
                         >
                             Staff Dashboard
                         </Typography>
+                        <Search>
+                            <SearchIcon fontSize="small" color="action" />
+                            <SearchInput placeholder="Search..." inputProps={{ 'aria-label': 'search' }} />
+                        </Search>
+                        <Box sx={{ flexGrow: 1 }} />
+                        <SettingsLauncher />
                         <AccountMenu />
                     </Toolbar>
                 </AppBar>

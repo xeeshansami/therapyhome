@@ -5,14 +5,17 @@ import App from './App';
 import store from './redux/store';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
+import ThemeModeProvider from './ThemeModeProvider';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <Provider store={store}>
-      <BrowserRouter basename="/therapyhome"> {/* ✅ important */}
-       <App />
-      </BrowserRouter>
+      <ThemeModeProvider>
+        <BrowserRouter basename="/therapyhome"> {/* ✅ important */}
+         <App />
+        </BrowserRouter>
+      </ThemeModeProvider>
     </Provider>
   </React.StrictMode>
 );
