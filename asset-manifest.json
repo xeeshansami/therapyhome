@@ -1,25 +1,25 @@
 {
   "files": {
-    "main.css": "/therapyhome/static/css/main.aa1c8977.css",
-    "main.js": "/therapyhome/static/js/main.c6d97e9d.js",
+    "main.css": "/therapyhome/static/css/main.81334025.css",
+    "main.js": "/therapyhome/static/js/main.ce9167cb.js",
     "static/js/977.b584b783.chunk.js": "/therapyhome/static/js/977.b584b783.chunk.js",
     "static/js/455.7ce8742c.chunk.js": "/therapyhome/static/js/455.7ce8742c.chunk.js",
     "static/media/background_web.png": "/therapyhome/static/media/background_web.1d2980412043993cef24.png",
-    "static/media/subjects.svg": "/therapyhome/static/media/subjects.013b9ea5daf1ce262cdf1faf054c2b50.svg",
+    "static/media/subjects.svg": "/therapyhome/static/media/subjects.ef81f0bbea2b9a3231edcf49d00d7ad5.svg",
     "static/media/stamp.png": "/therapyhome/static/media/stamp.cbf3cff6043b2d7edee6.png",
-    "static/media/assignment.svg": "/therapyhome/static/media/assignment.bc61fe3453a587ff7d3028a4494ad169.svg",
+    "static/media/assignment.svg": "/therapyhome/static/media/assignment.4def021ac61723cb0479c69bf8efa1ab.svg",
     "static/media/classroom.png": "/therapyhome/static/media/classroom.f472ff2cd754d14669f3.png",
-    "static/media/time.svg": "/therapyhome/static/media/time.4385c93898939eb79375d3cdc30644aa.svg",
+    "static/media/time.svg": "/therapyhome/static/media/time.0e9d36f6356c032a523d5cc2fb081da2.svg",
     "static/media/logo.png": "/therapyhome/static/media/logo.1dc1e7c26a94b2f9d73e.png",
     "static/media/designlogin.jpg": "/therapyhome/static/media/designlogin.3cac939f195a9e698ba4.jpg",
     "index.html": "/therapyhome/index.html",
-    "main.aa1c8977.css.map": "/therapyhome/static/css/main.aa1c8977.css.map",
-    "main.c6d97e9d.js.map": "/therapyhome/static/js/main.c6d97e9d.js.map",
+    "main.81334025.css.map": "/therapyhome/static/css/main.81334025.css.map",
+    "main.ce9167cb.js.map": "/therapyhome/static/js/main.ce9167cb.js.map",
     "977.b584b783.chunk.js.map": "/therapyhome/static/js/977.b584b783.chunk.js.map",
     "455.7ce8742c.chunk.js.map": "/therapyhome/static/js/455.7ce8742c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.aa1c8977.css",
-    "static/js/main.c6d97e9d.js"
+    "static/css/main.81334025.css",
+    "static/js/main.ce9167cb.js"
   ]
 }
