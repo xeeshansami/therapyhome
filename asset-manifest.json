@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/therapyhome/static/css/main.346ea90c.css",
-    "main.js": "/therapyhome/static/js/main.3284c3a3.js",
+    "main.css": "/therapyhome/static/css/main.135dad61.css",
+    "main.js": "/therapyhome/static/js/main.6f194610.js",
     "static/js/977.b584b783.chunk.js": "/therapyhome/static/js/977.b584b783.chunk.js",
     "static/js/455.7ce8742c.chunk.js": "/therapyhome/static/js/455.7ce8742c.chunk.js",
     "static/media/background_web.png": "/therapyhome/static/media/background_web.1d2980412043993cef24.png",
@@ -13,13 +13,13 @@
     "static/media/logo.png": "/therapyhome/static/media/logo.1dc1e7c26a94b2f9d73e.png",
     "static/media/designlogin.jpg": "/therapyhome/static/media/designlogin.3cac939f195a9e698ba4.jpg",
     "index.html": "/therapyhome/index.html",
-    "main.346ea90c.css.map": "/therapyhome/static/css/main.346ea90c.css.map",
-    "main.3284c3a3.js.map": "/therapyhome/static/js/main.3284c3a3.js.map",
+    "main.135dad61.css.map": "/therapyhome/static/css/main.135dad61.css.map",
+    "main.6f194610.js.map": "/therapyhome/static/js/main.6f194610.js.map",
     "977.b584b783.chunk.js.map": "/therapyhome/static/js/977.b584b783.chunk.js.map",
     "455.7ce8742c.chunk.js.map": "/therapyhome/static/js/455.7ce8742c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.346ea90c.css",
-    "static/js/main.3284c3a3.js"
+    "static/css/main.135dad61.css",
+    "static/js/main.6f194610.js"
   ]
 }
