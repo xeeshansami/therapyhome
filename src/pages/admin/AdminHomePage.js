@@ -105,35 +105,35 @@ const AdminHomePage = () => {
 
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $gradient={tokens.gradients.indigo} {...cardMotion(0)}>
+                            <MotionCard $accent="#7C3AED" {...cardMotion(0)}>
                                 <img src={Students} alt="Students" />
                                 <Title>Total Students</Title>
                                 <Data start={0} end={numberOfStudents} duration={2.5} />
                             </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $gradient={tokens.gradients.amber} {...cardMotion(1)}>
+                            <MotionCard $accent="#F59E0B" {...cardMotion(1)}>
                                 <img src={Classes} alt="Classes" />
                                 <Title>Total Classes</Title>
                                 <Data start={0} end={numberOfClasses} duration={5} />
                             </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $gradient={tokens.gradients.purple} {...cardMotion(2)}>
+                            <MotionCard $accent="#2563EB" {...cardMotion(2)}>
                                 <img src={Teachers} alt="Teachers" />
                                 <Title>Total Teachers</Title>
                                 <Data start={0} end={numberOfTeachers} duration={2.5} />
                             </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $gradient={tokens.gradients.teal} {...cardMotion(3)}>
+                            <MotionCard $accent="#10B981" {...cardMotion(3)}>
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Daily</Title>
                                 <Data start={0} end={totalDailyFee} duration={2.5} prefix="PKR " />
                             </MotionCard>
                         </Grid>
                         <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $gradient={tokens.gradients.red} {...cardMotion(4)}>
+                            <MotionCard $accent="#F43F5E" {...cardMotion(4)}>
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Monthly</Title>
 
@@ -161,10 +161,10 @@ const AdminHomePage = () => {
 const StyledPaper = styled(Paper)`
   && {
     position: relative;
-    padding: 20px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    min-height: 150px;
+    min-height: 132px;
     justify-content: space-between;
     align-items: flex-start;
     text-align: left;
@@ -174,23 +174,23 @@ const StyledPaper = styled(Paper)`
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
   }
   && img {
-    width: 48px;
-    height: 48px;
-    padding: 11px;
+    width: 44px;
+    height: 44px;
+    padding: 10px;
     box-sizing: border-box;
-    background: ${(props) => props.$gradient || tokens.gradients.indigo};
-    border-radius: 14px;
+    background: ${(props) => `${props.$accent || tokens.primary}1f`};
+    border-radius: 12px;
     object-fit: contain;
   }
   &&::after {
     content: "";
     position: absolute;
-    right: -30px;
-    bottom: -30px;
-    width: 110px;
-    height: 110px;
-    background: ${(props) => props.$gradient || tokens.gradients.indigo};
-    opacity: 0.07;
+    right: -34px;
+    bottom: -34px;
+    width: 104px;
+    height: 104px;
+    background: ${(props) => props.$accent || tokens.primary};
+    opacity: 0.05;
     border-radius: 50%;
   }
 `;

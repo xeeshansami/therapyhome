@@ -190,13 +190,15 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
             MuiListItemButton: {
                 styleOverrides: {
                     root: {
-                        borderRadius: 12,
-                        marginLeft: 10,
-                        marginRight: 10,
-                        marginTop: 2,
-                        marginBottom: 2,
-                        paddingTop: 9,
-                        paddingBottom: 9,
+                        borderRadius: 10,
+                        marginLeft: 8,
+                        marginRight: 8,
+                        marginTop: 1,
+                        marginBottom: 1,
+                        paddingTop: 7,
+                        paddingBottom: 7,
+                        '& .MuiListItemIcon-root': { minWidth: 36 },
+                        '& .MuiListItemText-primary': { fontSize: '0.875rem' },
                         transition: 'background-color .15s ease, color .15s ease',
                         '&:hover': { backgroundColor: `${primary}12` },
                         '&.Mui-selected': {

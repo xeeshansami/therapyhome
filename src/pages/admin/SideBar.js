@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Divider, ListItemButton, ListItemIcon, ListItemText, ListSubheader } from '@mui/material';
+import { Divider, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 
 import HomeIcon from "@mui/icons-material/Home";
@@ -95,9 +95,6 @@ const SideBar = () => {
             </React.Fragment>
             <Divider sx={{ my: 1 }} />
             <React.Fragment>
-                <ListSubheader component="div" inset>
-                    User
-                </ListSubheader>
                 <ListItemButton component={Link} to="/Admin/profile" selected={location.pathname.startsWith("/Admin/profile")}>
                     <ListItemIcon>
                         <AccountCircleOutlinedIcon color={location.pathname.startsWith("/Admin/profile") ? 'primary' : 'inherit'} />
