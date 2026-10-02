@@ -23,7 +23,7 @@ const SideBar = () => {
                     <ListItemIcon>
                         <HomeIcon color={location.pathname === ("/" || "/Admin/dashboard") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Home" />
+                    <ListItemText primary="Dashboard" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/classes" selected={location.pathname.startsWith('/Admin/classes')}>
                     <ListItemIcon>
@@ -41,32 +41,32 @@ const SideBar = () => {
                     <ListItemIcon>
                         <SupervisorAccountOutlinedIcon color={location.pathname.startsWith("/Admin/teachers") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Teachers" />
+                    <ListItemText primary="Staff" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/students" selected={location.pathname.startsWith("/Admin/students")}>
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/students") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="View Students" />
+                    <ListItemText primary="Students" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/AddConsultancy" selected={location.pathname.startsWith("/Admin/AddConsultancy")}>
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/AddConsultancy") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Consultancy Form" />
+                    <ListItemText primary="New Consultancy" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/addstudents" selected={location.pathname.startsWith("/Admin/addstudents")}>
                     <ListItemIcon>
                         <PersonOutlineIcon color={location.pathname.startsWith("/Admin/addstudents") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Add/Update Students" />
+                    <ListItemText primary="Add Student" />
                 </ListItemButton>
 
                <ListItemButton component={Link} to="/Admin/Fees" selected={location.pathname.startsWith("/Admin/Fees")}>
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Fees") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Fee-Salary Portal" />
+                    <ListItemText primary="Collect Fee" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/FeeRecords" selected={location.pathname.startsWith("/Admin/FeeRecords")}>
                     <ListItemIcon>
@@ -78,7 +78,7 @@ const SideBar = () => {
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/TeachersSalary") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Salary Portal" />
+                    <ListItemText primary="Pay Salary" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/Invoice" selected={location.pathname.startsWith("/Admin/Invoice")}>
                     <ListItemIcon>
@@ -90,7 +90,7 @@ const SideBar = () => {
                     <ListItemIcon>
                         <ReportIcon color={location.pathname.startsWith("/Admin/complains") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Complains" />
+                    <ListItemText primary="Complaints" />
                 </ListItemButton>
                  <ListItemButton component={Link} to="/Admin/notices" selected={location.pathname.startsWith("/Admin/notices")}>
                     <ListItemIcon>

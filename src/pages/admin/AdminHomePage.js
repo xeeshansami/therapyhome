@@ -1,5 +1,6 @@
 import { Box, Container, Grid, Paper, MenuItem, Select, FormControl, InputLabel, Stack, Typography } from '@mui/material';
 import SeeNotice from '../../components/SeeNotice';
+import FinanceOverview from '../../components/FinanceOverview';
 import Students from "../../assets/img1.png";
 import Classes from "../../assets/img2.png";
 import Teachers from "../../assets/img3.png";
@@ -127,6 +128,11 @@ const AdminHomePage = () => {
                                 </MotionCard>
                             </Grid>
                         ))}
+                        <Grid item xs={12}>
+                            <Box sx={{ mt: 1 }}>
+                                <FinanceOverview />
+                            </Box>
+                        </Grid>
                         <Grid item xs={12} md={12} lg={12}>
                             <Paper sx={{ p: 2.5, display: 'flex', flexDirection: 'column' }}>
                                 <SeeNotice />

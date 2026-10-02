@@ -1,13 +1,18 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
 import {
+    Alert,
     Box,
+    Button,
     Card,
     CardContent,
+    CircularProgress,
     Container,
     Divider,
     Grid,
     Stack,
+    TextField,
     ToggleButton,
     ToggleButtonGroup,
     Tooltip,
@@ -18,8 +23,10 @@ import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import CheckIcon from '@mui/icons-material/Check';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useColorMode } from '../../context/ColorModeContext';
 import { primaryPresets } from '../../theme';
+import { authSuccess } from '../../redux/userRelated/userSlice';
 
 // Settings surface for the preferences the app actually has: colour mode and
 // primary colour, both already provided by ColorModeContext. Nothing else is
@@ -53,23 +60,107 @@ const SectionCard = ({ icon: Icon, title, description, children }) => (
     </Card>
 );
 
-const ReadOnlyRow = ({ label, value }) => (
-    <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        sx={{ py: 1.25 }}
-        justifyContent="space-between"
-        spacing={0.5}
-    >
-        <Typography variant="body2" color="text.secondary">{label}</Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600, wordBreak: 'break-word' }}>
-            {value || '—'}
-        </Typography>
-    </Stack>
-);
-
 const AdminSettings = () => {
     const { mode, primary, setMode, setPrimary } = useColorMode();
     const { currentUser } = useSelector((state) => state.user);
+    const dispatch = useDispatch();
+
+    const [form, setForm] = useState({ name: '', email: '', schoolName: '' });
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [feedback, setFeedback] = useState(null); // { severity, text }
+
+    useEffect(() => {
+        if (currentUser) {
+            setForm({
+                name: currentUser.name || '',
+                email: currentUser.email || '',
+                schoolName: currentUser.schoolName || '',
+            });
+        }
+    }, [currentUser]);
+
+    const dirty =
+        form.name !== (currentUser?.name || '') ||
+        form.email !== (currentUser?.email || '') ||
+        form.schoolName !== (currentUser?.schoolName || '') ||
+        password.length > 0;
+
+    const handleField = (field) => (e) => {
+        setForm((prev) => ({ ...prev, [field]: e.target.value }));
+        setFeedback(null);
+    };
+
+    const handleSave = async () => {
+        if (!form.name.trim()) {
+            setFeedback({ severity: 'error', text: 'Name is required.' });
+            return;
+        }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) {
+            setFeedback({ severity: 'error', text: 'Enter a valid email address.' });
+            return;
+        }
+        if (!form.schoolName.trim()) {
+            setFeedback({ severity: 'error', text: 'Organisation name is required.' });
+            return;
+        }
+        if (password && password.length < 6) {
+            setFeedback({ severity: 'error', text: 'Password must be at least 6 characters.' });
+            return;
+        }
+        if (password && password !== confirmPassword) {
+            setFeedback({ severity: 'error', text: 'The two passwords do not match.' });
+            return;
+        }
+
+        setSaving(true);
+        setFeedback(null);
+        try {
+            const payload = {
+                name: form.name.trim(),
+                email: form.email.trim(),
+                schoolName: form.schoolName.trim(),
+            };
+            if (password) payload.password = password;
+
+            const res = await axios.put(
+                `${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}`,
+                payload,
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (res.data && res.data._id) {
+                // Keep the signed-in user in step with what was saved. The response
+                // omits the password, so carry the stored one over.
+                const merged = { ...currentUser, ...res.data };
+                dispatch(authSuccess(merged));
+                setPassword('');
+                setConfirmPassword('');
+                setFeedback({ severity: 'success', text: 'Profile updated successfully.' });
+            } else {
+                setFeedback({ severity: 'error', text: res.data?.message || 'Unable to update profile.' });
+            }
+        } catch (err) {
+            setFeedback({
+                severity: 'error',
+                text: err.response?.data?.message || 'Unable to update profile. Please try again.',
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleReset = () => {
+        setForm({
+            name: currentUser?.name || '',
+            email: currentUser?.email || '',
+            schoolName: currentUser?.schoolName || '',
+        });
+        setPassword('');
+        setConfirmPassword('');
+        setFeedback(null);
+    };
 
     return (
         <Container maxWidth="lg" sx={{ py: { xs: 2, md: 3 } }}>
@@ -151,18 +242,62 @@ const AdminSettings = () => {
                     <SectionCard
                         icon={PersonOutlineIcon}
                         title="Account"
-                        description="Details from your signed-in account."
+                        description="Update the details on your signed-in account."
                     >
-                        <ReadOnlyRow label="Name" value={currentUser?.name} />
-                        <Divider />
-                        <ReadOnlyRow label="Email" value={currentUser?.email} />
-                        <Divider />
-                        <ReadOnlyRow label="Organisation" value={currentUser?.schoolName} />
-                        <Divider />
-                        <ReadOnlyRow label="Role" value={currentUser?.role} />
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-                            These details are read-only here — the app has no account update endpoint.
+                        {feedback && (
+                            <Alert severity={feedback.severity} sx={{ mb: 2 }} onClose={() => setFeedback(null)}>
+                                {feedback.text}
+                            </Alert>
+                        )}
+
+                        <Stack spacing={2}>
+                            <TextField label="Name" value={form.name} onChange={handleField('name')} fullWidth required />
+                            <TextField label="Email" type="email" value={form.email} onChange={handleField('email')} fullWidth required />
+                            <TextField label="Organisation" value={form.schoolName} onChange={handleField('schoolName')} fullWidth required />
+                            <TextField label="Role" value={currentUser?.role || ''} fullWidth disabled helperText="Role cannot be changed here." />
+                        </Stack>
+
+                        <Divider sx={{ my: 3 }} />
+
+                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                            <LockOutlinedIcon fontSize="small" color="action" />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Change password</Typography>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                            Leave blank to keep your current password.
                         </Typography>
+                        <Stack spacing={2}>
+                            <TextField
+                                label="New password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => { setPassword(e.target.value); setFeedback(null); }}
+                                fullWidth
+                                autoComplete="new-password"
+                            />
+                            <TextField
+                                label="Confirm new password"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => { setConfirmPassword(e.target.value); setFeedback(null); }}
+                                fullWidth
+                                autoComplete="new-password"
+                                error={Boolean(confirmPassword) && confirmPassword !== password}
+                                helperText={Boolean(confirmPassword) && confirmPassword !== password ? 'Passwords do not match.' : ' '}
+                            />
+                        </Stack>
+
+                        <Stack direction="row" spacing={1} sx={{ mt: 2 }} justifyContent="flex-end">
+                            <Button onClick={handleReset} disabled={saving || !dirty}>Reset</Button>
+                            <Button
+                                variant="contained"
+                                onClick={handleSave}
+                                disabled={saving || !dirty}
+                                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+                            >
+                                {saving ? 'Saving...' : 'Save changes'}
+                            </Button>
+                        </Stack>
                     </SectionCard>
                 </Grid>
             </Grid>
