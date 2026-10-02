@@ -12,6 +12,7 @@ import ClassOutlinedIcon from '@mui/icons-material/ClassOutlined';
 import SupervisorAccountOutlinedIcon from '@mui/icons-material/SupervisorAccountOutlined';
 import ReportIcon from '@mui/icons-material/Report';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 
 const SideBar = () => {
     const location = useLocation();
@@ -102,6 +103,12 @@ const SideBar = () => {
                         <AccountCircleOutlinedIcon color={location.pathname.startsWith("/Admin/profile") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
                     <ListItemText primary="Profile" />
+                </ListItemButton>
+                <ListItemButton component={Link} to="/Admin/settings" selected={location.pathname.startsWith("/Admin/settings")}>
+                    <ListItemIcon>
+                        <SettingsOutlinedIcon color={location.pathname.startsWith("/Admin/settings") ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary="Settings" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/admin/logout" selected={location.pathname.startsWith("/logout")}>
                     <ListItemIcon>

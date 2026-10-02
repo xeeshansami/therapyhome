@@ -264,7 +264,7 @@ const LoginPage = ({ role }) => {
                                 mt: 3,
                                 py: 1.2,
                                 borderRadius: 2.5,
-                                background: `linear-gradient(120deg, ${primary}, #7b2ff7)`,
+                                background: `linear-gradient(120deg, ${primary}, ${primary}aa)`,
                                 boxShadow: `0 12px 26px ${primary}55`,
                             }}
                         >
@@ -302,8 +302,8 @@ const LoginPage = ({ role }) => {
                     position: 'relative',
                     overflow: 'hidden',
                     background: isDark
-                        ? 'radial-gradient(800px 500px at 30% 20%, rgba(122,110,255,0.28), transparent 60%), linear-gradient(135deg, #151b2d, #221a4d)'
-                        : `linear-gradient(135deg, ${primary}, #7b2ff7 55%, #11b3a4)`,
+                        ? `radial-gradient(800px 500px at 30% 20%, ${primary}33, transparent 60%), linear-gradient(135deg, #151b2d, #1b2a24)`
+                        : `linear-gradient(135deg, ${primary} 0%, ${primary}d0 55%, ${primary}99 100%)`,
                 }}
             >
                 <MotionDiv

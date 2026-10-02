@@ -280,7 +280,6 @@ const StyledContainerBackground = styled.div`
   align-items: center;
   height: 100%;
   width:100%;
-  font-family: "Josefin Sans", sans-serif;
   color: white;
   background-image: url(${background}); /* Use template literal to apply the imported image */
   background-size: cover; /* Optional: ensures the background image covers the entire container */

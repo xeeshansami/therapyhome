@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAllTeachers } from '../../../redux/teacherRelated/teacherHandle';
 import {
     Paper, Table, TableBody, TableContainer,
-    TableHead, TablePagination, Button, Box, IconButton,
+    TableHead, TablePagination, Button, Box, IconButton, Stack,
     Avatar,
     // ✅ 1. IMPORT CircularProgress
     CircularProgress,
@@ -14,7 +14,6 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { StyledTableCell, StyledTableRow } from '../../../components/styles';
 import { BlueButton, GreenButton } from '../../../components/buttonStyles';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
-import SpeedDialTemplate from '../../../components/SpeedDialTemplate';
 import Popup from '../../../components/Popup';
 
 const ShowTeachers = () => {
@@ -81,9 +80,27 @@ const ShowTeachers = () => {
         }
     ];
 
+    const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
+    const currentPage = Math.min(page, lastPage);
+
     return (
-        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-            <TableContainer>
+        <Paper sx={{ width: '100%', overflow: 'hidden', p: 2 }}>
+            {actions && actions.length > 0 && (
+                <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}>
+                    {actions.map((action, index) => (
+                        <Button
+                            key={action.name || index}
+                            onClick={action.action}
+                            startIcon={action.icon}
+                            variant={index === 0 ? 'contained' : 'outlined'}
+                            size="small"
+                        >
+                            {action.name}
+                        </Button>
+                    ))}
+                </Stack>
+            )}
+            <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table stickyHeader aria-label="sticky table">
                     <TableHead>
                         <StyledTableRow>
@@ -103,7 +120,7 @@ const ShowTeachers = () => {
                     </TableHead>
                     <TableBody>
                         {rows
-                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                            .slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
                             .map((row) => {
                                 return (
                                     <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.id}>
@@ -141,15 +158,16 @@ const ShowTeachers = () => {
                 component="div"
                 count={rows.length}
                 rowsPerPage={rowsPerPage}
-                page={page}
+                page={currentPage}
                 onPageChange={(event, newPage) => setPage(newPage)}
                 onRowsPerPageChange={(event) => {
-                    setRowsPerPage(parseInt(event.target.value, 5));
+                    // Radix 10. This was parseInt(value, 5), which read the choice
+                    // in base 5: "5" became NaN and "100" became 25.
+                    setRowsPerPage(parseInt(event.target.value, 10));
                     setPage(0);
                 }}
             />
 
-            <SpeedDialTemplate actions={actions} />
             <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
         </Paper >
     );

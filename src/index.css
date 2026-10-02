@@ -1,5 +1,5 @@
 * {
-  font-family: 'Inter', 'Plus Jakarta Sans', 'Poppins', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Poppins', sans-serif;
   margin: 0;
   box-sizing: border-box;
 }
@@ -90,7 +90,6 @@ body {
   /* background-color: var(--color-bg);
   background-size: cover;
   background-blend-mode: darken; */
-  font-family: "Josefin Sans", sans-serif;
 }
 .loader {
     position: fixed;
@@ -250,4 +249,17 @@ body {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Surface tokens used by styled-components that sit outside the MUI theme.
+   Kept in sync with theme.js palette values for both colour modes. */
+:root,
+[data-theme="light"] {
+  --th-card-border: rgba(15, 23, 42, 0.08);
+  --th-muted: #64748b;
+}
+
+[data-theme="dark"] {
+  --th-card-border: rgba(148, 163, 184, 0.16);
+  --th-muted: #94a3b8;
 }

@@ -3,14 +3,15 @@ import { Button } from '@mui/material';
 
 // Enterprise palette (UI only). Export names are kept identical so every
 // existing import/usage across the app continues to work unchanged.
-// Primary actions now use Blue #2563EB; secondary uses Indigo #4F46E5.
+// Primary actions follow the live accent (--color-primary) so every screen
+// tracks the theme; destructive/semantic colours stay fixed.
 
 export const RedButton = styled(Button)`
   && {
     background-color: #EF4444;
     color: white;
     margin-left: 4px;
-    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.28);
+    box-shadow: none;
     &:hover {
       background-color: #dc2626;
       border-color: #dc2626;
@@ -43,40 +44,40 @@ export const DarkRedButton = styled(Button)`
 
 export const BlueButton = styled(Button)`
   && {
-    background-color: #2563EB;
+    background-color: var(--color-primary, #3DBE72);
     color: #fff;
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28);
+    box-shadow: none;
     &:hover {
-      background-color: #1d4ed8;
+      background-color: var(--color-primary-dark, #2E9D5B);
     }
   }
 `;
 
 export const PurpleButton = styled(Button)`
   && {
-    background-color: #7C3AED;
+    background-color: var(--color-primary, #3DBE72);
     color: #fff;
     &:hover {
-      background-color: #6d28d9;
+      background-color: var(--color-primary-dark, #2E9D5B);
     }
   }
 `;
 
 export const LightPurpleButton = styled(Button)`
   && {
-    background-color: #2563EB;
+    background-color: var(--color-primary, #3DBE72);
     color: #fff;
     width: 200px; // Set the desired width here
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+    box-shadow: none;
     &:hover {
-      background-color: #1d4ed8;
+      background-color: var(--color-primary-dark, #2E9D5B);
     }
   }
 `;
 
 export const LightPurpleButtonCricle = styled(Button)`
   && {
-    background-color: #2563EB;
+    background-color: var(--color-primary, #3DBE72);
     color: #fff;
     width: 100px;  // Set width and height to the same value for a circle
     height: 100px; // Set height to be equal to width
@@ -85,21 +86,21 @@ export const LightPurpleButtonCricle = styled(Button)`
     align-items: center; // Center text vertically
     justify-content: center; // Center text horizontally
     text-align: center; // Center text alignment
-    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+    box-shadow: none;
 
     &:hover {
-      background-color: #1d4ed8;
+      background-color: var(--color-primary-dark, #2E9D5B);
     }
   }
 `;
 
 export const GreenButton = styled(Button)`
   && {
-    background-color: #10B981;
+    background-color: var(--color-primary, #3DBE72);
     color: #fff;
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.26);
+    box-shadow: none;
     &:hover {
-      background-color: #059669;
+      background-color: var(--color-primary-dark, #2E9D5B);
     }
   }
 `;
@@ -117,12 +118,12 @@ export const BrownButton = styled(Button)`
 
 export const IndigoButton = styled(Button)`
   && {
-    background-color: #4F46E5;
+    background-color: var(--color-primary, #3DBE72);
     color: white;
-    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28);
+    box-shadow: none;
     &:hover {
-      background-color: #4338ca;
-      border-color: #4338ca;
+      background-color: var(--color-primary-dark, #2E9D5B);
+      border-color: var(--color-primary-dark, #2E9D5B);
     }
   }
 `;

@@ -9,9 +9,9 @@ import { createTheme } from '@mui/material/styles';
 // =============================================================================
 
 export const tokens = {
-    primary: '#2563EB',
-    primaryLight: '#3b82f6',
-    primaryDark: '#1d4ed8',
+    primary: '#3DBE72',
+    primaryLight: '#5ED08C',
+    primaryDark: '#2E9D5B',
     secondary: '#4F46E5',
     accentAmber: '#F59E0B',
     accentPurple: '#7C3AED',
@@ -21,11 +21,11 @@ export const tokens = {
     warning: '#F59E0B',
     danger: '#EF4444',
     info: '#0EA5E9',
-    bg: '#F8FAFC',
+    bg: '#F5F6F8',
     paper: '#FFFFFF',
     textPrimary: '#0F172A',
     textSecondary: '#64748B',
-    border: '#E9EDF3',
+    border: '#E8ECF1',
     // Gradient presets (mode independent). Keys kept stable — AdminHomePage and
     // other dashboards reference indigo/amber/purple/red/teal by name.
     gradients: {
@@ -34,12 +34,13 @@ export const tokens = {
         purple: 'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
         red: 'linear-gradient(135deg, #FB7185 0%, #EF4444 100%)',
         teal: 'linear-gradient(135deg, #34D399 0%, #10B981 100%)',
-        brand: 'linear-gradient(120deg, #2563EB 0%, #4F46E5 55%, #7C3AED 100%)',
+        brand: 'linear-gradient(120deg, #3DBE72 0%, #2E9D5B 55%, #1F7A46 100%)',
     },
 };
 
 // Selectable primary colours for the customizer panel.
 export const primaryPresets = [
+    { name: 'Green', value: '#3DBE72' },
     { name: 'Blue', value: '#2563EB' },
     { name: 'Indigo', value: '#4F46E5' },
     { name: 'Violet', value: '#7C3AED' },
@@ -76,9 +77,9 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
             warning: { main: tokens.warning, contrastText: '#ffffff' },
             error: { main: tokens.danger, contrastText: '#ffffff' },
             info: { main: tokens.info, contrastText: '#ffffff' },
-            background: { default: '#F8FAFC', paper: '#FFFFFF' },
+            background: { default: '#F5F6F8', paper: '#FFFFFF' },
             text: { primary: '#0F172A', secondary: '#64748B' },
-            divider: '#E9EDF3',
+            divider: '#E8ECF1',
         }
         : {
             mode: 'dark',
@@ -94,14 +95,14 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
         };
 
     const softShadow = isLight
-        ? '0 1px 2px rgba(15,23,42,0.04), 0 8px 24px rgba(15,23,42,0.06)'
+        ? '0 1px 2px rgba(15,23,42,0.03), 0 4px 12px rgba(15,23,42,0.04)'
         : '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5)';
 
     return createTheme({
         palette,
         shape: { borderRadius: 14 },
         typography: {
-            fontFamily: '"Inter", "Plus Jakarta Sans", "Poppins", "Helvetica", "Arial", sans-serif',
+            fontFamily: '"Plus Jakarta Sans", "Inter", "Poppins", "Helvetica", "Arial", sans-serif',
             h1: { fontWeight: 800, letterSpacing: '-0.03em' },
             h2: { fontWeight: 800, letterSpacing: '-0.03em' },
             h3: { fontWeight: 800, letterSpacing: '-0.02em' },
@@ -164,8 +165,8 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
                     },
                     sizeLarge: { paddingTop: 11, paddingBottom: 11, fontSize: '0.975rem' },
                     containedPrimary: {
-                        boxShadow: `0 6px 16px ${primary}40`,
-                        '&:hover': { boxShadow: `0 8px 22px ${primary}55` },
+                        boxShadow: 'none',
+                        '&:hover': { boxShadow: `0 4px 12px ${primary}33` },
                     },
                     outlined: {
                         borderColor: palette.divider,
@@ -199,11 +200,11 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
                         transition: 'background-color .15s ease, color .15s ease',
                         '&:hover': { backgroundColor: `${primary}12` },
                         '&.Mui-selected': {
-                            backgroundColor: `${primary}1a`,
-                            color: primary,
-                            '& .MuiListItemIcon-root': { color: primary },
-                            '& .MuiListItemText-primary': { fontWeight: 700 },
-                            '&:hover': { backgroundColor: `${primary}26` },
+                            backgroundColor: primary,
+                            color: '#ffffff',
+                            '& .MuiListItemIcon-root': { color: '#ffffff' },
+                            '& .MuiListItemText-primary': { fontWeight: 600 },
+                            '&:hover': { backgroundColor: primaryDark },
                         },
                     },
                 },

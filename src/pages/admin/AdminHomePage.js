@@ -137,7 +137,7 @@ const AdminHomePage = () => {
                                 <img src={Fees} alt="Fees" />
                                 <Title>Fees Collection Monthly</Title>
 
-                                <Typography variant="h6" style={{ color: '#ffffff', fontWeight: 'bold' }}>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
                                     <Data start={0} end={totalFee} duration={2.5} prefix="PKR " />
                                 </Typography>
 
@@ -155,39 +155,42 @@ const AdminHomePage = () => {
     );
 };
 
+// Surface-coloured stat card: the accent now lives in the icon tile instead of
+// flooding the whole card, which keeps the figures high-contrast in both modes.
+// Paper supplies the themed background, so no colour is hardcoded here.
 const StyledPaper = styled(Paper)`
   && {
     position: relative;
-    padding: 22px 20px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    height: 200px;
+    min-height: 150px;
     justify-content: space-between;
     align-items: flex-start;
     text-align: left;
-    color: #ffffff;
     border-radius: 16px;
     overflow: hidden;
-    background: ${(props) => props.$gradient || tokens.gradients.indigo};
-    box-shadow: 0 10px 24px rgba(45, 55, 99, 0.12);
+    border: 1px solid var(--th-card-border, rgba(15, 23, 42, 0.08));
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
   }
   && img {
-    width: 56px;
-    height: 56px;
-    padding: 12px;
+    width: 48px;
+    height: 48px;
+    padding: 11px;
     box-sizing: border-box;
-    background: rgba(255, 255, 255, 0.22);
+    background: ${(props) => props.$gradient || tokens.gradients.indigo};
     border-radius: 14px;
     object-fit: contain;
   }
   &&::after {
     content: "";
     position: absolute;
-    right: -28px;
-    bottom: -28px;
+    right: -30px;
+    bottom: -30px;
     width: 110px;
     height: 110px;
-    background: rgba(255, 255, 255, 0.12);
+    background: ${(props) => props.$gradient || tokens.gradients.indigo};
+    opacity: 0.07;
     border-radius: 50%;
   }
 `;
@@ -207,16 +210,15 @@ const cardMotion = (i) => ({
 });
 
 const Title = styled.p`
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  opacity: 0.95;
+  color: var(--th-muted, #64748b);
   margin: 0;
 `;
 
 const Data = styled(CountUp)`
-  font-size: 1.9rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #ffffff;
 `;
 
 const StyledContainerBackground = styled.div`

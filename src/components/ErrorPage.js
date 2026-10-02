@@ -19,7 +19,6 @@ const Container = styled.div`
   justify-content: center;
   align-items: center;
   height: 100vh;
-  font-family: "Josefin Sans", sans-serif;
   color: white;
   background-image: url('https://images.pexels.com/photos/593158/pexels-photo-593158.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1')
 `;

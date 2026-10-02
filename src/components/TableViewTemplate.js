@@ -54,7 +54,9 @@ const TableViewTemplate = ({ columns, rows }) => {
                 page={page}
                 onPageChange={(event, newPage) => setPage(newPage)}
                 onRowsPerPageChange={(event) => {
-                    setRowsPerPage(parseInt(event.target.value, 5));
+                    // Radix 10. This was parseInt(value, 5), which read the choice
+                    // in base 5: "5" became NaN and "100" became 25.
+                    setRowsPerPage(parseInt(event.target.value, 10));
                     setPage(0);
                 }}
             />

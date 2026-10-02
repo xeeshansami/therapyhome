@@ -10,7 +10,6 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { BlueButton, GreenButton } from '../../../components/buttonStyles';
 import TableTemplate from '../../../components/TableTemplate';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
-import SpeedDialTemplate from '../../../components/SpeedDialTemplate';
 import Popup from '../../../components/Popup';
 import axios from 'axios';
 
@@ -169,13 +168,12 @@ const ShowStudents = () => {
             ) : (
                 <Paper sx={{ width: '100%', overflow: 'hidden' }}>
                     {Array.isArray(studentsList) && studentsList.length > 0 ? (
-                        <TableTemplate buttonHaver={StudentButtonHaver} columns={studentColumns} rows={studentRows} />
+                        <TableTemplate buttonHaver={StudentButtonHaver} columns={studentColumns} rows={studentRows} actions={actions} />
                     ) : (
                         <Typography variant="h6" sx={{ p: 2, textAlign: 'center' }}>
                             No students found.
                         </Typography>
                     )}
-                    <SpeedDialTemplate actions={actions} />
                 </Paper>
             )}
             <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />

@@ -74,7 +74,7 @@ const AccountMenu = () => {
                                 height: 34,
                                 fontSize: 15,
                                 fontWeight: 700,
-                                background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
+                                background: 'linear-gradient(135deg, var(--color-primary, #3DBE72), var(--color-primary-dark, #2E9D5B))',
                             }}
                         >
                             {initial}
@@ -122,7 +122,7 @@ const AccountMenu = () => {
                                 width: 40,
                                 height: 40,
                                 fontWeight: 700,
-                                background: 'linear-gradient(135deg, #2563EB, #4F46E5)',
+                                background: 'linear-gradient(135deg, var(--color-primary, #3DBE72), var(--color-primary-dark, #2E9D5B))',
                             }}
                         >
                             {initial}
@@ -144,7 +144,7 @@ const AccountMenu = () => {
                     </ListItemIcon>
                     Profile
                 </MenuItem>
-                <MenuItem>
+                <MenuItem component={Link} to={`/${currentRole}/settings`}>
                     <ListItemIcon>
                         <Settings fontSize="small" />
                     </ListItemIcon>

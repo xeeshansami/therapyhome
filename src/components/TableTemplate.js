@@ -1,13 +1,41 @@
 import React, { useState } from 'react'
 import { StyledTableCell, StyledTableRow } from './styles';
-import { Table, TableBody, TableContainer, TableHead, TablePagination } from '@mui/material';
+import { Box, Button, Stack, Table, TableBody, TableContainer, TableHead, TablePagination } from '@mui/material';
 
-const TableTemplate = ({ buttonHaver: ButtonHaver, columns, rows }) => {
+const TableTemplate = ({ buttonHaver: ButtonHaver, columns, rows, actions }) => {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
+
+    const safeRows = rows || [];
+
+    // Keep the page in range when the row set shrinks (search, delete, filter),
+    // otherwise the table renders empty on a page that no longer exists.
+    const lastPage = Math.max(0, Math.ceil(safeRows.length / rowsPerPage) - 1);
+    const currentPage = Math.min(page, lastPage);
+
     return (
         <>
-            <TableContainer>
+            {actions && actions.length > 0 && (
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ mb: 2, flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}
+                >
+                    {actions.map((action, index) => (
+                        <Button
+                            key={action.name || index}
+                            onClick={action.action}
+                            startIcon={action.icon}
+                            variant={index === 0 ? 'contained' : 'outlined'}
+                            size="small"
+                        >
+                            {action.name}
+                        </Button>
+                    ))}
+                </Stack>
+            )}
+
+            <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table stickyHeader aria-label="sticky table">
                     <TableHead>
                         <StyledTableRow>
@@ -26,8 +54,8 @@ const TableTemplate = ({ buttonHaver: ButtonHaver, columns, rows }) => {
                         </StyledTableRow>
                     </TableHead>
                     <TableBody>
-                        {rows
-                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                        {safeRows
+                            .slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
                             .map((row) => {
                                 return (
                                     <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.id}>
@@ -44,7 +72,9 @@ const TableTemplate = ({ buttonHaver: ButtonHaver, columns, rows }) => {
                                             );
                                         })}
                                         <StyledTableCell align="center">
-                                            <ButtonHaver row={row} />
+                                            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                <ButtonHaver row={row} />
+                                            </Box>
                                         </StyledTableCell>
                                     </StyledTableRow>
                                 );
@@ -55,12 +85,14 @@ const TableTemplate = ({ buttonHaver: ButtonHaver, columns, rows }) => {
             <TablePagination
                 rowsPerPageOptions={[5, 10, 25, 100]}
                 component="div"
-                count={rows.length}
+                count={safeRows.length}
                 rowsPerPage={rowsPerPage}
-                page={page}
+                page={currentPage}
                 onPageChange={(event, newPage) => setPage(newPage)}
                 onRowsPerPageChange={(event) => {
-                    setRowsPerPage(parseInt(event.target.value, 5));
+                    // Radix 10. This was parseInt(value, 5), which read the choice in
+                    // base 5: "5" became NaN and "100" became 25.
+                    setRowsPerPage(parseInt(event.target.value, 10));
                     setPage(0);
                 }}
             />

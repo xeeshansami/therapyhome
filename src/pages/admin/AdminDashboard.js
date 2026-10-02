@@ -17,6 +17,7 @@ import SettingsLauncher from '../../components/SettingsLauncher';
 import Logout from '../Logout';
 import SideBar from './SideBar';
 import AdminProfile from './AdminProfile';
+import AdminSettings from './AdminSettings';
 import AdminInvoice from './AdminInvoice';
 import AdminFees from './AdminFees';
 import TeachersSalary from './TeachersSalary';
@@ -115,6 +116,7 @@ const AdminDashboard = () => {
                         <Route path="/" element={<AdminHomePage />} />
                         <Route path="/dashboard" element={<AdminHomePage />} />
                         <Route path="/profile" element={<AdminProfile />} />
+                        <Route path="/settings" element={<AdminSettings />} />
                         <Route path="/complains" element={<SeeComplains />} />
 
                         {/* Notice */}
