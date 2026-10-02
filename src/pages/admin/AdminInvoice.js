@@ -34,7 +34,9 @@ const TableHeader = styled.th`
 class AdminInvoice extends Component {
     state = {
         // --- Primary Target ---
-        searchTarget: 'student', // 'student' or 'teacher'
+        // Student fee records now live on the Fee Records page; this portal
+        // covers teacher salary slips only.
+        searchTarget: 'teacher',
 
         // --- Student Search State ---
         studentSearchBy: 'rollNum',
@@ -443,7 +445,6 @@ class AdminInvoice extends Component {
                                     onChange={this.handlePrimaryTargetChange}
                                     label="Select Target"
                                 >
-                                    <MenuItem value="student">Student Invoice</MenuItem>
                                     <MenuItem value="teacher">Teacher Salary Slip</MenuItem>
                                 </Select>
                             </FormControl>
