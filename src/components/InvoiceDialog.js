@@ -477,6 +477,41 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                     </div>
                                 </div>
 
+                                {/* SESSION / SERVICE BREAKDOWN - only when the slip carries line items */}
+                                {Array.isArray(currentData.lineItems) && currentData.lineItems.length > 0 && (
+                                    <div className="fee-breakdown" style={{ margin: '8px 0' }}>
+                                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Fee Details</div>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95em' }}>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ textAlign: 'left', borderBottom: '1px solid #999', padding: '3px 4px' }}>Session / Service</th>
+                                                    <th style={{ textAlign: 'right', borderBottom: '1px solid #999', padding: '3px 4px' }}>Fee</th>
+                                                    <th style={{ textAlign: 'right', borderBottom: '1px solid #999', padding: '3px 4px' }}>Sessions</th>
+                                                    <th style={{ textAlign: 'right', borderBottom: '1px solid #999', padding: '3px 4px' }}>Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {currentData.lineItems.map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td style={{ padding: '3px 4px', borderBottom: '1px solid #eee' }}>{item.serviceName}</td>
+                                                        <td style={{ padding: '3px 4px', borderBottom: '1px solid #eee', textAlign: 'right' }}>{Number(item.feePerSession || 0).toLocaleString()}</td>
+                                                        <td style={{ padding: '3px 4px', borderBottom: '1px solid #eee', textAlign: 'right' }}>{item.sessions}</td>
+                                                        <td style={{ padding: '3px 4px', borderBottom: '1px solid #eee', textAlign: 'right' }}>{Number(item.total || 0).toLocaleString()}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colSpan={3} style={{ padding: '4px', fontWeight: 'bold', borderTop: '1px solid #999' }}>NET FEE</td>
+                                                    <td style={{ padding: '4px', fontWeight: 'bold', borderTop: '1px solid #999', textAlign: 'right' }}>
+                                                        Rs. {currentData.lineItems.reduce((sum, i) => sum + (Number(i.total) || 0), 0).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                )}
+
                                 {/* NEW ROW FOR PAID AMOUNT AND BALANCE DUE */}
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="fee-label" style={feeLabelStyle}>Paid Amount:</div>

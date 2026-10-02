@@ -1,289 +1,279 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom'
-import { getClassDetails, getClassStudents, getSubjectList } from "../../../redux/sclassRelated/sclassHandle";
-import { deleteUser } from '../../../redux/userRelated/userHandle';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import {
-    Box, Container, Typography, Tab, IconButton
+    Box, Button, Card, CardContent, CircularProgress, Container, FormControl,
+    Grid, InputLabel, MenuItem, Paper, Select, Stack, TextField, Typography
 } from '@mui/material';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import { resetSubjects } from "../../../redux/sclassRelated/sclassSlice";
-import { BlueButton, GreenButton, PurpleButton } from "../../../components/buttonStyles";
-import TableTemplate from "../../../components/TableTemplate";
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import SpeedDialTemplate from "../../../components/SpeedDialTemplate";
+import { getClassDetails } from "../../../redux/sclassRelated/sclassHandle";
 import Popup from "../../../components/Popup";
-import DeleteIcon from "@mui/icons-material/Delete";
-import PostAddIcon from '@mui/icons-material/PostAdd';
+
+const DetailItem = ({ label, value }) => (
+    <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+            {label}
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+            {(value === 0 || value) ? String(value) : "N/A"}
+        </Typography>
+    </Grid>
+);
 
 const ClassDetails = () => {
-    const params = useParams()
-    const navigate = useNavigate()
+    const params = useParams();
+    const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { subjectsList, sclassStudents, sclassDetails, loading, error, response, getresponse } = useSelector((state) => state.sclass);
 
-    const classID = params.id
+    const { sclassDetails, loading, error } = useSelector((state) => state.sclass);
+    const classID = params.id;
 
-    useEffect(() => {
-        dispatch(getClassDetails(classID, "Sclass"));
-        dispatch(getSubjectList(classID, "ClassSubjects"))
-        dispatch(getClassStudents(classID));
-    }, [dispatch, classID])
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [formData, setFormData] = useState({ sclassName: '', sclassFee: '', timingType: '', timingSlot: '' });
+    const [saving, setSaving] = useState(false);
 
-    if (error) {
-        console.log(error)
-    }
-
-    const [value, setValue] = useState('1');
-
-    const handleChange = (event, newValue) => {
-        setValue(newValue);
-    };
+    // Timing dropdowns use the same endpoints as AddClass.
+    const [types, setTypes] = useState([]);
+    const [slots, setSlots] = useState([]);
+    const [loadingTypes, setLoadingTypes] = useState(false);
+    const [loadingSlots, setLoadingSlots] = useState(false);
 
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
+    const [isSuccess, setIsSuccess] = useState(false);
 
-    const deleteHandler = (deleteID, address) => {
-        console.log(deleteID);
-        console.log(address);
-        setMessage("Sorry the delete function has been disabled for now.")
-        setShowPopup(true)
-        // dispatch(deleteUser(deleteID, address))
-        //     .then(() => {
-        //         dispatch(getClassStudents(classID));
-        //         dispatch(resetSubjects())
-        //         dispatch(getSubjectList(classID, "ClassSubjects"))
-        //     })
+    useEffect(() => {
+        dispatch(getClassDetails(classID, "Sclass"));
+    }, [dispatch, classID]);
+
+    if (error) {
+        console.log(error);
     }
 
-    const subjectColumns = [
-        { id: 'name', label: 'Subject Name', minWidth: 170 },
-        { id: 'code', label: 'Subject Code', minWidth: 100 },
-    ]
-
-    const subjectRows = subjectsList && subjectsList.length > 0 && subjectsList.map((subject) => {
-        return {
-            name: subject.subName,
-            code: subject.subCode,
-            id: subject._id,
-        };
-    })
-
-    const SubjectsButtonHaver = ({ row }) => {
-        return (
-            <>
-                <IconButton onClick={() => deleteHandler(row.id, "Subject")}>
-                    <DeleteIcon color="error" />
-                </IconButton>
-                <BlueButton
-                    variant="contained"
-                    onClick={() => {
-                        navigate(`/Admin/class/subject/${classID}/${row.id}`)
-                    }}
-                >
-                    View
-                </BlueButton >
-            </>
-        );
-    };
-
-    const subjectActions = [
-        {
-            icon: <PostAddIcon color="primary" />, name: 'Add New Subject',
-            action: () => navigate("/Admin/addsubject/" + classID)
-        },
-        {
-            icon: <DeleteIcon color="error" />, name: 'Delete All Subjects',
-            action: () => deleteHandler(classID, "SubjectsClass")
+    // Seed the edit form from whatever the API returned.
+    useEffect(() => {
+        if (sclassDetails) {
+            setFormData({
+                sclassName: sclassDetails.sclassName || '',
+                sclassFee: sclassDetails.sclassFee || '',
+                timingType: sclassDetails.timingType || '',
+                timingSlot: sclassDetails.timingSlot || '',
+            });
         }
-    ];
+    }, [sclassDetails]);
 
-    const ClassSubjectsSection = () => {
-        return (
-            <>
-                {response ?
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                        <GreenButton
-                            variant="contained"
-                            onClick={() => navigate("/Admin/addsubject/" + classID)}
-                        >
-                            Add Subjects
-                        </GreenButton>
-                    </Box>
-                    :
-                    <>
-                        <Typography variant="h5" gutterBottom>
-                            Subjects List:
-                        </Typography>
-
-                        <TableTemplate buttonHaver={SubjectsButtonHaver} columns={subjectColumns} rows={subjectRows} />
-                        <SpeedDialTemplate actions={subjectActions} />
-                    </>
-                }
-            </>
-        )
-    }
-
-    const studentColumns = [
-        { id: 'name', label: 'Name', minWidth: 170 },
-        { id: 'rollNum', label: 'Roll Number', minWidth: 100 },
-    ]
-
-    const studentRows = sclassStudents.map((student) => {
-        return {
-            name: student.name,
-            rollNum: student.rollNum,
-            id: student._id,
+    useEffect(() => {
+        if (!isEditMode) return;
+        const fetchTypes = async () => {
+            setLoadingTypes(true);
+            try {
+                const res = await axios.get(`${process.env.REACT_APP_BASE_URL}/timing-types`);
+                setTypes(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch timing types:", err);
+                setTypes([]);
+            } finally {
+                setLoadingTypes(false);
+            }
         };
-    })
+        fetchTypes();
+    }, [isEditMode]);
 
-    const StudentsButtonHaver = ({ row }) => {
-        return (
-            <>
-                <IconButton onClick={() => deleteHandler(row.id, "Student")}>
-                    <PersonRemoveIcon color="error" />
-                </IconButton>
-                <BlueButton
-                    variant="contained"
-                    onClick={() => navigate("/Admin/students/student/" + row.id)}
-                >
-                    View
-                </BlueButton>
-                <PurpleButton
-                    variant="contained"
-                    onClick={() =>
-                        navigate("/Admin/students/student/attendance/" + row.id)
-                    }
-                >
-                    Attendance
-                </PurpleButton>
-            </>
-        );
+    useEffect(() => {
+        if (!isEditMode || !formData.timingType) {
+            setSlots([]);
+            return;
+        }
+        const fetchSlots = async () => {
+            setLoadingSlots(true);
+            try {
+                const res = await axios.get(`${process.env.REACT_APP_BASE_URL}/timing-slots/${formData.timingType}`);
+                setSlots(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch timing slots:", err);
+                setSlots([]);
+            } finally {
+                setLoadingSlots(false);
+            }
+        };
+        fetchSlots();
+    }, [isEditMode, formData.timingType]);
+
+    const handleChange = (event) => {
+        const { name, value } = event.target;
+        setFormData((prev) => {
+            // Changing the type invalidates a slot picked under the old type.
+            if (name === 'timingType') {
+                return { ...prev, timingType: value, timingSlot: '' };
+            }
+            return { ...prev, [name]: value };
+        });
     };
 
-    const studentActions = [
-        {
-            icon: <PersonAddAlt1Icon color="primary" />, name: 'Add New Student',
-            action: () => navigate("/Admin/class/addstudents/" + classID)
-        },
-        {
-            icon: <PersonRemoveIcon color="error" />, name: 'Delete All Students',
-            action: () => deleteHandler(classID, "StudentsClass")
-        },
-    ];
+    const resetForm = () => {
+        if (sclassDetails) {
+            setFormData({
+                sclassName: sclassDetails.sclassName || '',
+                sclassFee: sclassDetails.sclassFee || '',
+                timingType: sclassDetails.timingType || '',
+                timingSlot: sclassDetails.timingSlot || '',
+            });
+        }
+    };
 
-    const ClassStudentsSection = () => {
+    const handleCancel = () => {
+        setIsEditMode(false);
+        resetForm();
+    };
+
+    const handleSave = async () => {
+        if (!formData.sclassName || !formData.sclassFee) {
+            setIsSuccess(false);
+            setMessage("Class name and fee are required.");
+            setShowPopup(true);
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await axios.put(`${process.env.REACT_APP_BASE_URL}/Sclass/${classID}`, {
+                sclassName: formData.sclassName,
+                sclassFee: formData.sclassFee,
+                timingType: formData.timingType,
+                timingSlot: formData.timingSlot,
+            }, { headers: { 'Content-Type': 'application/json' } });
+
+            setIsSuccess(true);
+            setMessage("Class updated successfully.");
+            setShowPopup(true);
+            setIsEditMode(false);
+            dispatch(getClassDetails(classID, "Sclass"));
+        } catch (err) {
+            setIsSuccess(false);
+            setMessage(err.response?.data?.message || "Failed to update the class.");
+            setShowPopup(true);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
         return (
-            <>
-                {getresponse ? (
-                    <>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                            <GreenButton
-                                variant="contained"
-                                onClick={() => navigate("/Admin/class/addstudents/" + classID)}
-                            >
-                                Add Students
-                            </GreenButton>
-                        </Box>
-                    </>
-                ) : (
-                    <>
-                        <Typography variant="h5" gutterBottom>
-                            Students List:
-                        </Typography>
-
-                        <TableTemplate buttonHaver={StudentsButtonHaver} columns={studentColumns} rows={studentRows} />
-                        <SpeedDialTemplate actions={studentActions} />
-                    </>
-                )}
-            </>
-        )
-    }
-
-    const ClassTeachersSection = () => {
-        return (
-            <>
-                Teachers
-            </>
-        )
-    }
-
-    const ClassDetailsSection = () => {
-        const numberOfSubjects = subjectsList.length;
-        const numberOfStudents = sclassStudents.length;
-
-        return (
-            <>
-                <Typography variant="h4" align="center" gutterBottom>
-                    Class Details
-                </Typography>
-                <Typography variant="h5" gutterBottom>
-                    Class: {sclassDetails && sclassDetails.sclassName}
-                </Typography>
-                <Typography variant="h6" gutterBottom>
-                    Fee of Session/Program: {sclassDetails && sclassDetails.sclassFee}
-                </Typography>
-                <Typography variant="h6" gutterBottom>
-                    Number of Students: {numberOfStudents}
-                </Typography>
-                {/* {getresponse &&
-                    <GreenButton
-                        variant="contained"
-                        onClick={() => navigate("/Admin/class/addstudents/" + classID)}
-                    >
-                        Add Students
-                    </GreenButton>
-                }
-                {response &&
-                    <GreenButton
-                        variant="contained"
-                        onClick={() => navigate("/Admin/addsubject/" + classID)}
-                    >
-                        Add Subjects
-                    </GreenButton>
-                } */}
-            </>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <CircularProgress />
+            </Box>
         );
     }
 
     return (
         <>
-            {loading ? (
-                <div>Loading...</div>
-            ) : (
-                <>
-                    <Box sx={{ width: '100%', typography: 'body1', }} >
-                        <TabContext value={value}>
-                            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                                <TabList onChange={handleChange} sx={{ position: 'fixed', width: '100%', bgcolor: 'background.paper', zIndex: 1 }}>
-                                    <Tab label="Details" value="1" />
-                                    {/* <Tab label="Subjects" value="2" />
-                                    <Tab label="Students" value="3" />
-                                    <Tab label="Teachers" value="4" /> */}
-                                </TabList>
-                            </Box>
-                            <Container sx={{ marginTop: "3rem", marginBottom: "4rem" }}>
-                                <TabPanel value="1">
-                                    <ClassDetailsSection />
-                                </TabPanel>
-                                {/* <TabPanel value="2">
-                                    <ClassSubjectsSection />
-                                </TabPanel>
-                                <TabPanel value="3">
-                                    <ClassStudentsSection />
-                                </TabPanel>
-                                <TabPanel value="4">
-                                    <ClassTeachersSection />
-                                </TabPanel> */}
-                            </Container>
-                        </TabContext>
+            <Container sx={{ mt: 3, mb: 4 }}>
+                <Paper elevation={2} sx={{ p: 3 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                        <Typography variant="h5">Class Details</Typography>
+                        {!isEditMode ? (
+                            <Button variant="contained" onClick={() => setIsEditMode(true)}>
+                                Edit
+                            </Button>
+                        ) : (
+                            <Stack direction="row" spacing={1}>
+                                <Button variant="outlined" onClick={handleCancel} disabled={saving}>
+                                    Cancel
+                                </Button>
+                                <Button variant="contained" onClick={handleSave} disabled={saving}>
+                                    {saving ? "Saving..." : "Save"}
+                                </Button>
+                            </Stack>
+                        )}
+                    </Stack>
+
+                    <Card variant="outlined">
+                        <CardContent>
+                            {isEditMode ? (
+                                <Stack spacing={3}>
+                                    <TextField
+                                        label="Session/Program Name"
+                                        name="sclassName"
+                                        value={formData.sclassName}
+                                        onChange={handleChange}
+                                        fullWidth
+                                        required
+                                    />
+                                    <TextField
+                                        label="Fee of Session/Program"
+                                        name="sclassFee"
+                                        type="number"
+                                        value={formData.sclassFee}
+                                        onChange={handleChange}
+                                        fullWidth
+                                        required
+                                    />
+                                    <FormControl fullWidth>
+                                        <InputLabel id="timing-type-label">Shift / Timing Type</InputLabel>
+                                        <Select
+                                            labelId="timing-type-label"
+                                            label="Shift / Timing Type"
+                                            name="timingType"
+                                            value={formData.timingType}
+                                            onChange={handleChange}
+                                            disabled={loadingTypes}
+                                        >
+                                            <MenuItem value="" disabled>
+                                                <em>{loadingTypes ? 'Loading...' : 'Select a Type'}</em>
+                                            </MenuItem>
+                                            {types.map((type) => (
+                                                <MenuItem key={type} value={type} sx={{ textTransform: 'capitalize' }}>
+                                                    {type}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    <FormControl fullWidth disabled={!formData.timingType || loadingSlots}>
+                                        <InputLabel id="timing-slot-label">Available Slot</InputLabel>
+                                        <Select
+                                            labelId="timing-slot-label"
+                                            label="Available Slot"
+                                            name="timingSlot"
+                                            value={formData.timingSlot}
+                                            onChange={handleChange}
+                                        >
+                                            <MenuItem value="" disabled>
+                                                <em>
+                                                    {loadingSlots ? 'Loading...' : !formData.timingType ? 'Select a type first' : 'Select a Slot'}
+                                                </em>
+                                            </MenuItem>
+                                            {/* Keep the saved slot selectable even if it is no longer offered. */}
+                                            {formData.timingSlot && !slots.some((s) => s.slot === formData.timingSlot) && (
+                                                <MenuItem value={formData.timingSlot}>{formData.timingSlot}</MenuItem>
+                                            )}
+                                            {slots.map((item, index) => (
+                                                <MenuItem key={index} value={item.slot}>
+                                                    {item.slot}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                </Stack>
+                            ) : (
+                                <Grid container spacing={2}>
+                                    <DetailItem label="Class Name" value={sclassDetails && sclassDetails.sclassName} />
+                                    <DetailItem label="Fee of Session/Program" value={sclassDetails && sclassDetails.sclassFee} />
+                                    <DetailItem label="Shift / Timing Type" value={sclassDetails && sclassDetails.timingType} />
+                                    <DetailItem label="Slot" value={sclassDetails && sclassDetails.timingSlot} />
+                                </Grid>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Box sx={{ mt: 3 }}>
+                        <Button variant="text" onClick={() => navigate("/Admin/classes")}>
+                            Back to Classes
+                        </Button>
                     </Box>
-                </>
-            )}
-            <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+                </Paper>
+            </Container>
+
+            <Popup open={showPopup} message={message} success={isSuccess} onClose={() => setShowPopup(false)} />
         </>
     );
 };

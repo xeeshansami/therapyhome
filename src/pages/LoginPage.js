@@ -113,7 +113,7 @@ const LoginPage = ({ role }) => {
     };
 
     useEffect(() => {
-        if (status === 'success' || currentUser !== null) {
+        if (status === 'success' || status === 'succeeded' || currentUser !== null) {
             if (currentRole === 'Admin') {
                 navigate('/Admin/dashboard');
             } else if (currentRole === 'Student') {

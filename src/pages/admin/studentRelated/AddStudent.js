@@ -358,7 +358,7 @@ const AddStudent = ({ situation }) => {
 
         setLoader(true);
         try {
-            debugger
+            
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/${role}Reg`, formDataToSubmit);
             if (result.data.status === "00") {
                 await fetchNextInvoiceNo(result.data.data, feeDetails.totalAmount, formattedDateTime);
@@ -366,13 +366,13 @@ const AddStudent = ({ situation }) => {
                 setIsSuccess(true);
                 setShowPopup(true);
             } else {
-                debugger
+                
                 setMessage("Student addition failed: " + (result.data.message || "Unknown error."));
                 setIsSuccess(false);
                 setShowPopup(true);
             }
         } catch (error) {
-            debugger
+            
             setMessage("Student addition failed: " + (error.response?.data?.message || error.message));
             setIsSuccess(false);
             setShowPopup(true);
@@ -415,9 +415,9 @@ const AddStudent = ({ situation }) => {
     };
 
     const handleSaveFee = (selectedStudent, consultancy, date, invoiceNo) => {
-        debugger
+        
         const fields = {
-            adminID: '68946290703454aaf4bae0de',
+            adminID: '68795ab802f2887382d217b0',
             attendance: [],
             parentName: selectedStudent.parentName,
             name: selectedStudent.name,
@@ -440,7 +440,7 @@ const AddStudent = ({ situation }) => {
             .then(response => {
             })
             .catch(error => {
-                debugger
+                
                 setShowPopup(false);
                 setIsSuccess(false);
                 setMessage('Error saving fee details:', error);

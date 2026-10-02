@@ -8,7 +8,7 @@ import { GreenButton, PurpleButton } from '../../../components/buttonStyles';
 import { StyledTableCell, StyledTableRow } from '../../../components/styles';
 
 const ChooseSubject = ({ situation }) => {
-    debugger
+    
     const params = useParams();
     const navigate = useNavigate()
     const dispatch = useDispatch();
@@ -37,7 +37,7 @@ const ChooseSubject = ({ situation }) => {
         return <div>Loading...</div>;
     } else if (response) {
         return <div>
-            <h1>Sorry all subjects have teachers assigned already</h1>
+            <h1>Sorry all subjects have staff assigned already</h1>
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
                 <PurpleButton variant="contained"
                     onClick={() => navigate("/Admin/addsubject/" + classID)}>
@@ -50,7 +50,7 @@ const ChooseSubject = ({ situation }) => {
     }
 
     const updateSubjectHandler = (teacherId, teachSubject) => {
-        debugger
+        
         setLoader(true)
         dispatch(updateTeachSubject(teacherId, teachSubject))
         navigate("/Admin/teachers")

@@ -19,6 +19,7 @@ import SideBar from './SideBar';
 import AdminProfile from './AdminProfile';
 import AdminInvoice from './AdminInvoice';
 import AdminFees from './AdminFees';
+import TeachersSalary from './TeachersSalary';
 import TermsPage from './studentRelated/TermsPage';
 import AdminHomePage from './AdminHomePage';
 
@@ -128,6 +129,9 @@ const AdminDashboard = () => {
 
                         {/* AdminFees */}
                         <Route path="/Fees" element={<AdminFees />} />
+
+                        {/* TeachersSalary */}
+                        <Route path="/TeachersSalary" element={<TeachersSalary />} />
                         <Route path="/terms" element={<TermsPage />} />
                         
                         {/* Subject */}

@@ -65,9 +65,9 @@ const ShowClasses = () => {
     ];
     return (
       <ButtonContainer>
-        <IconButton onClick={() => deleteHandler(row.id, "Sclass")} color="secondary">
+        {/* <IconButton onClick={() => deleteHandler(row.id, "Sclass")} color="secondary">
           <DeleteIcon color="error" />
-        </IconButton>
+        </IconButton> */}
         <BlueButton variant="contained"
           onClick={() => navigate("/Admin/classes/class/" + row.id)}>
           View
@@ -135,11 +135,12 @@ const ShowClasses = () => {
     {
       icon: <AddCardIcon color="primary" />, name: 'Add New Class',
       action: () => navigate("/Admin/addclass")
-    },
-    {
-      icon: <DeleteIcon color="error" />, name: 'Delete All Classes',
-      action: () => deleteHandler(adminID, "Sclasses")
-    },
+    }
+    // ,
+    // {
+    //   icon: <DeleteIcon color="error" />, name: 'Delete All Classes',
+    //   action: () => deleteHandler(adminID, "Sclasses")
+    // },
   ];
 
   return (

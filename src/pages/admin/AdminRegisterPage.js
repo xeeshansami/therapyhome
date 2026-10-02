@@ -70,7 +70,7 @@ const AdminRegisterPage = () => {
     };
 
     useEffect(() => {
-        if (status === 'success' || (currentUser !== null && currentRole === 'Admin')) {
+        if (status === 'success' || status === 'succeeded' || (currentUser !== null && currentRole === 'Admin')) {
             navigate('/Admin/dashboard');
         }
         else if (status === 'failed') {
