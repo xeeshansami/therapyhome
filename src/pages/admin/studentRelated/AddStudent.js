@@ -829,8 +829,7 @@ const AddStudent = ({ situation }) => {
                                     <Divider sx={{ my: 2 }} />
                                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Sessions / Services</Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                        A line is added for each class selected above. The rate is seeded from the class
-                                        but can be changed for this student, and extra sessions can be added below.
+                                        Fee per session is set per student, so the same class can be billed at a different rate for each student.
                                     </Typography>
 
                                     {sessionItems.length === 0 ? (
@@ -841,10 +840,10 @@ const AddStudent = ({ situation }) => {
                                         <Box key={item.key} sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                                             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
                                                 <FormControl sx={{ flex: 2, minWidth: 0 }}>
-                                                    <InputLabel id={`sess-class-${item.key}`}>Session / Class</InputLabel>
+                                                    <InputLabel id={`sess-class-${item.key}`}>Session / Service</InputLabel>
                                                     <Select
                                                         labelId={`sess-class-${item.key}`}
-                                                        label="Session / Class"
+                                                        label="Session / Service"
                                                         value={sclassesList.some(c => c._id === item.classId) ? item.classId : ''}
                                                         onChange={(e) => handleSessionChange(item.key, 'classId', e.target.value)}
                                                         displayEmpty
@@ -867,7 +866,7 @@ const AddStudent = ({ situation }) => {
                                                     </Select>
                                                 </FormControl>
                                                 <TextField
-                                                    label="Fee Per Session"
+                                                    label="Fee Per Session (PKR)"
                                                     type="number"
                                                     value={item.feePerSession}
                                                     onChange={(e) => handleSessionChange(item.key, 'feePerSession', e.target.value)}
@@ -883,7 +882,7 @@ const AddStudent = ({ situation }) => {
                                                     sx={{ flex: 1, minWidth: 0 }}
                                                 />
                                                 <TextField
-                                                    label="Total"
+                                                    label="Total (PKR)"
                                                     value={lineTotal(item).toLocaleString()}
                                                     InputProps={{ readOnly: true }}
                                                     variant="filled"
@@ -907,7 +906,7 @@ const AddStudent = ({ situation }) => {
                                     <Paper variant="outlined" sx={{ p: 2 }}>
                                         <Stack direction="row" justifyContent="space-between" alignItems="baseline">
                                             <Typography variant="subtitle1" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
-                                                Net Monthly Fee
+                                                Net Fee
                                             </Typography>
                                             <Typography variant="h5" sx={{ fontWeight: 700 }}>
                                                 Rs. {Number(monthlyFee).toLocaleString()}

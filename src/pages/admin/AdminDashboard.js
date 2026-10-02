@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     CssBaseline,
     Box,
@@ -7,6 +7,7 @@ import {
     Typography,
     Divider,
     IconButton,
+    useMediaQuery,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -54,7 +55,11 @@ import logo from "../../assets/logo.png";
 import { SpaceBar } from '@mui/icons-material';
 
 const AdminDashboard = () => {
-    const [open, setOpen] = useState(false);
+    // Sidebar starts expanded on desktop; it still collapses to the icon rail on
+    // narrow screens, where a 240px drawer would leave almost no room for content.
+    const isNarrow = useMediaQuery((t) => t.breakpoints.down('md'));
+    const [open, setOpen] = useState(true);
+    useEffect(() => { setOpen(!isNarrow); }, [isNarrow]);
     const toggleDrawer = () => {
         setOpen(!open);
     };

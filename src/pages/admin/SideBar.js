@@ -84,7 +84,7 @@ const SideBar = () => {
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/Invoice") ? 'primary' : 'inherit'} />
                     </ListItemIcon>
-                    <ListItemText primary="Invoice's" />
+                    <ListItemText primary="Records" />
                 </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/complains" selected={location.pathname.startsWith("/Admin/complains")}>
                     <ListItemIcon>
