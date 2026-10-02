@@ -7,7 +7,11 @@ import { underControl } from '../../../redux/userRelated/userSlice';
 import Popup from '../../../components/Popup';
 import axios from 'axios';
 import { getAllSclasses } from '../../../redux/sclassRelated/sclassHandle';
-import { Box, FormControlLabel, ListItemText, FormGroup, Checkbox, Typography, TextField, Button, Grid, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import InvoiceDialog from '../../../components/InvoiceDialog';
+import { lineTotal, sumLineItems, toMoney } from '../../../utils/feeCalc';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import { Box, FormControlLabel, ListItemText, FormGroup, Checkbox, Typography, TextField, Button, Grid, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Divider } from '@mui/material';
 
 const AddStudent = ({ situation }) => {
     const [searchContact, setSearchContact] = useState('');
@@ -114,6 +118,18 @@ const AddStudent = ({ situation }) => {
     });
     // --- NEW STATE FOR MONTHLY FEE ---
     const [monthlyFee, setMonthlyFee] = useState(0);
+
+    // Per-session billing lines, same shape the fee portal uses so a student can
+    // be charged a different rate from the class default.
+    const [sessionItems, setSessionItems] = useState([]);
+    const sessionKeyRef = React.useRef(0);
+    const nextSessionKey = () => {
+        sessionKeyRef.current += 1;
+        return `sess-${sessionKeyRef.current}`;
+    };
+
+    const [showInvoice, setShowInvoice] = useState(false);
+    const [invoiceData, setInvoiceData] = useState({});
     const fetchNextInvoiceNo = async (result, totalAmount, formattedDateTime) => {
         try {
             setLoader(true);
@@ -252,13 +268,71 @@ const AddStudent = ({ situation }) => {
         setFeeDetails(prev => ({ ...prev, totalAmount: total }));
     }, [feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.otherCharges]);
 
-    // --- EFFECT TO CALCULATE MONTHLY FEE FROM CLASSES ---
+    // --- KEEP ONE BILLING LINE PER SELECTED CLASS ---
+    // The class fee only seeds the line; the user can override the rate and the
+    // session count, and edits survive re-selection of other classes.
     useEffect(() => {
-        const classFeesTotal = sclassesList
-            .filter(sclass => selectedClasses.includes(sclass._id))
-            .reduce((sum, currentClass) => sum + (Number(currentClass.sclassFee) || 0), 0);
-        setMonthlyFee(classFeesTotal);
+        setSessionItems(prev => {
+            const kept = prev.filter(item => !item.fromClass || selectedClasses.includes(item.classId));
+            const existingClassIds = kept.filter(i => i.fromClass).map(i => i.classId);
+            const added = selectedClasses
+                .filter(id => !existingClassIds.includes(id))
+                .map(id => {
+                    const sclass = sclassesList.find(c => c._id === id);
+                    return {
+                        key: nextSessionKey(),
+                        classId: id,
+                        fromClass: true,
+                        serviceName: sclass ? sclass.sclassName : '',
+                        feePerSession: sclass ? (parseFloat(sclass.sclassFee) || 0) : '',
+                        sessions: 1,
+                    };
+                });
+            return [...kept, ...added];
+        });
     }, [selectedClasses, sclassesList]);
+
+    // --- NET MONTHLY FEE IS THE SUM OF THE BILLING LINES ---
+    useEffect(() => {
+        setMonthlyFee(sumLineItems(sessionItems));
+    }, [sessionItems]);
+
+    const handleSessionChange = (key, field, value) => {
+        setSessionItems(prev => prev.map(item => {
+            if (item.key !== key) return item;
+            if (field === 'classId') {
+                const picked = sclassesList.find(c => c._id === value);
+                return {
+                    ...item,
+                    classId: value,
+                    serviceName: picked ? picked.sclassName : item.serviceName,
+                    feePerSession: picked ? (parseFloat(picked.sclassFee) || 0) : item.feePerSession,
+                };
+            }
+            return { ...item, [field]: value };
+        }));
+    };
+
+    const handleAddSession = () => {
+        setSessionItems(prev => [
+            ...prev,
+            { key: nextSessionKey(), classId: '', fromClass: false, serviceName: '', feePerSession: '', sessions: 1 },
+        ]);
+    };
+
+    const handleRemoveSession = (key) => {
+        setSessionItems(prev => prev.filter(item => item.key !== key));
+    };
+
+    const buildLineItems = () => sessionItems
+        .filter(item => String(item.serviceName || '').trim())
+        .map(item => ({
+            sclassName: item.classId || undefined,
+            serviceName: String(item.serviceName).trim(),
+            feePerSession: toMoney(item.feePerSession),
+            sessions: parseInt(item.sessions, 10) || 0,
+            total: lineTotal(item),
+        }));
 
     const handleGenerateRollNumClick = async () => {
         setRollNumLoading(true);
@@ -432,12 +506,15 @@ const AddStudent = ({ situation }) => {
             sclassName: selectedStudent.sclassName || '',
             isConsultancyOrIsRegistrationOrMonthly: '1',
             school: selectedStudent.school || '',
+            lineItems: buildLineItems(),
         };
 
         axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
             headers: { 'Content-Type': 'application/json' },
         })
             .then(response => {
+                // Hand the saved record to the existing slip dialog so it can be printed.
+                setInvoiceData({ ...fields, ...(response.data || {}) });
             })
             .catch(error => {
                 
@@ -749,7 +826,94 @@ const AddStudent = ({ situation }) => {
                                         </Grid>
                                     </Grid>
                                     <TextField fullWidth label="Admission Fee Total" type="number" value={feeDetails.totalAmount} InputProps={{ readOnly: true }} variant="filled" sx={{ mb: 2 }} />
-                                    <TextField fullWidth label="Monthly Program/Session Fee (from classes)" type="number" value={monthlyFee} InputProps={{ readOnly: true }} variant="filled" />
+                                    <Divider sx={{ my: 2 }} />
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Sessions / Services</Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        A line is added for each class selected above. The rate is seeded from the class
+                                        but can be changed for this student, and extra sessions can be added below.
+                                    </Typography>
+
+                                    {sessionItems.length === 0 ? (
+                                        <Typography variant="body2" sx={{ fontStyle: 'italic', py: 1 }}>
+                                            Select a class above, or add a session below.
+                                        </Typography>
+                                    ) : sessionItems.map((item) => (
+                                        <Box key={item.key} sx={{ p: 2, mb: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+                                                <FormControl sx={{ flex: 2, minWidth: 0 }}>
+                                                    <InputLabel id={`sess-class-${item.key}`}>Session / Class</InputLabel>
+                                                    <Select
+                                                        labelId={`sess-class-${item.key}`}
+                                                        label="Session / Class"
+                                                        value={sclassesList.some(c => c._id === item.classId) ? item.classId : ''}
+                                                        onChange={(e) => handleSessionChange(item.key, 'classId', e.target.value)}
+                                                        displayEmpty
+                                                        renderValue={(selected) => {
+                                                            if (selected) {
+                                                                const picked = sclassesList.find(c => c._id === selected);
+                                                                return picked ? picked.sclassName : item.serviceName;
+                                                            }
+                                                            return item.serviceName || <em>Select a class</em>;
+                                                        }}
+                                                    >
+                                                        {sclassesList.length === 0 && (
+                                                            <MenuItem value="" disabled><em>No classes available</em></MenuItem>
+                                                        )}
+                                                        {sclassesList.map((c) => (
+                                                            <MenuItem key={c._id} value={c._id}>
+                                                                {c.sclassName}{c.timingType ? ` \u2014 ${c.timingType}` : ''}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                                <TextField
+                                                    label="Fee Per Session"
+                                                    type="number"
+                                                    value={item.feePerSession}
+                                                    onChange={(e) => handleSessionChange(item.key, 'feePerSession', e.target.value)}
+                                                    InputProps={{ inputProps: { min: 0 } }}
+                                                    sx={{ flex: 1, minWidth: 0 }}
+                                                />
+                                                <TextField
+                                                    label="Sessions"
+                                                    type="number"
+                                                    value={item.sessions}
+                                                    onChange={(e) => handleSessionChange(item.key, 'sessions', e.target.value)}
+                                                    InputProps={{ inputProps: { min: 1, step: 1 } }}
+                                                    sx={{ flex: 1, minWidth: 0 }}
+                                                />
+                                                <TextField
+                                                    label="Total"
+                                                    value={lineTotal(item).toLocaleString()}
+                                                    InputProps={{ readOnly: true }}
+                                                    variant="filled"
+                                                    sx={{ flex: 1, minWidth: 0 }}
+                                                />
+                                                <IconButton
+                                                    color="error"
+                                                    onClick={() => handleRemoveSession(item.key)}
+                                                    aria-label={`Remove ${item.serviceName || 'session'}`}
+                                                >
+                                                    <DeleteIcon />
+                                                </IconButton>
+                                            </Stack>
+                                        </Box>
+                                    ))}
+
+                                    <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddSession} sx={{ mb: 2 }}>
+                                        Add Session
+                                    </Button>
+
+                                    <Paper variant="outlined" sx={{ p: 2 }}>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
+                                                Net Monthly Fee
+                                            </Typography>
+                                            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                                Rs. {Number(monthlyFee).toLocaleString()}
+                                            </Typography>
+                                        </Stack>
+                                    </Paper>
                                 </Section>
                             </Grid>
 
@@ -766,12 +930,23 @@ const AddStudent = ({ situation }) => {
                     <div className="custom-popup" style={popupStyle}>
                         <h2 style={{ color: isSuccess ? 'green' : 'red' }}>{isSuccess ? "Success!" : "Error"}</h2>
                         <p>{message}</p>
-                        <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
-                            {isSuccess ? "Done" : "Close"}
-                        </Button>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                            {isSuccess && invoiceData && invoiceData.invoiceID && (
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => { setShowPopup(false); setShowInvoice(true); }}
+                                >
+                                    View / Print Invoice
+                                </Button>
+                            )}
+                            <Button variant="contained" onClick={isSuccess ? handlePopupConfirm : () => setShowPopup(false)}>
+                                {isSuccess ? "Done" : "Close"}
+                            </Button>
+                        </Box>
                     </div>
                 </div>
             )}
+            <InvoiceDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={invoiceData} />
         </>
     );
 }

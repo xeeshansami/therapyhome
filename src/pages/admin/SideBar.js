@@ -68,6 +68,12 @@ const SideBar = () => {
                     </ListItemIcon>
                     <ListItemText primary="Fee-Salary Portal" />
                 </ListItemButton>
+                <ListItemButton component={Link} to="/Admin/FeeRecords" selected={location.pathname.startsWith("/Admin/FeeRecords")}>
+                    <ListItemIcon>
+                        <DescriptionIcon  color={location.pathname.startsWith("/Admin/FeeRecords") ? 'primary' : 'inherit'} />
+                    </ListItemIcon>
+                    <ListItemText primary="Fee Records" />
+                </ListItemButton>
                 <ListItemButton component={Link} to="/Admin/TeachersSalary" selected={location.pathname.startsWith("/Admin/TeachersSalary")}>
                     <ListItemIcon>
                         <DescriptionIcon  color={location.pathname.startsWith("/Admin/TeachersSalary") ? 'primary' : 'inherit'} />
