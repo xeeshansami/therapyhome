@@ -1,4 +1,4 @@
-import { Container, Grid, Paper, MenuItem, Select, FormControl, InputLabel,Typography } from '@mui/material';
+import { Box, Container, Grid, Paper, MenuItem, Select, FormControl, InputLabel, Stack, Typography } from '@mui/material';
 import SeeNotice from '../../components/SeeNotice';
 import Students from "../../assets/img1.png";
 import Classes from "../../assets/img2.png";
@@ -103,48 +103,32 @@ const AdminHomePage = () => {
                         </FormControl>
                     </Grid>
 
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $accent="#7C3AED" {...cardMotion(0)}>
-                                <img src={Students} alt="Students" />
-                                <Title>Total Students</Title>
-                                <Data start={0} end={numberOfStudents} duration={2.5} />
-                            </MotionCard>
-                        </Grid>
-                        <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $accent="#F59E0B" {...cardMotion(1)}>
-                                <img src={Classes} alt="Classes" />
-                                <Title>Total Classes</Title>
-                                <Data start={0} end={numberOfClasses} duration={5} />
-                            </MotionCard>
-                        </Grid>
-                        <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $accent="#2563EB" {...cardMotion(2)}>
-                                <img src={Teachers} alt="Teachers" />
-                                <Title>Total Teachers</Title>
-                                <Data start={0} end={numberOfTeachers} duration={2.5} />
-                            </MotionCard>
-                        </Grid>
-                        <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $accent="#10B981" {...cardMotion(3)}>
-                                <img src={Fees} alt="Fees" />
-                                <Title>Fees Collection Daily</Title>
-                                <Data start={0} end={totalDailyFee} duration={2.5} prefix="PKR " />
-                            </MotionCard>
-                        </Grid>
-                        <Grid item xs={12} md={3} lg={3}>
-                            <MotionCard $accent="#F43F5E" {...cardMotion(4)}>
-                                <img src={Fees} alt="Fees" />
-                                <Title>Fees Collection Monthly</Title>
-
-                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                    <Data start={0} end={totalFee} duration={2.5} prefix="PKR " />
-                                </Typography>
-
-                            </MotionCard>
-                        </Grid>
+                    <Grid container spacing={2.5}>
+                        {[
+                            { icon: Students, accent: '#7C3AED', label: 'Total Students', value: numberOfStudents, duration: 2.5 },
+                            { icon: Classes, accent: '#F59E0B', label: 'Total Classes', value: numberOfClasses, duration: 5 },
+                            { icon: Teachers, accent: '#2563EB', label: 'Total Teachers', value: numberOfTeachers, duration: 2.5 },
+                            { icon: Fees, accent: '#10B981', label: 'Fees Collection Daily', value: totalDailyFee, duration: 2.5, prefix: 'PKR ' },
+                            { icon: Fees, accent: '#F43F5E', label: 'Fees Collection Monthly', value: totalFee, duration: 2.5, prefix: 'PKR ' },
+                        ].map((card, i) => (
+                            <Grid item xs={12} sm={6} md={3} lg={3} key={card.label}>
+                                <MotionCard $accent={card.accent} {...cardMotion(i)}>
+                                    <Stack direction="row" spacing={1.75} alignItems="center">
+                                        <IconTile $accent={card.accent}>
+                                            <img src={card.icon} alt="" />
+                                        </IconTile>
+                                        <Box sx={{ minWidth: 0 }}>
+                                            <Title>{card.label}</Title>
+                                            <Value>
+                                                <Data start={0} end={card.value} duration={card.duration} prefix={card.prefix} />
+                                            </Value>
+                                        </Box>
+                                    </Stack>
+                                </MotionCard>
+                            </Grid>
+                        ))}
                         <Grid item xs={12} md={12} lg={12}>
-                            <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                            <Paper sx={{ p: 2.5, display: 'flex', flexDirection: 'column' }}>
                                 <SeeNotice />
                             </Paper>
                         </Grid>
@@ -161,26 +145,17 @@ const AdminHomePage = () => {
 const StyledPaper = styled(Paper)`
   && {
     position: relative;
-    padding: 18px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    min-height: 132px;
-    justify-content: space-between;
-    align-items: flex-start;
+    min-height: 96px;
+    justify-content: center;
+    align-items: stretch;
     text-align: left;
-    border-radius: 16px;
+    border-radius: 14px;
     overflow: hidden;
     border: 1px solid var(--th-card-border, rgba(15, 23, 42, 0.08));
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
-  }
-  && img {
-    width: 44px;
-    height: 44px;
-    padding: 10px;
-    box-sizing: border-box;
-    background: ${(props) => `${props.$accent || tokens.primary}1f`};
-    border-radius: 12px;
-    object-fit: contain;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   }
   &&::after {
     content: "";
@@ -209,15 +184,35 @@ const cardMotion = (i) => ({
   transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
 });
 
+const IconTile = styled.span`
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: ${(props) => `${props.$accent || tokens.primary}1f`};
+  img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+`;
+
 const Title = styled.p`
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--th-muted, #64748b);
-  margin: 0;
+  margin: 0 0 2px;
+`;
+
+const Value = styled.div`
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.2;
 `;
 
 const Data = styled(CountUp)`
-  font-size: 1.75rem;
   font-weight: 700;
 `;
 
