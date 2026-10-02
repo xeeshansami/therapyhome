@@ -196,12 +196,14 @@ const StyledPaper = styled(Paper)`
 // entrance + hover lift. Transient $gradient prop is consumed by styled().
 const MotionCard = motion(StyledPaper);
 
+// The entrance is done in CSS (.th-fade-up) rather than through motion props.
+// A JS-driven `initial: { opacity: 0 }` leaves the card permanently invisible
+// and offset if the animation never runs, which hid the whole dashboard.
+// Hover stays on motion since it cannot hide content.
 const cardMotion = (i) => ({
-  initial: { opacity: 0, y: 22 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, amount: 0.3 },
+  className: `th-fade-up${i > 0 && i < 5 ? ` th-fade-up-${Math.min(i, 4)}` : ''}`,
   whileHover: { y: -6 },
-  transition: { duration: 0.45, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
+  transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] },
 });
 
 const Title = styled.p`

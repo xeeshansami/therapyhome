@@ -97,9 +97,7 @@ const ChooseUser = ({ visitor }) => {
     >
       <Container maxWidth="md">
         <MotionDiv
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="th-fade-up"
         >
           <Stack alignItems="center" spacing={2} sx={{ mb: 5, textAlign: 'center' }}>
             <Box
@@ -127,10 +125,9 @@ const ChooseUser = ({ visitor }) => {
               return (
                 <MotionDiv
                   key={r.key}
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                  className={`th-fade-up${i > 0 ? ` th-fade-up-${Math.min(i, 4)}` : ''}`}
                   whileHover={{ y: -8 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   style={{ flex: 1, maxWidth: 340, cursor: 'pointer' }}
                   onClick={() => navigateHandler(r.key)}
                 >

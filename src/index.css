@@ -222,3 +222,32 @@ body {
     border-radius: 12px;
   }
 }
+/* Entry animation used by page/card mount transitions.
+   Deliberately CSS-driven with animation-fill-mode: both, so the element is
+   guaranteed to finish visible even if a JS animation library never runs.
+   Content visibility must never depend on an animation completing. */
+@keyframes th-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.th-fade-up {
+  animation: th-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.th-fade-up-1 { animation-delay: 0.06s; }
+.th-fade-up-2 { animation-delay: 0.12s; }
+.th-fade-up-3 { animation-delay: 0.18s; }
+.th-fade-up-4 { animation-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .th-fade-up,
+  .th-fade-up-1,
+  .th-fade-up-2,
+  .th-fade-up-3,
+  .th-fade-up-4 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

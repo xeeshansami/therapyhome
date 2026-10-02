@@ -10,9 +10,9 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import SearchIcon from '@mui/icons-material/Search';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AppBar, Drawer, Search, SearchInput } from '../../components/styles';
+import { AppBar, Drawer } from '../../components/styles';
+import GlobalSearch from '../../components/GlobalSearch';
 import SettingsLauncher from '../../components/SettingsLauncher';
 import Logout from '../Logout';
 import SideBar from './SideBar';
@@ -88,10 +88,7 @@ const AdminDashboard = () => {
                         >
                             Admin Dashboard
                         </Typography>
-                        <Search>
-                            <SearchIcon fontSize="small" color="action" />
-                            <SearchInput placeholder="Search..." inputProps={{ 'aria-label': 'search' }} />
-                        </Search>
+                        <GlobalSearch />
                         <Box sx={{ flexGrow: 1 }} />
                         <SettingsLauncher />
                         <AccountMenu />
