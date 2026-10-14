@@ -194,6 +194,22 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
         // Merge actual data on top of defaults
         ...data
     };
+    // Records store parentName/parentContact; older code read parentsName/parentsContact.
+    currentData.parentsName = data.parentsName || data.parentName || 'N/A';
+    currentData.parentsContact = data.parentsContact || data.parentContact || '';
+
+    // Amounts shown on the slip come from the saved fee record.
+    const money = (v) => (Number(v) || 0).toLocaleString();
+    const feeType = currentData.isConsultancyOrIsRegistrationOrMonthly;
+    const sessionSubtotal = Array.isArray(currentData.lineItems)
+        ? currentData.lineItems.reduce((sum, i) => sum + (Number(i.total) || 0), 0)
+        : 0;
+    // A reprint shows the date the slip was issued, not today's date.
+    const slipDate = (() => {
+        const raw = data.date || data.createdAt;
+        const d = raw ? new Date(raw) : null;
+        return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString() : (raw || new Date().toLocaleDateString());
+    })();
 
     
 
@@ -440,7 +456,7 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                             <div className="info-section" style={infoSectionStyle}>
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="info-label" style={infoLabelStyle}>DATE:</div>
-                                    <div className="info-value" style={infoValueStyle}>{new Date().toLocaleDateString()}</div>
+                                    <div className="info-value" style={infoValueStyle}>{slipDate}</div>
                                     <div className="info-label" style={{ ...infoLabelStyle, marginLeft: '10px' }}>GR NO:</div>
                                     <div className="info-value" style={infoValueStyle}>{currentData.rollNum}</div>
                                 </div>
@@ -471,6 +487,12 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                     <div className="fee-value" style={feeValueStyle}>
                                         {currentData.isConsultancyOrIsRegistrationOrMonthly === '1' ? currentData.securityDeposit : 'N/A'}
                                     </div>
+                                    {feeType === '1' && Number(currentData.otherCharges) > 0 && (
+                                        <>
+                                            <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Other Charges:</div>
+                                            <div className="fee-value" style={feeValueStyle}>{currentData.otherCharges}</div>
+                                        </>
+                                    )}
                                     <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Consultancy Fee's:</div>
                                     <div className="fee-value" style={feeValueStyle}>
                                         {(currentData.isConsultantStudent && currentData.isConsultancyOrIsRegistrationOrMonthly === '0') ? currentData.netTotalFee : 'N/A'}
@@ -502,15 +524,22 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                             </tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <td colSpan={3} style={{ padding: '4px', fontWeight: 'bold', borderTop: '1px solid #999' }}>NET FEE</td>
+                                                    <td colSpan={3} style={{ padding: '4px', fontWeight: 'bold', borderTop: '1px solid #999' }}>{feeType === '1' ? 'SESSION FEE' : 'NET FEE'}</td>
                                                     <td style={{ padding: '4px', fontWeight: 'bold', borderTop: '1px solid #999', textAlign: 'right' }}>
-                                                        Rs. {currentData.lineItems.reduce((sum, i) => sum + (Number(i.total) || 0), 0).toLocaleString()}
+                                                        Rs. {sessionSubtotal.toLocaleString()}
                                                     </td>
                                                 </tr>
                                             </tfoot>
                                         </table>
                                     </div>
                                 )}
+
+                                <div className="info-row" style={infoRowStyle}>
+                                    <div className="fee-label" style={{ ...feeLabelStyle, fontWeight: 'bold' }}>Net Amount:</div>
+                                    <div className="fee-value" style={{ ...feeValueStyle, fontWeight: 'bold' }}>
+                                        Rs. {money(currentData.netTotalFee)}
+                                    </div>
+                                </div>
 
                                 {/* NEW ROW FOR PAID AMOUNT AND BALANCE DUE */}
                                 <div className="info-row" style={infoRowStyle}>

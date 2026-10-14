@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 import {
     Container,
@@ -9,7 +10,8 @@ import {
     Stack,
     Card,
     CardContent,
-    Avatar,
+    Skeleton,
+    Chip,
     useTheme,
 } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -21,14 +23,13 @@ import {
     Wallet,
     ShieldCheck,
     ArrowRight,
-    Star,
     Sparkles,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 // ---------------------------------------------------------------------------
-// Premium SaaS landing page (UI only). No business logic — the single action
-// is the "Login / Get started" link to /choose, preserved from the original.
+// Public landing page. Figures and programs are loaded live from the system;
+// the only action is the "Login / Get started" link to /choose.
 // ---------------------------------------------------------------------------
 
 const MotionBox = motion(Box);
@@ -52,23 +53,33 @@ const features = [
     { icon: ShieldCheck, title: 'Role-based access', desc: 'Admin, staff and reception each get a tailored, secure workspace out of the box.' },
 ];
 
-const stats = [
-    { value: '10k+', label: 'Sessions managed' },
-    { value: '99.9%', label: 'Uptime' },
-    { value: '4.9/5', label: 'Avg. rating' },
-    { value: '24/7', label: 'Support' },
+// Live figures from the system, loaded from the public summary endpoint
+// (aggregate counts only, no personal or financial details).
+const STAT_FIELDS = [
+    { key: 'students', label: 'Students enrolled' },
+    { key: 'staff', label: 'Therapists & staff' },
+    { key: 'programCount', label: 'Therapy programs' },
+    { key: 'sessionsBilled', label: 'Sessions delivered' },
 ];
 
-const testimonials = [
-    { name: 'Dr. Amina Khan', role: 'Clinic Director', quote: 'TherapyHome replaced three tools we used to juggle. Scheduling and invoicing finally live in one place.' },
-    { name: 'Bilal Ahmed', role: 'Lead Therapist', quote: 'Attendance and progress tracking take minutes now. The dashboards make reviews genuinely easy.' },
-    { name: 'Sara Malik', role: 'Front Desk', quote: 'Onboarding a new student is a two-minute job. The interface feels modern and stays out of my way.' },
-];
+const usePublicSummary = () => {
+    const [state, setState] = useState({ loading: true, error: false, data: null });
+    useEffect(() => {
+        let cancelled = false;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/public/summary`)
+            .then(({ data }) => { if (!cancelled) setState({ loading: false, error: false, data }); })
+            .catch(() => { if (!cancelled) setState({ loading: false, error: true, data: null }); });
+        return () => { cancelled = true; };
+    }, []);
+    return state;
+};
 
 const Homepage = () => {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const primary = theme.palette.primary.main;
+    const summary = usePublicSummary();
+    const programs = summary.data?.programs || [];
 
     const pageBg = isDark
         ? 'radial-gradient(1200px 600px at 80% -10%, rgba(122,110,255,0.18), transparent 60%), radial-gradient(900px 500px at -10% 20%, rgba(17,179,164,0.12), transparent 55%), #0f1526'
@@ -185,14 +196,6 @@ const Homepage = () => {
                                 </Button>
                             </Stack>
 
-                            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 3 }}>
-                                {[...Array(5)].map((_, i) => (
-                                    <Star key={i} size={16} color="#ffb400" fill="#ffb400" />
-                                ))}
-                                <Typography variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>
-                                    Loved by modern clinics &amp; academies
-                                </Typography>
-                            </Stack>
                         </MotionBox>
                     </Grid>
 
@@ -230,8 +233,8 @@ const Homepage = () => {
                                     />
                                 </MotionBox>
                                 <Grid container spacing={1.5}>
-                                    {stats.map((s) => (
-                                        <Grid item xs={6} key={s.label}>
+                                    {STAT_FIELDS.map((s) => (
+                                        <Grid item xs={6} key={s.key}>
                                             <Box
                                                 sx={{
                                                     borderRadius: 3,
@@ -242,7 +245,11 @@ const Homepage = () => {
                                                 }}
                                             >
                                                 <Typography variant="h5" sx={{ fontWeight: 800, color: primary }}>
-                                                    {s.value}
+                                                    {summary.loading
+                                                        ? <Skeleton width="60%" sx={{ mx: 'auto' }} />
+                                                        : summary.error
+                                                            ? '—'
+                                                            : Number(summary.data?.[s.key] || 0).toLocaleString()}
                                                 </Typography>
                                                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                                                     {s.label}
@@ -251,6 +258,11 @@ const Homepage = () => {
                                         </Grid>
                                     ))}
                                 </Grid>
+                                {summary.error && (
+                                    <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 1.5, color: 'text.secondary' }}>
+                                        Live figures are unavailable right now.
+                                    </Typography>
+                                )}
                             </Box>
                         </MotionBox>
                     </Grid>
@@ -331,7 +343,7 @@ const Homepage = () => {
                 </Grid>
             </Container>
 
-            {/* ---------------- Testimonials ---------------- */}
+            {/* ---------------- Therapy programs (live) ---------------- */}
             <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
                 <MotionBox
                     variants={fadeUp}
@@ -341,49 +353,51 @@ const Homepage = () => {
                     sx={{ textAlign: 'center', mb: 6 }}
                 >
                     <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.02em', fontSize: { xs: '1.9rem', md: '2.5rem' } }}>
-                        Trusted by teams that care
+                        Our therapy programs
                     </Typography>
                 </MotionBox>
-                <Grid container spacing={3}>
-                    {testimonials.map((t, i) => (
-                        <Grid item xs={12} md={4} key={t.name}>
-                            <MotionCard
-                                variants={fadeUp}
-                                custom={i}
-                                initial="hidden"
-                                whileInView="show"
-                                viewport={{ once: true, amount: 0.3 }}
-                                elevation={0}
-                                sx={{
-                                    height: '100%',
-                                    borderRadius: 4,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    backgroundColor: 'background.paper',
-                                }}
-                            >
-                                <CardContent sx={{ p: 3 }}>
-                                    <Stack direction="row" spacing={0.5} sx={{ mb: 2 }}>
-                                        {[...Array(5)].map((_, s) => (
-                                            <Star key={s} size={15} color="#ffb400" fill="#ffb400" />
-                                        ))}
-                                    </Stack>
-                                    <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.7 }}>
-                                        “{t.quote}”
-                                    </Typography>
-                                    <Stack direction="row" spacing={1.5} alignItems="center">
-                                        <Avatar sx={{ bgcolor: primary, fontWeight: 700 }}>
-                                            {t.name.charAt(0)}
-                                        </Avatar>
-                                        <Box>
-                                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{t.name}</Typography>
-                                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t.role}</Typography>
-                                        </Box>
-                                    </Stack>
-                                </CardContent>
-                            </MotionCard>
-                        </Grid>
-                    ))}
-                </Grid>
+                {summary.loading ? (
+                    <Grid container spacing={3}>
+                        {[0, 1, 2].map((i) => (
+                            <Grid item xs={12} sm={6} md={4} key={i}>
+                                <Skeleton variant="rounded" height={110} sx={{ borderRadius: 4 }} />
+                            </Grid>
+                        ))}
+                    </Grid>
+                ) : programs.length === 0 ? (
+                    <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary' }}>
+                        {summary.error ? 'Programs could not be loaded right now.' : 'No programs have been added yet.'}
+                    </Typography>
+                ) : (
+                    <Grid container spacing={3}>
+                        {programs.map((p, i) => (
+                            <Grid item xs={12} sm={6} md={4} key={`${p.name}-${i}`}>
+                                <MotionCard
+                                    variants={fadeUp}
+                                    custom={i}
+                                    initial="hidden"
+                                    whileInView="show"
+                                    viewport={{ once: true, amount: 0.3 }}
+                                    elevation={0}
+                                    sx={{
+                                        height: '100%',
+                                        borderRadius: 4,
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        backgroundColor: 'background.paper',
+                                    }}
+                                >
+                                    <CardContent sx={{ p: 3 }}>
+                                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>{p.name}</Typography>
+                                        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                                            {p.timingType && <Chip size="small" label={p.timingType} />}
+                                            {p.timingSlot && <Chip size="small" variant="outlined" label={p.timingSlot} />}
+                                        </Stack>
+                                    </CardContent>
+                                </MotionCard>
+                            </Grid>
+                        ))}
+                    </Grid>
+                )}
             </Container>
 
             {/* ---------------- CTA banner ---------------- */}

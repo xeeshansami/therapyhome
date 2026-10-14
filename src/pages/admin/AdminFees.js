@@ -103,6 +103,8 @@ const AdminFees = () => {
     openModal: false,
     selectedStudent: null,
     isMonthlyFee: false,
+    // 'agreed' when the rates come from the student's saved fee plan, 'class' for older students without one.
+    feeSource: 'class',
     feeDetails: {
       date: new Date().toISOString().split('T')[0],
       paid: '',
@@ -194,6 +196,16 @@ const AdminFees = () => {
 
     const classIds = student.className || [];
 
+    // Rates agreed for this student at admission are the default. Opening the
+    // form never changes them; edits here only affect this one slip.
+    const agreedItems = (student.feePlan || []).map(line => ({
+      key: nextLineKey(),
+      classId: (line.sclassName && (line.sclassName._id || line.sclassName)) || '',
+      serviceName: line.serviceName,
+      feePerSession: toMoney(line.feePerSession),
+      sessions: parseInt(line.sessions, 10) || 1,
+    }));
+
     // The monthly plan cost becomes its own editable line so the net fee stays
     // the sum of what is actually shown on the slip.
     const planItems = [];
@@ -212,16 +224,17 @@ const AdminFees = () => {
       console.error("Could not read therapy plan:", err);
     }
 
-    if (!classIds || classIds.length === 0) {
+    if (agreedItems.length > 0 || !classIds || classIds.length === 0) {
       const initialNetAmount = student.totalFee || 0;
       setState(prev => ({
         ...prev, openModal: true, selectedStudent: student, loading: false, isMonthlyFee: false,
+        feeSource: agreedItems.length > 0 ? 'agreed' : 'class',
         feeDetails: {
           ...prev.feeDetails,
           date: new Date().toISOString().split('T')[0],
           paid: '', remark: '',
           netAmount: initialNetAmount, balance: initialNetAmount,
-          lineItems: planItems,
+          lineItems: agreedItems.length > 0 ? agreedItems : planItems,
         }
       }));
       return;
@@ -250,6 +263,7 @@ const AdminFees = () => {
         selectedStudent: student,
         loading: false,
         isMonthlyFee: false, // Start in "Admission Fee" mode
+        feeSource: 'class',
         feeDetails: {
           ...prev.feeDetails,
           date: new Date().toISOString().split('T')[0],
@@ -371,6 +385,7 @@ const AdminFees = () => {
     const payload = {
       adminID: ADMIN_ID,
       ...selectedStudent,
+      studentId: selectedStudent._id,
       date: feeDetails.date,
       isPaid: '1',
       netTotalFee: feeDetails.netAmount,
@@ -474,7 +489,9 @@ const AdminFees = () => {
               <>
                 <Typography variant="h6">Sessions / Services</Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Fee per session is set per student, so the same class can be billed at a different rate for each student.
+                  {state.feeSource === 'agreed'
+                    ? "Rates agreed for this student at admission. Changes here apply to this slip only; to change the student's default fee, edit it on the student's profile."
+                    : 'No agreed fee is saved for this student, so rates start from the class fee. Fee per session can be changed for this slip.'}
                 </Typography>
 
                 {lineItems.length === 0 ? (

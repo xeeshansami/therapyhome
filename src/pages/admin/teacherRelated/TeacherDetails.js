@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getTeacherDetails } from '../../../redux/teacherRelated/teacherHandle';
@@ -6,16 +6,36 @@ import {
     Box, Button, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField,
     FormControl, Select, MenuItem, Avatar, InputLabel,
-    Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Popup from '../../../components/Popup';
+import OtpActionDialog from '../../../components/OtpActionDialog';
 import axios from 'axios';
 
-// Helper components remain unchanged...
-const DetailItem = ({ label, value }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography><Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography></Grid>);
-const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? (<TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} InputLabelProps={type === 'time' ? { shrink: true } : {}} />) : (<Typography variant="body1" gutterBottom>{String(value) || "N/A"}</Typography>)}</Grid>);
+// Shows "N/A" for null/undefined/empty instead of the literal text "undefined".
+const show = (value) => (value === null || value === undefined || value === '' ? 'N/A' : String(value));
+
+const DetailItem = ({ label, value }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography><Typography variant="body1" gutterBottom>{show(value)}</Typography></Grid>);
+const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? (<TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} InputLabelProps={type === 'time' ? { shrink: true } : {}} />) : (<Typography variant="body1" gutterBottom>{show(value)}</Typography>)}</Grid>);
+
+// The single source for the editable form, used on load and on Cancel.
+const buildForm = (t) => ({
+    name: t.name || '',
+    email: t.email || '',
+    phone: t.phone || '',
+    address: t.address || '',
+    emergencyContact: t.emergencyContact || '',
+    salary: t.salary ?? '',
+    gender: t.gender || '',
+    maritalStatus: t.maritalStatus || '',
+    cnic: t.cnic || '',
+    education: t.education || '',
+    fatherName: t.fatherName || '',
+    occupation: t.occupation || '',
+    timing: (t.timing && (t.timing._id || t.timing)) || '',
+    teacherDateTime: t.teacherDateTime || '',
+});
 
 const TeacherDetails = () => {
     // --- SECTION: Core Component State & Hooks ---
@@ -28,24 +48,18 @@ const TeacherDetails = () => {
 
     // --- SECTION: UI & Form State ---
     const [isEditMode, setIsEditMode] = useState(false);
-    const [showPopup, setShowPopup] = useState(false);
-    const [message, setMessage] = useState("");
-    const [formData, setFormData] = useState({});
+    const [popup, setPopup] = useState({ open: false, message: '', success: true });
+    const [formData, setFormData] = useState(buildForm({}));
 
     // --- State for Timings ---
     const [timings, setTimings] = useState([]);
     const [timingLoader, setTimingLoader] = useState(true);
-    const [timingDetails, setTimingDetails] = useState(null);
 
-    // --- State for Multi-Step Confirmation Dialog ---
-    const [openDialog, setOpenDialog] = useState(false);
-    const [password, setPassword] = useState('');
-    const [otp, setOtp] = useState('');
-    const [actionToConfirm, setActionToConfirm] = useState(null);
-    const [dialogStep, setDialogStep] = useState('password');
-    const [dialogLoader, setDialogLoader] = useState(false);
-    const [dialogMessage, setDialogMessage] = useState("");
-    const [dialogError, setDialogError] = useState("");
+    // --- OTP-verified update/delete ---
+    const [otpAction, setOtpAction] = useState(null); // { type, payload }
+
+    // teacherDetails is shared redux state; only trust it once it is this staff member.
+    const isLoaded = !!teacherDetails && teacherDetails._id === teacherID;
 
     // --- SECTION: Data Fetching & Form Initialization ---
     useEffect(() => { dispatch(getTeacherDetails(teacherID)); }, [dispatch, teacherID]);
@@ -66,124 +80,78 @@ const TeacherDetails = () => {
         fetchTimings();
     }, []);
 
+    // The form is filled from the saved record as soon as it loads. It used to
+    // wait for the timings list too, so when /teacherstimings returned nothing
+    // every field stayed blank.
     useEffect(() => {
-        if (teacherDetails && timings.length > 0) {
-            const timingId = teacherDetails.timing?._id || teacherDetails.timing;
-            const currentTimingObject = timings.find(t => t._id === timingId);
-            setTimingDetails(currentTimingObject);
-
-            setFormData({
-                name: teacherDetails.name || '',
-                email: teacherDetails.email || '',
-                phone: teacherDetails.phone || '',
-                address: teacherDetails.address || '',
-                emergencyContact: teacherDetails.emergencyContact || '',
-                salary: teacherDetails.salary || '',
-                gender: teacherDetails.gender || '',
-                maritalStatus: teacherDetails.maritalStatus || '',
-                cnic: teacherDetails.cnic || '',
-                education: teacherDetails.education || '',
-                fatherName: teacherDetails.fatherName || '',
-                occupation: teacherDetails.occupation || '',
-                timing: timingId || '',
-                // ✅ 1. INITIALIZE teacherDateTime IN THE FORM STATE
-                teacherDateTime: teacherDetails.teacherDateTime || '',
-            });
+        if (isLoaded) {
+            setFormData(buildForm(teacherDetails));
+            setIsEditMode(false);
         }
+    }, [isLoaded, teacherDetails]);
+
+    const timingDetails = useMemo(() => {
+        const id = teacherDetails?.timing?._id || teacherDetails?.timing;
+        return timings.find(t => t._id === id) || null;
     }, [teacherDetails, timings]);
 
     // --- SECTION: Event Handlers ---
     const handleInputChange = (event) => setFormData(prev => ({ ...prev, [event.target.name]: event.target.value }));
 
     const handleCancel = () => {
+        // Discard unsaved edits and go back to the saved values.
         setIsEditMode(false);
-        if (teacherDetails) {
-            const timingId = teacherDetails.timing?._id || teacherDetails.timing;
-            setFormData({
-                name: teacherDetails.name || '',
-                email: teacherDetails.email || '',
-                phone: teacherDetails.phone || '',
-                address: teacherDetails.address || '',
-                emergencyContact: teacherDetails.emergencyContact || '',
-                salary: teacherDetails.salary || '',
-                gender: teacherDetails.gender || '',
-                maritalStatus: teacherDetails.maritalStatus || '',
-                cnic: teacherDetails.cnic || '',
-                education: teacherDetails.education || '',
-                fatherName: teacherDetails.fatherName || '',
-                occupation: teacherDetails.occupation || '',
-                timing: timingId || '',
-                // ✅ 2. RESET teacherDateTime ON CANCEL
-                teacherDateTime: teacherDetails.teacherDateTime || '',
-            });
+        if (isLoaded) setFormData(buildForm(teacherDetails));
+    };
+
+    // Only changed fields are sent, so untouched values are never rewritten.
+    const handleUpdateClick = () => {
+        const original = buildForm(teacherDetails);
+        const changes = {};
+        Object.keys(formData).forEach((k) => {
+            if (String(formData[k] ?? '') !== String(original[k] ?? '')) changes[k] = formData[k];
+        });
+        if (Object.keys(changes).length === 0) {
+            setPopup({ open: true, message: 'No changes to save.', success: false });
+            return;
         }
-    };
-
-    // --- SECTION: Dialog and Action Logic (Unchanged) ---
-    const handleOpenDialog = (action) => {
-        setActionToConfirm(action);
-        setDialogStep('password');
-        setDialogMessage("");
-        setDialogError("");
-        setPassword('');
-        setOtp('');
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => setOpenDialog(false);
-
-    const handlePasswordConfirm = async () => {
-        setDialogLoader(true);
-        setDialogError("");
-        try {
-            await axios.post(`${process.env.REACT_APP_BASE_URL}/verify-password-send-otp`, {
-                adminId: currentUser._id,
-                password: password,
-            });
-            setDialogMessage(`OTP sent to ${currentUser.email}. Please check your email.`);
-            setDialogStep('otp');
-        } catch (error) {
-            setDialogError(error.response?.data?.message || "Password verification failed.");
-        } finally {
-            setDialogLoader(false);
+        if (changes.name !== undefined && !String(changes.name).trim()) {
+            setPopup({ open: true, message: 'Name is required.', success: false });
+            return;
         }
-    };
-
-    const handleOtpConfirm = async () => {
-        setDialogLoader(true);
-        setDialogError("");
-        try {
-            const actionPayload = {
-                type: actionToConfirm,
-                targetId: teacherID,
-                payload: actionToConfirm === 'update' ? formData : null,
-            };
-            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/verify-otp-execute-action`, {
-                adminId: currentUser._id,
-                otp: otp,
-                action: actionPayload,
-                actiontype: "teacher",
-            });
-
-            setMessage(result.data.message);
-            setShowPopup(true);
-            handleCloseDialog();
-
-            if (actionToConfirm === 'delete') {
-                navigate('/Admin/teachers');
-            } else {
-                setIsEditMode(false);
-                dispatch(getTeacherDetails(teacherID));
-            }
-
-        } catch (error) {
-            setDialogError(error.response?.data?.message || "OTP verification failed.");
-        } finally {
-            setDialogLoader(false);
+        if (changes.email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(changes.email).trim())) {
+            setPopup({ open: true, message: 'Enter a valid email address.', success: false });
+            return;
         }
+        setOtpAction({ type: 'update', payload: changes });
     };
 
-    if (loading && !teacherDetails) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
+    const handleOtpSuccess = (result) => {
+        const type = otpAction?.type;
+        setOtpAction(null);
+        if (type === 'delete') {
+            navigate('/Admin/teachers', { replace: true });
+            return;
+        }
+        setIsEditMode(false);
+        setPopup({ open: true, message: result?.message || 'Details Updated Successfully.', success: true });
+        // Reload so the page shows exactly what the server saved.
+        dispatch(getTeacherDetails(teacherID));
+    };
+
+    if (!isLoaded) {
+        if (error && !loading) {
+            return (
+                <Box sx={{ textAlign: 'center', mt: 4 }}>
+                    <Typography variant="h6" gutterBottom>
+                        {error?.response?.status === 404 ? 'This staff member was not found. It may have been deleted.' : 'Error loading staff details.'}
+                    </Typography>
+                    <Button variant="outlined" onClick={() => navigate('/Admin/teachers')}>Back to staff</Button>
+                </Box>
+            );
+        }
+        return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
+    }
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -202,7 +170,7 @@ const TeacherDetails = () => {
                 )}
             </Paper>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleOpenDialog('update'); }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleUpdateClick(); }}>
                 <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Personal Information</Typography></AccordionSummary>
                     <AccordionDetails>
@@ -292,47 +260,29 @@ const TeacherDetails = () => {
                 {isEditMode && (
                     <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                         <Button variant="outlined" color="secondary" onClick={handleCancel}>Cancel</Button>
-                        <Button type="submit" variant="contained" color="primary">Update Details</Button>
+                        <Button type="submit" variant="contained" color="primary" disabled={!!otpAction}>Update Details</Button>
                     </Box>
                 )}
             </form>
 
-            <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button variant="contained" color="error" onClick={() => handleOpenDialog('delete')}>Delete Teacher</Button>
-            </Box>
-            <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+            {!isEditMode && (
+                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button variant="contained" color="error" onClick={() => setOtpAction({ type: 'delete', payload: null })}>Delete Teacher</Button>
+                </Box>
+            )}
+            <Popup open={popup.open} message={popup.message} success={popup.success} onClose={() => setPopup((p) => ({ ...p, open: false }))} />
 
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>Confirm Action</DialogTitle>
-                <DialogContent>
-                    {dialogStep === 'password' && (
-                        <>
-                            <DialogContentText>To proceed, please enter your admin password for verification.</DialogContentText>
-                            <TextField autoFocus margin="dense" id="password" label="Password" type="password" fullWidth value={password} onChange={(e) => setPassword(e.target.value)} error={!!dialogError} helperText={dialogError} onKeyPress={(e) => e.key === 'Enter' && handlePasswordConfirm()} />
-                        </>
-                    )}
-                    {dialogStep === 'otp' && (
-                        <>
-                            <DialogContentText sx={{ color: 'green', mb: 2 }}>{dialogMessage}</DialogContentText>
-                            <DialogContentText>Enter the OTP you received in your email.</DialogContentText>
-                            <TextField autoFocus margin="dense" id="otp" label="Enter OTP" type="text" fullWidth value={otp} onChange={(e) => setOtp(e.target.value)} error={!!dialogError} helperText={dialogError} onKeyPress={(e) => e.key === 'Enter' && handleOtpConfirm()} />
-                        </>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog} color="secondary">Cancel</Button>
-                    {dialogStep === 'password' && (
-                        <Button onClick={handlePasswordConfirm} color="primary" disabled={dialogLoader}>
-                            {dialogLoader ? <CircularProgress size={24} /> : 'Verify & Send OTP'}
-                        </Button>
-                    )}
-                    {dialogStep === 'otp' && (
-                        <Button onClick={handleOtpConfirm} color="primary" disabled={dialogLoader}>
-                            {dialogLoader ? <CircularProgress size={24} /> : 'Verify & Confirm Action'}
-                        </Button>
-                    )}
-                </DialogActions>
-            </Dialog>
+            <OtpActionDialog
+                open={!!otpAction}
+                onClose={() => setOtpAction(null)}
+                onSuccess={handleOtpSuccess}
+                adminId={currentUser?._id}
+                actionType={otpAction?.type}
+                targetType="teacher"
+                targetId={teacherID}
+                targetName={teacherDetails?.name}
+                payload={otpAction?.payload}
+            />
         </Container>
     );
 };

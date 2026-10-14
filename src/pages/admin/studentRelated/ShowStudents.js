@@ -61,7 +61,7 @@ const ShowStudents = () => {
                 setClassDetailsError(null); // Reset error state on new fetch
 
                 // Collect all unique class IDs to avoid redundant API calls
-                const allClassIDs = new Set(studentsList.flatMap(student => student.className));
+                const allClassIDs = new Set(studentsList.flatMap(student => student.className || []));
 
                 const promises = Array.from(allClassIDs).map(id =>
                     axios.get(`${process.env.REACT_APP_BASE_URL}/Sclass/${id}`)
@@ -111,7 +111,7 @@ const ShowStudents = () => {
 
     const studentRows = studentsList && studentsList.length > 0 && studentsList.map((student) => {
         // For each student, find their class objects from the details map
-        const enrolledClasses = student.className.map(id =>
+        const enrolledClasses = (student.className || []).map(id =>
             classDetailsMap.get(id) || { _id: id, sclassName: 'Loading...' }
         );
 

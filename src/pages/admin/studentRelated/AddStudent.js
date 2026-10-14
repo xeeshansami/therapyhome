@@ -49,8 +49,6 @@ const AddStudent = ({ situation }) => {
     const [parentProfession, setPProfession] = useState('');
     const [reference, setReference] = useState('');
     const [selectedClasses, setSelectedClasses] = useState([]);
-    const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('Loading...');
-    const [invoiceNoError, setInvoiceNoError] = useState('');
     const [cnicError, setCNICError] = useState('');
     const [selectedClassDetails, setSelectedClassDetails] = useState('');
     const [sclassName, setSclassName] = useState('');
@@ -118,6 +116,8 @@ const AddStudent = ({ situation }) => {
     });
     // --- NEW STATE FOR MONTHLY FEE ---
     const [monthlyFee, setMonthlyFee] = useState(0);
+    // Amount collected now; defaults to the full net amount until edited.
+    const [paidAmount, setPaidAmount] = useState('');
 
     // Per-session billing lines, same shape the fee portal uses so a student can
     // be charged a different rate from the class default.
@@ -130,27 +130,6 @@ const AddStudent = ({ situation }) => {
 
     const [showInvoice, setShowInvoice] = useState(false);
     const [invoiceData, setInvoiceData] = useState({});
-    const fetchNextInvoiceNo = async (result, totalAmount, formattedDateTime) => {
-        try {
-            setLoader(true);
-            setInvoiceNoError(''); // Clear previous errors
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/invoices/next-number`);
-            if (response.data && response.data.invoiceNum) {
-                setGeneratedInvoiceNo(response.data.invoiceNum);
-                handleSaveFee(result, totalAmount, formattedDateTime, response.data.invoiceNum);
-            } else {
-                setGeneratedInvoiceNo('THS16072025-01'); // Default fallback
-                console.warn("Could not fetch invoice number, defaulting.");
-                setInvoiceNoError('Could not generate invoice number automatically.');
-            }
-        } catch (error) {
-            console.error("Error fetching next invoice number:", error);
-            setGeneratedInvoiceNo('Error');
-            setInvoiceNoError('Failed to fetch invoice number.');
-        } finally {
-            setLoader(false);
-        }
-    };
     useEffect(() => {
         if (situation === "Class") {
             setSclassName(params.id);
@@ -367,8 +346,13 @@ const AddStudent = ({ situation }) => {
         return `${day}-${month}-${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
     };
 
+    // Admission net amount = one-time charges + the first period of session fees.
+    const netAdmissionAmount = toMoney(feeDetails.totalAmount) + toMoney(monthlyFee);
+    const effectivePaid = paidAmount === '' ? netAdmissionAmount : toMoney(paidAmount);
+
     const submitHandler = async (event) => {
         event.preventDefault();
+        if (loader) return; // prevent duplicate submissions
 
         if (!name) {
             setMessage("Please enter student name.");
@@ -391,6 +375,23 @@ const AddStudent = ({ situation }) => {
         if (days.length === 0) {
             setDaySelectionError(true);
             setMessage("Please select at least one day.");
+            setShowPopup(true);
+            return;
+        }
+        const feeLines = buildLineItems();
+        const feeProblem = feeLines.find(l => !(l.feePerSession >= 0) || !(l.sessions >= 1));
+        if (feeProblem) {
+            setMessage(`Enter a valid fee and at least 1 session for "${feeProblem.serviceName}".`);
+            setShowPopup(true);
+            return;
+        }
+        if ([feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.otherCharges].some(v => toMoney(v) < 0)) {
+            setMessage("Admission charges cannot be negative.");
+            setShowPopup(true);
+            return;
+        }
+        if (effectivePaid < 0 || effectivePaid > netAdmissionAmount) {
+            setMessage("Paid amount must be between 0 and the net amount.");
             setShowPopup(true);
             return;
         }
@@ -423,8 +424,12 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('admissionFee', feeDetails.admissionFee);
         formDataToSubmit.append('securityDeposit', feeDetails.securityDeposit);
         formDataToSubmit.append('otherCharges', feeDetails.otherCharges);
-        formDataToSubmit.append('totalFee', feeDetails.totalAmount); // This is one-time fee
-        formDataToSubmit.append('monthlyFee', monthlyFee); // This is the new monthly fee
+        // The agreed per-session fees become this student's default for every
+        // later monthly slip. The server saves them, the student and the
+        // admission slip together.
+        formDataToSubmit.append('feePlan', JSON.stringify(feeLines));
+        formDataToSubmit.append('paidAmount', effectivePaid);
+        formDataToSubmit.append('generateAdmissionSlip', 'true');
 
         if (selectedFile) {
             formDataToSubmit.append('medicalReportPath', selectedFile);
@@ -435,7 +440,8 @@ const AddStudent = ({ situation }) => {
             
             const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/${role}Reg`, formDataToSubmit);
             if (result.data.status === "00") {
-                await fetchNextInvoiceNo(result.data.data, feeDetails.totalAmount, formattedDateTime);
+                // The slip is printed from the records the server saved.
+                setInvoiceData(result.data.feeRecord ? { ...result.data.data, ...result.data.feeRecord } : {});
                 setMessage(result.data.message);
                 setIsSuccess(true);
                 setShowPopup(true);
@@ -487,44 +493,6 @@ const AddStudent = ({ situation }) => {
             setSearchLoading(false);
         }
     };
-
-    const handleSaveFee = (selectedStudent, consultancy, date, invoiceNo) => {
-        
-        const fields = {
-            adminID: '68795ab802f2887382d217b0',
-            attendance: [],
-            parentName: selectedStudent.parentName,
-            name: selectedStudent.name,
-            parentContact: selectedStudent.parentContact,
-            isPaid: "1",
-            role: 'Student',
-            invoiceID: invoiceNo,
-            rollNum: selectedStudent.rollNum,
-            date: date,
-            netTotalFee: consultancy,
-            paidFee: consultancy,
-            sclassName: selectedStudent.sclassName || '',
-            isConsultancyOrIsRegistrationOrMonthly: '1',
-            school: selectedStudent.school || '',
-            lineItems: buildLineItems(),
-        };
-
-        axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
-            headers: { 'Content-Type': 'application/json' },
-        })
-            .then(response => {
-                // Hand the saved record to the existing slip dialog so it can be printed.
-                setInvoiceData({ ...fields, ...(response.data || {}) });
-            })
-            .catch(error => {
-                
-                setShowPopup(false);
-                setIsSuccess(false);
-                setMessage('Error saving fee details:', error);
-                console.error('Error saving fee details:', error);
-            });
-    };
-
 
     const handleSelectStudent = (student) => {
         // Populate student-specific fields for context
@@ -906,19 +874,50 @@ const AddStudent = ({ situation }) => {
                                     <Paper variant="outlined" sx={{ p: 2 }}>
                                         <Stack direction="row" justifyContent="space-between" alignItems="baseline">
                                             <Typography variant="subtitle1" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
-                                                Net Fee
+                                                Session Fee
                                             </Typography>
-                                            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                            <Typography variant="h6" sx={{ fontWeight: 700 }}>
                                                 Rs. {Number(monthlyFee).toLocaleString()}
                                             </Typography>
                                         </Stack>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Saved as this student's agreed fee; every new monthly slip starts from these rates.
+                                        </Typography>
+                                        <Divider sx={{ my: 1.5 }} />
+                                        <Stack direction="row" justifyContent="space-between">
+                                            <Typography variant="body2">Admission Fee Total</Typography>
+                                            <Typography variant="body2">Rs. {toMoney(feeDetails.totalAmount).toLocaleString()}</Typography>
+                                        </Stack>
+                                        <Stack direction="row" justifyContent="space-between">
+                                            <Typography variant="body2">Session Fee</Typography>
+                                            <Typography variant="body2">Rs. {toMoney(monthlyFee).toLocaleString()}</Typography>
+                                        </Stack>
+                                        <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mt: 1 }}>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 700, textTransform: 'uppercase' }}>
+                                                Net Amount
+                                            </Typography>
+                                            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                                                Rs. {netAdmissionAmount.toLocaleString()}
+                                            </Typography>
+                                        </Stack>
+                                        <TextField
+                                            fullWidth
+                                            label="Amount Paid Now (PKR)"
+                                            type="number"
+                                            value={paidAmount === '' ? netAdmissionAmount : paidAmount}
+                                            onChange={(e) => setPaidAmount(e.target.value)}
+                                            InputProps={{ inputProps: { min: 0, max: netAdmissionAmount } }}
+                                            error={effectivePaid < 0 || effectivePaid > netAdmissionAmount}
+                                            helperText={`Balance: Rs. ${(netAdmissionAmount - effectivePaid).toLocaleString()}`}
+                                            sx={{ mt: 2 }}
+                                        />
                                     </Paper>
                                 </Section>
                             </Grid>
 
 
                         </Grid>
-                        <Button fullWidth onClick={submitHandler} type="submit" variant="contained" color="primary" disabled={loader} sx={{ mt: 3, py: 1.5, fontSize: '1.1rem' }}>
+                        <Button fullWidth type="submit" variant="contained" color="primary" disabled={loader} sx={{ mt: 3, py: 1.5, fontSize: '1.1rem' }}>
                             {loader ? <CircularProgress size={24} color="inherit" /> : setBtnName ? setBtnName : 'Add Student'}
                         </Button>
                     </form>
