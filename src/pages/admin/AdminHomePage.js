@@ -88,6 +88,7 @@ const AdminHomePage = () => {
     const [monthTotal, setMonthTotal] = useState(null);
     const [todayTotal, setTodayTotal] = useState(null);
     const [updatedAt, setUpdatedAt] = useState(null);
+    const [pendingConsultations, setPendingConsultations] = useState(null);
 
     const loadFees = useCallback(async (month) => {
         const base = process.env.REACT_APP_BASE_URL;
@@ -104,6 +105,9 @@ const AdminHomePage = () => {
         dispatch(getAllSclasses(adminID, 'Sclass'));
         dispatch(getAllTeachers(adminID));
         loadFees(selectedMonth);
+        axios.get(`${process.env.REACT_APP_BASE_URL}/consultations/${adminID}`, { params: { status: 'pending' } })
+            .then(({ data }) => setPendingConsultations(Array.isArray(data) ? data.length : 0))
+            .catch(() => setPendingConsultations(0));
         setUpdatedAt(new Date());
     }, [adminID, dispatch, loadFees, selectedMonth]);
 
@@ -119,22 +123,24 @@ const AdminHomePage = () => {
     const figures = useMemo(() => {
         const students = list(studentsList);
         const staff = list(teachersList);
-        const consultations = students.filter((s) => s.isConsultantStudent).length;
+        // Older records may still be consultant students; new consultations are counted separately.
+        const legacyConsultations = students.filter((s) => s.isConsultantStudent).length;
+        const consultations = legacyConsultations + (pendingConsultations || 0);
         const teachers = staff.filter((t) => String(t.role || '').toLowerCase() === 'teacher').length;
         const interns = staff.filter((t) => /^intern$/i.test(String(t.role || '').trim())).length;
         return {
-            admitted: students.length - consultations,
+            admitted: students.length - legacyConsultations,
             consultations,
             staff: staff.length,
             teachers,
             interns,
             classes: list(sclassesList).length,
         };
-    }, [studentsList, teachersList, sclassesList]);
+    }, [studentsList, teachersList, sclassesList, pendingConsultations]);
 
     const cards = [
         { icon: SchoolOutlinedIcon, label: 'Students', value: formatNumber(figures.admitted), detail: `${formatNumber(figures.consultations)} awaiting admission`, note: 'Students admitted through Add Student.' },
-        { icon: AssignmentIndOutlinedIcon, label: 'Consultations', value: formatNumber(figures.consultations), detail: 'Registered, not yet admitted', note: 'Children seen through New Consultancy.' },
+        { icon: AssignmentIndOutlinedIcon, label: 'Consultations', value: pendingConsultations === null ? null : formatNumber(figures.consultations), detail: 'Seen, not yet admitted', note: 'Admit them from the Consultations page.' },
         { icon: BadgeOutlinedIcon, label: 'Staff', value: formatNumber(figures.staff), detail: `${formatNumber(figures.teachers)} teachers${figures.interns ? ` · ${formatNumber(figures.interns)} interns` : ''}`, note: 'Everyone on the staff list, all designations.' },
         { icon: ClassOutlinedIcon, label: 'Classes', value: formatNumber(figures.classes), detail: 'Therapy programmes offered', note: 'Each class sets its own session fee.' },
         { icon: TodayOutlinedIcon, label: 'Collected Today', value: todayTotal === null ? null : `Rs. ${formatNumber(todayTotal)}`, detail: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), note: 'Payments recorded on fee slips today.' },

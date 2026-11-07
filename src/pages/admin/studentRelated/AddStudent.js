@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { CircularProgress, IconButton, InputAdornment } from '@mui/material';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
@@ -9,6 +9,8 @@ import axios from 'axios';
 import { getAllSclasses } from '../../../redux/sclassRelated/sclassHandle';
 import InvoiceDialog from '../../../components/InvoiceDialog';
 import StudentLookup from '../../../components/StudentLookup';
+import PageHeader from '../../../components/PageHeader';
+import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
 import { lineTotal, sumLineItems, toMoney } from '../../../utils/feeCalc';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -34,6 +36,10 @@ const AddStudent = ({ situation }) => {
     const [parentName, setparentName] = useState('');
 
     const [rollNum, setRollNum] = useState('');
+    // Set when admitting a consultation: the server copies its details to the new student.
+    const [consultationId, setConsultationId] = useState(null);
+    const [lookupSelection, setLookupSelection] = useState(null);
+    const location = useLocation();
     const [rollNumLoading, setRollNumLoading] = useState(false);
     const [rollNumError, setRollNumError] = useState('');
     const [phoneError, setPhoneError] = useState('');
@@ -428,6 +434,7 @@ const AddStudent = ({ situation }) => {
         formDataToSubmit.append('feePlan', JSON.stringify(feeLines));
         formDataToSubmit.append('paidAmount', effectivePaid);
         formDataToSubmit.append('generateAdmissionSlip', 'true');
+        if (consultationId) formDataToSubmit.append('consultationId', consultationId);
 
         if (selectedFile) {
             formDataToSubmit.append('medicalReportPath', selectedFile);
@@ -465,6 +472,8 @@ const AddStudent = ({ situation }) => {
 
     // Clearing the lookup returns the form to a blank new-student entry.
     const handleClearSearch = () => {
+        setConsultationId(null);
+        setLookupSelection(null);
         setName('');
         setRollNum('');
         setparentName('');
@@ -482,9 +491,12 @@ const AddStudent = ({ situation }) => {
     };
 
     const handleSelectStudent = (student) => {
+        const isConsultation = student.kind === 'consultation';
+        setConsultationId(isConsultation ? student._id : null);
         // Populate student-specific fields for context
         setName(student.name || '');
-        setRollNum(student.rollNum || '');
+        // A consultation has no roll number yet; a new one is issued for the admission.
+        setRollNum(isConsultation ? '' : (student.rollNum || ''));
 
         // Note: You have a separate "Father's/Parent's Name" field at the top.
         // This line ensures it's also populated.
@@ -521,9 +533,32 @@ const AddStudent = ({ situation }) => {
         setSelectedClasses([]);
         setSelectedFile(null);
         setRollNumError('');
+        if (isConsultation) {
+            handleGenerateRollNumClick().then(() => {
+                setButtonName('Admit Student');
+                setUpdateName('Admit from Consultation');
+            });
+        }
         setPhoneError(''); // Clear any previous validation errors
         setCNICError('');   // Clear any previous validation errors
     };
+    // Arriving from Consultations > Admit: load that consultation and fill the form.
+    useEffect(() => {
+        const id = location.state && location.state.consultationId;
+        if (!id) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/Consultation/${id}`)
+            .then(({ data }) => {
+                if (data && data._id && data.status === 'pending') {
+                    const picked = { ...data, kind: 'consultation' };
+                    setLookupSelection(picked);
+                    handleSelectStudent(picked);
+                }
+            })
+            .catch(() => {});
+        // Only on arrival.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.state]);
+
     const isEmpty = (value) => value === null || value === undefined || value.toString().trim() === '';
     const validateForm = () => {
         const { parent } = formData;
@@ -573,12 +608,13 @@ const AddStudent = ({ situation }) => {
     return (
         <>
             <Box sx={{ padding: { xs: 2, md: 4 } }}>
+                <PageHeader icon={PersonAddAlt1OutlinedIcon} title="Add Student" subtitle="Admit a child: start from a consultation or enter a new student" />
                 <Paper elevation={3} sx={{ padding: { xs: 2, md: 3 }, mb: 3 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>Find an Existing Student</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                         Search by the student's name or the parent's number. Choosing a student fills in the form below.
                     </Typography>
-                    <StudentLookup adminId={adminID} onSelect={handleSelectStudent} onClear={handleClearSearch} />
+                    <StudentLookup adminId={adminID} onSelect={handleSelectStudent} onClear={handleClearSearch} selection={lookupSelection} />
                 </Paper>
 
                 <Paper elevation={3} sx={{ padding: { xs: 2, md: 4 } }}>

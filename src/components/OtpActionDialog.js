@@ -17,7 +17,11 @@ const TARGETS = {
     teacher: { label: 'staff member', note: 'Salary slips already issued are kept.' },
     sclass: { label: 'class', note: 'A class can only be deleted when no student, staff member or fee slip uses it.' },
     notice: { label: 'notice', note: '' },
+    consultation: { label: 'consultation', note: 'Its consultation fee slip is kept as payment history.' },
 };
+
+// Settings key for each action, e.g. studentUpdate / sclassDelete.
+const policyKey = (targetType, actionType) => `${targetType}${actionType === 'delete' ? 'Delete' : 'Update'}`;
 
 const RESEND_COOLDOWN_S = 30; // matches the server's cooldown
 
@@ -37,6 +41,9 @@ const OtpActionDialog = ({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const [resendIn, setResendIn] = useState(0);
+    // 'otp' = emailed code; 'credentials' = admin password + admin key (OTP switched off in Settings).
+    const [mode, setMode] = useState('otp');
+    const [adminKey, setAdminKey] = useState('');
     const target = TARGETS[targetType] || { label: 'record', note: '' };
 
     useEffect(() => {
@@ -48,6 +55,13 @@ const OtpActionDialog = ({
     useEffect(() => {
         if (open) {
             setResendIn(0);
+            setAdminKey('');
+            setMode('otp');
+            axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${adminId}/settings`)
+                .then(({ data }) => {
+                    if (data?.requireOtp && data.requireOtp[policyKey(targetType, actionType)] === false) setMode('credentials');
+                })
+                .catch(() => {}); // fall back to OTP, which the server always accepts
             setStep(isDelete ? 'confirm' : 'password');
             setPassword('');
             setOtp('');
@@ -55,8 +69,9 @@ const OtpActionDialog = ({
             setError('');
         } else {
             setPassword(''); // never keep the password around after closing
+            setAdminKey('');
         }
-    }, [open, isDelete]);
+    }, [open, isDelete, adminId, targetType, actionType]);
 
     const action = { type: actionType, targetType, targetId };
 
@@ -85,6 +100,31 @@ const OtpActionDialog = ({
                 if (wait > 0) setResendIn(wait);
             }
             setError(errorText(err, 'Password verification failed.'));
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const confirmWithCredentials = async () => {
+        if (busy) return;
+        if (!password || !adminKey) {
+            setError('Enter your password and admin key.');
+            return;
+        }
+        setBusy(true);
+        setError('');
+        try {
+            const { data } = await axios.post(`${process.env.REACT_APP_BASE_URL}/verify-credentials-execute-action`, {
+                adminId,
+                password,
+                adminKey,
+                action: { ...action, payload: isDelete ? null : payload },
+            });
+            onSuccess(data);
+        } catch (err) {
+            // Settings changed to require OTP meanwhile: switch to the OTP route.
+            if (err?.response?.data?.code === 'OTP_REQUIRED') setMode('otp');
+            setError(errorText(err, 'Verification failed.'));
         } finally {
             setBusy(false);
         }
@@ -133,7 +173,25 @@ const OtpActionDialog = ({
                         {target.note && <><br /><br />{target.note}</>}
                     </DialogContentText>
                 )}
-                {step === 'password' && (
+                {step === 'password' && mode === 'credentials' && (
+                    <>
+                        <DialogContentText sx={{ mb: 1 }}>
+                            Enter your admin password and admin key to {isDelete ? 'delete' : 'save'} this {target.label}.
+                        </DialogContentText>
+                        <TextField
+                            autoFocus margin="dense" label="Password" type="password" fullWidth
+                            value={password} onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && confirmWithCredentials()}
+                        />
+                        <TextField
+                            margin="dense" label="Admin key" type="password" fullWidth autoComplete="off"
+                            value={adminKey} onChange={(e) => setAdminKey(e.target.value)}
+                            error={!!error} helperText={error || 'OTP is switched off for this action in Settings.'}
+                            onKeyDown={(e) => e.key === 'Enter' && confirmWithCredentials()}
+                        />
+                    </>
+                )}
+                {step === 'password' && mode === 'otp' && (
                     <>
                         <DialogContentText sx={{ mb: 1 }}>
                             Enter your admin password. A one-time code will be emailed to you.
@@ -177,9 +235,14 @@ const OtpActionDialog = ({
                 {step === 'confirm' && (
                     <Button color="error" variant="contained" onClick={() => setStep('password')}>Confirm Delete</Button>
                 )}
-                {step === 'password' && (
+                {step === 'password' && mode === 'otp' && (
                     <Button onClick={requestOtp} variant="contained" disabled={busy}>
                         {busy ? <CircularProgress size={22} color="inherit" /> : 'Verify & Send OTP'}
+                    </Button>
+                )}
+                {step === 'password' && mode === 'credentials' && (
+                    <Button onClick={confirmWithCredentials} variant="contained" color={isDelete ? 'error' : 'primary'} disabled={busy}>
+                        {busy ? <CircularProgress size={22} color="inherit" /> : (isDelete ? 'Verify & Delete' : 'Verify & Update')}
                     </Button>
                 )}
                 {step === 'otp' && (

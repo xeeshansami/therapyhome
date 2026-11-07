@@ -1,185 +1,90 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { getAllTeachers } from '../../../redux/teacherRelated/teacherHandle';
-import {
-    Paper, Table, TableBody, TableContainer,
-    TableHead, TablePagination, Button, Box, IconButton, Stack,
-    Avatar,
-    // ✅ 1. IMPORT CircularProgress
-    CircularProgress,
-} from '@mui/material';
-import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
-import { StyledTableCell, StyledTableRow } from '../../../components/styles';
-import { BlueButton, GreenButton } from '../../../components/buttonStyles';
+import { Avatar, Button, Chip, Stack, Typography } from '@mui/material';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import { getAllTeachers } from '../../../redux/teacherRelated/teacherHandle';
+import DataTable, { RowButton } from '../../../components/DataTable';
+import PageHeader, { PageShell } from '../../../components/PageHeader';
 import Popup from '../../../components/Popup';
 import OtpActionDialog from '../../../components/OtpActionDialog';
-import { internLabel } from '../../../utils/staffForm';
+import { internLabel, formatTime } from '../../../utils/staffForm';
 
 const ShowTeachers = () => {
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { teachersList, loading, error, response } = useSelector((state) => state.teacher);
+    const { teachersList, loading } = useSelector((state) => state.teacher);
     const { currentUser } = useSelector((state) => state.user);
-
-    useEffect(() => {
-        dispatch(getAllTeachers(currentUser._id));
-    }, [currentUser._id, dispatch]);
-
-    const [showPopup, setShowPopup] = useState(false);
-    const [message, setMessage] = useState("");
     const [toDelete, setToDelete] = useState(null); // { id, name }
+    const [message, setMessage] = useState('');
+
+    useEffect(() => { dispatch(getAllTeachers(currentUser._id)); }, [currentUser._id, dispatch]);
+
+    const rows = useMemo(() => (Array.isArray(teachersList) ? teachersList : []).map((t) => ({
+        ...t,
+        designationText: t.role || '',
+        // Non-teaching staff are filed under a placeholder class; it is not their designation.
+        classText: String(t.role || '').toLowerCase() === 'teacher' ? (t.teachSclass?.sclassName || '') : '',
+    })), [teachersList]);
 
     const handleDeleted = (result) => {
         setToDelete(null);
         setMessage(result?.message || 'Record Deleted Successfully.');
-        setShowPopup(true);
         dispatch(getAllTeachers(currentUser._id));
     };
 
-    // ✅ 2. UPDATE THE LOADING BLOCK TO SHOW THE SPINNER
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <CircularProgress />
-            </Box>
-        );
-    } else if (response) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                <GreenButton variant="contained" onClick={() => navigate("/Admin/teachers/chooseclass")}>
-                    Add Staff
-                </GreenButton>
-            </Box>
-        );
-    } else if (error) {
-        console.log(error);
-    }
-
     const columns = [
-        { id: 'photo', label: 'Photo', minWidth: 70, align: 'center' },
-        { id: 'name', label: 'Name', minWidth: 170 },
-        { id: 'designation', label: 'Designation', minWidth: 150 },
-        { id: 'teachSclass', label: 'Class', minWidth: 140 },
-    ];
-
-    const rows = teachersList.map((teacher) => {
-        return {
-            photo: teacher.photo,
-            name: teacher.name,
-            teachSubject: teacher.teachSubject?.subName || null,
-            designation: [teacher.role || 'N/A', internLabel(teacher) && `(${internLabel(teacher)})`].filter(Boolean).join(' '),
-            // Non-teaching staff are filed under a placeholder class; it is not their designation.
-            teachSclass: String(teacher.role || '').toLowerCase() === 'teacher' ? (teacher.teachSclass?.sclassName || 'N/A') : '—',
-            teachSclassID: teacher.teachSclass?._id,
-            id: teacher._id,
-        };
-    });
-
-    const actions = [
         {
-            icon: <PersonAddAlt1Icon color="primary" />, name: 'Add New Staff',
-            action: () => navigate("/Admin/teachers/chooseclass")
-        }
+            id: 'name', label: 'Staff Member', minWidth: 200,
+            render: (r) => (
+                <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Avatar src={r.photo} sx={{ width: 36, height: 36 }}>{(r.name || '?')[0]}</Avatar>
+                    <Typography sx={{ fontWeight: 600 }}>{r.name}</Typography>
+                </Stack>
+            ),
+        },
+        {
+            id: 'designationText', label: 'Designation', highlight: true, minWidth: 150,
+            render: (r) => (
+                <Stack direction="row" spacing={1} alignItems="center">
+                    <span>{r.role || '—'}</span>
+                    {internLabel(r) && <Chip size="small" variant="outlined" color={r.internType === 'unpaid' ? 'default' : 'primary'} label={internLabel(r)} />}
+                </Stack>
+            ),
+        },
+        { id: 'phone', label: 'Phone' },
+        { id: 'email', label: 'Email', minWidth: 180 },
+        {
+            id: 'schedule', label: 'Scheduled Hours',
+            render: (r) => (r.scheduledCheckIn ? `${formatTime(r.scheduledCheckIn)} – ${formatTime(r.scheduledCheckOut)}` : '—'),
+        },
+        { id: 'classText', label: 'Class', render: (r) => r.classText || '—' },
     ];
-
-    const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
-    const currentPage = Math.min(page, lastPage);
 
     return (
-        <Paper sx={{ width: '100%', overflow: 'hidden', p: 2 }}>
-            {actions && actions.length > 0 && (
-                <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}>
-                    {actions.map((action, index) => (
-                        <Button
-                            key={action.name || index}
-                            onClick={action.action}
-                            startIcon={action.icon}
-                            variant={index === 0 ? 'contained' : 'outlined'}
-                            size="small"
-                        >
-                            {action.name}
-                        </Button>
-                    ))}
-                </Stack>
-            )}
-            <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table stickyHeader aria-label="sticky table">
-                    <TableHead>
-                        <StyledTableRow>
-                            {columns.map((column) => (
-                                <StyledTableCell
-                                    key={column.id}
-                                    align={column.align}
-                                    style={{ minWidth: column.minWidth }}
-                                >
-                                    {column.label}
-                                </StyledTableCell>
-                            ))}
-                            <StyledTableCell align="center">
-                                Actions
-                            </StyledTableCell>
-                        </StyledTableRow>
-                    </TableHead>
-                    <TableBody>
-                        {rows
-                            .slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
-                            .map((row) => {
-                                return (
-                                    <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.id}>
-                                        {columns.map((column) => {
-                                            const value = row[column.id];
-
-                                            if (column.id === 'photo') {
-                                                return (
-                                                    <StyledTableCell key={column.id} align={column.align}>
-                                                        <Avatar src={value} />
-                                                    </StyledTableCell>
-                                                );
-                                            }
-                                            
-                                            return (
-                                                <StyledTableCell key={column.id} align={column.align}>
-                                                    {column.format && typeof value === 'number' ? column.format(value) : value}
-                                                </StyledTableCell>
-                                            );
-                                        })}
-                                        <StyledTableCell align="center">
-                                            <BlueButton variant="contained"
-                                                onClick={() => navigate("/Admin/teachers/teacher/" + row.id)}>
-                                                View
-                                            </BlueButton>
-                                            <IconButton aria-label={`Delete ${row.name}`} color="error" sx={{ ml: 1 }}
-                                                onClick={() => setToDelete({ id: row.id, name: row.name })}>
-                                                <PersonRemoveIcon />
-                                            </IconButton>
-                                        </StyledTableCell>
-                                    </StyledTableRow>
-                                );
-                            })}
-                    </TableBody>
-                </Table>
-            </TableContainer>
-            <TablePagination
-                rowsPerPageOptions={[5, 10, 25, 100]}
-                component="div"
-                count={rows.length}
-                rowsPerPage={rowsPerPage}
-                page={currentPage}
-                onPageChange={(event, newPage) => setPage(newPage)}
-                onRowsPerPageChange={(event) => {
-                    // Radix 10. This was parseInt(value, 5), which read the choice
-                    // in base 5: "5" became NaN and "100" became 25.
-                    setRowsPerPage(parseInt(event.target.value, 10));
-                    setPage(0);
-                }}
+        <PageShell>
+            <PageHeader
+                icon={BadgeOutlinedIcon}
+                title="Staff"
+                subtitle={`${rows.length} staff member${rows.length === 1 ? '' : 's'}`}
+                actions={<Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/teachers/chooseclass')}>Add Staff</Button>}
             />
-
-            <Popup open={showPopup} message={message} success onClose={() => setShowPopup(false)} />
+            <DataTable
+                columns={columns}
+                rows={rows}
+                loading={loading && rows.length === 0}
+                searchKeys={['name', 'designationText', 'phone', 'email', 'classText']}
+                searchPlaceholder="Search by name, designation, phone or email"
+                emptyText="No staff yet. Add someone with Add Staff."
+                actions={(r) => (
+                    <>
+                        <RowButton onClick={() => navigate(`/Admin/teachers/teacher/${r._id}`)}>View</RowButton>
+                        <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: r.name })}>Delete</RowButton>
+                    </>
+                )}
+            />
+            <Popup open={!!message} message={message} success onClose={() => setMessage('')} />
             <OtpActionDialog
                 open={!!toDelete}
                 onClose={() => setToDelete(null)}
@@ -190,7 +95,7 @@ const ShowTeachers = () => {
                 targetId={toDelete?.id}
                 targetName={toDelete?.name}
             />
-        </Paper >
+        </PageShell>
     );
 };
 

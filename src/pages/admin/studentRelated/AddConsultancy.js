@@ -22,6 +22,8 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import InvoiceDialog from './../../../components/InvoiceDialog'; // adjust path as needed
+import PageHeader from '../../../components/PageHeader';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
 
 const AddConsultancy = () => {
     const { currentUser } = useSelector((state) => state.user);
@@ -40,10 +42,7 @@ const AddConsultancy = () => {
     // const [cnic, setCNIC] = useState(''); // Redundant
 
     const [generatedRollNum, setGeneratedRollNum] = useState('Loading...');
-    const [generatedInvoiceNo, setGeneratedInvoiceNo] = useState('Loading...');
-    const [invoiceNoError, setInvoiceNoError] = useState('');
     const [rollNumError, setRollNumError] = useState('');
-    const [rollNumInput, setRollNumInput] = useState('');
 
 
     const [feeDetails, setFeeDetails] = useState({
@@ -61,67 +60,26 @@ const AddConsultancy = () => {
         }));
     }, [feeDetails.admissionFee, feeDetails.securityDeposit, feeDetails.consultancy]);
 
-    // Fetch the next roll number when the component mounts
-    // Modified fetchNextRollNum to be callable on demand
-    const fetchNextRollNum = async () => {
+    // A consultation gets its own number (assigned on save) and no roll number;
+    // the fee comes from Settings.
+    const fetchConsultationSetup = async () => {
+        setRollNumError('');
         try {
-            setLoader(true);
-            setRollNumError(''); // Clear previous errors
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/GenerateNextRollNum`);
-            if (response.data && response.data.rollNum) {
-                setGeneratedRollNum(response.data.rollNum);
-                fetchNextInvoiceNo();
-                // Extract the numeric part if needed, assuming format "THS123"
-                setRollNumInput(response.data.rollNum.replace('THS', ''));
-            } else {
-                setGeneratedRollNum('THS001'); // Default fallback
-                setRollNumInput('001');
-                console.warn("Could not fetch next roll number, defaulting.");
-                setRollNumError('Could not generate roll number automatically.');
-            }
+            const [next, settings] = await Promise.all([
+                axios.get(`${process.env.REACT_APP_BASE_URL}/consultations/next-number`),
+                axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser?._id}/settings`),
+            ]);
+            setGeneratedRollNum(next.data?.consultationNo || '');
+            const fee = Number(settings.data?.consultationFee);
+            if (Number.isFinite(fee)) setFeeDetails((prev) => ({ ...prev, consultancy: fee, totalAmount: fee }));
         } catch (error) {
-            console.error("Error fetching next roll number:", error);
-            setGeneratedRollNum('Error');
-            setRollNumError('Failed to fetch roll number.');
-        } finally {
-            setLoader(false);
+            setGeneratedRollNum('');
+            setRollNumError('Could not load the consultation number or fee. Check your connection.');
         }
     };
-    const fetchNextInvoiceNo = async () => {
-        try {
-            setLoader(true);
-            setInvoiceNoError(''); // Clear previous errors
-            const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/invoices/next-number`);
-            if (response.data && response.data.invoiceNum) {
-                setGeneratedInvoiceNo(response.data.invoiceNum);
-            } else {
-                setGeneratedInvoiceNo('THS16072025-01'); // Default fallback
-                console.warn("Could not fetch invoice number, defaulting.");
-                setInvoiceNoError('Could not generate invoice number automatically.');
-            }
-        } catch (error) {
-            console.error("Error fetching next invoice number:", error);
-            setGeneratedInvoiceNo('Error');
-            setInvoiceNoError('Failed to fetch invoice number.');
-        } finally {
-            setLoader(false);
-        }
-    };
-    const handleRollNumChange = (e) => {
-        const userInput = e.target.value;
-        // Find the numeric part of the input, allowing for "THS" prefix
-        const numericPart = userInput.toUpperCase().replace('THS', '');
-
-        // Allow only numbers in the numeric part
-        if (/^[0-9]*$/.test(numericPart)) {
-            setRollNumInput(numericPart); // Update the state holding just the number
-            setGeneratedRollNum('THS' + numericPart); // Update the display value with the prefix
-            setRollNumError(''); // Clear any errors
-        }
-    };
-    // This useEffect will now run only once on initial component mount
     useEffect(() => {
-        fetchNextRollNum();
+        fetchConsultationSetup();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
 
@@ -250,8 +208,8 @@ const AddConsultancy = () => {
         if (!validateForm()) return;
         // Terms acceptance already checked in validateForm
 
-        if (generatedRollNum === 'Loading...' || generatedRollNum === 'Error' || rollNumError) {
-            alert('Roll number is not properly generated. Please wait or refresh.');
+        if (rollNumError) {
+            alert('The consultation fee could not be loaded. Please refresh the page.');
             return;
         }
 
@@ -318,8 +276,7 @@ const AddConsultancy = () => {
             dob: student.dob,
             gender: student.gender,
             age: student.age,
-            rollNum: generatedRollNum,
-            isConsultantStudent: convertToBoolean(student.isConsultantStudent), // Ensure this is set based on your form/logic
+            // No roll number at consultation; one is issued when the child is admitted.
             // role: "Student", // Default in schema, usually not explicitly sent unless user can change roles
 
             // --- Contact and Address ---
@@ -391,7 +348,6 @@ const AddConsultancy = () => {
             totalFee: parseFloat(feeDetails.totalFee) || 0,
             isPaid: "1", // If your schema's `isPaid` is Boolean, convert: convertToBoolean(feeDetails.isPaid)
             isConsultancyOrIsRegistrationOrMonthly: feeDetails.isConsultancyOrIsRegistrationOrMonthly,
-            invoiceID: generatedInvoiceNo, // Use the schema's field name 'invoiceID'
 
             // --- Terms Acceptance ---
             acceptedTerms: convertToBoolean(feeDetails.acceptedTerms),
@@ -399,15 +355,15 @@ const AddConsultancy = () => {
         setLoader(true);
         
         try {
-            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/StudentConsultancy`, payload, {
+            // The server saves the consultation and its fee slip together.
+            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/consultations`, { ...payload, paidAmount: feeDetails.consultancy }, {
                 headers: { 'Content-Type': 'application/json' },
             });
-            ; // Keep for debugging if needed
             if (result.data.status === "00") {
-                
-                const formattedDateTime = getCurrentDateTimeFormatted();
-                handleSaveFee(result.data.data, feeDetails.consultancy, formattedDateTime, generatedRollNum);
-                setMessage("Student consultancy added successfully! Please generate invoice.");
+                const saved = result.data.data;
+                setGeneratedRollNum(saved.consultationNo);
+                setInvoiceData({ ...result.data.feeRecord, ...saved, rollNum: saved.consultationNo });
+                setMessage(`Consultation ${saved.consultationNo} saved. Admit the child later from Consultations to give them a roll number.`);
                 setIsSuccess(true);
                 setShowPopup(true); // Show success popup first, then invoice via popup confirm
             } else {
@@ -425,52 +381,6 @@ const AddConsultancy = () => {
         }
     }
 
-    const handleSaveFee = (selectedStudent, consultancy, date, rollNum) => {
-        
-        const fields = {
-            adminID: currentUser?._id,
-            attendance: [],
-            parentName: selectedStudent.parentName,
-            name: selectedStudent.name,
-            parentContact: selectedStudent.parentContact,
-            isPaid: "1",
-            role: 'Student',
-            invoiceID: generatedInvoiceNo,
-            rollNum: selectedStudent.rollNum,
-            date: date,
-            netTotalFee: consultancy,
-            paidFee: consultancy,
-            sclassName: selectedStudent.sclassName || '',
-            isConsultancyOrIsRegistrationOrMonthly: '0',
-            school: selectedStudent.school || '',
-        };
-
-        axios.post(`${process.env.REACT_APP_BASE_URL}/StudentFeeReg`, fields, {
-            headers: { 'Content-Type': 'application/json' },
-        })
-            .then(response => {
-                
-                const mergedInvoiceData = {
-                    ...response.data, // Data from fee registration (e.g., receipt ID, fee specific details)
-                    ...selectedStudent, // Full student details from SingleStudent API
-                    // You can add more specific merging logic if needed, e.g.,
-                    // overwrite existing fields from fee registration if fetchedStudentData is more up-to-date
-                    // For example:
-                    // name: fetchedStudentData.name,
-                    // sclassName: fetchedStudentData.sclassName,
-                    // etc.
-                };
-                setInvoiceData(mergedInvoiceData); // Assuming backend returns the full student data including the saved rollNum
-                console.log(response);
-            })
-            .catch(error => {
-                
-                setShowPopup(false);
-                setIsSuccess(false);
-                setMessage('Error saving fee details:', error);
-                console.error('Error saving fee details:', error);
-            });
-    };
 
     const handleChange = (section, field) => (e) => {
         const { type } = e.target;
@@ -626,6 +536,7 @@ const AddConsultancy = () => {
 
     return (
         <Box sx={{ padding: { xs: 1, sm: 2, md: 3 }, width: '100%' }}>
+            <PageHeader icon={NoteAddOutlinedIcon} title="New Consultation" subtitle="Record a consultation. The child gets a roll number only when admitted as a student." />
             <Paper elevation={3} sx={{ padding: { xs: 1, sm: 2, md: 3 } }}>
                 <Box sx={{
                     display: 'flex',
@@ -651,29 +562,17 @@ const AddConsultancy = () => {
                     </Typography>
                 </Box>
 
-                {/* Generated Roll Number Display */}
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                {/* Consultation number: confirmed when saved. No roll number until admission. */}
+                <Box sx={{ mb: 2 }}>
                     <TextField
                         fullWidth
-                        label="Roll Number"
-                        value={generatedRollNum}
-                        onChange={handleRollNumChange} // New handler for manual input
-                        InputProps={{
-                            startAdornment: generatedRollNum === 'Loading...' ?
-                                <CircularProgress size={20} sx={{ mr: 1 }} /> : null,
-                        }}
+                        label="Consultation No."
+                        value={generatedRollNum === 'Loading...' ? '' : generatedRollNum}
+                        InputProps={{ readOnly: true, startAdornment: generatedRollNum === 'Loading...' ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null }}
                         error={!!rollNumError}
-                        helperText={rollNumError || 'Enter number after "THS" prefix or click Generate.'}
+                        helperText={rollNumError || 'Assigned when the consultation is saved. A roll number is issued only when the child is admitted as a student.'}
                         variant="filled"
                     />
-                    <Button
-                        variant="contained"
-                        onClick={fetchNextRollNum} // Re-use your fetch function on click
-                        disabled={loader}
-                        sx={{ ml: 1, height: '56px' }} // Match height of filled TextField
-                    >
-                        Generate
-                    </Button>
                 </Box>
 
                 {/* Student Details */}
@@ -924,12 +823,11 @@ const AddConsultancy = () => {
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 fullWidth
-                                label="Fixed Fee"
+                                label="Consultation Fee (PKR)"
                                 value={feeDetails.consultancy}
-                                variant="filled" // Using "filled" variant makes it look non-interactive
-                                InputProps={{
-                                    readOnly: true, // This makes the field read-only
-                                }}
+                                variant="filled"
+                                helperText="Set in Settings → Consultation fee."
+                                InputProps={{ readOnly: true }}
                             />
                         </Grid>
                     </Grid>

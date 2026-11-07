@@ -12,6 +12,8 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axios from 'axios';
 import imageCompression from 'browser-image-compression';
 import { isInternTitle, staffRuleError, titleOf, to24h } from '../../../utils/staffForm';
+import PageHeader from '../../../components/PageHeader';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 
 // Class used for staff who are not assigned to a therapy class (it is named "GENERAL").
 const UNASSIGNED_CLASS_ID = "68b7dbc567099ec00b0cd82e";
@@ -227,8 +229,8 @@ const AddTeacher = () => {
 
     return (
         <Box sx={{ p: { xs: 2, md: 4 } }}>
+            <PageHeader icon={BadgeOutlinedIcon} title="Add Staff" subtitle="Designation, schedule, contact and salary details" />
             <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                <Typography variant="h4" align="left" gutterBottom sx={{ fontSize: { xs: '1.6rem', md: '2.1rem' } }}>Add New Staff Member</Typography>
                 <Box sx={{ mb: 2, textAlign: 'left' }}>
                     <Typography variant="h6">
                         Designation: <Box component="span" sx={{ fontWeight: 'bold' }}>{selectedTitle || 'Not selected'}</Box>

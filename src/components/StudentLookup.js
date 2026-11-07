@@ -41,7 +41,7 @@ const Highlight = ({ text, query }) => {
     );
 };
 
-const StudentLookup = ({ adminId, onSelect, onClear }) => {
+const StudentLookup = ({ adminId, onSelect, onClear, selection }) => {
     const navigate = useNavigate();
     const [mode, setMode] = useState('name');
     const [input, setInput] = useState('');
@@ -50,6 +50,14 @@ const StudentLookup = ({ adminId, onSelect, onClear }) => {
     const [selected, setSelected] = useState(null);
     const [error, setError] = useState('');
     const requestId = useRef(0);
+
+    // A record chosen elsewhere (e.g. Consultations > Admit) shows as selected.
+    useEffect(() => {
+        if (selection) {
+            setSelected(selection);
+            setInput(optionLabel(selection));
+        }
+    }, [selection]);
 
     const config = MODES[mode];
     const query = mode === 'contact' ? input.replace(/\D/g, '') : input.trim();
@@ -65,12 +73,19 @@ const StudentLookup = ({ adminId, onSelect, onClear }) => {
         setError('');
         const timer = setTimeout(async () => {
             try {
-                const { data } = await axios.post(`${process.env.REACT_APP_BASE_URL}/students/search`, {
-                    [config.field]: escapeRegex(query),
-                    id: adminId,
-                });
+                // Pending consultations and students are searched together.
+                const [students, consultations] = await Promise.allSettled([
+                    axios.post(`${process.env.REACT_APP_BASE_URL}/students/search`, { [config.field]: escapeRegex(query), id: adminId }),
+                    axios.get(`${process.env.REACT_APP_BASE_URL}/consultations/${adminId}`, { params: { status: 'pending', q: query, limit: 10 } }),
+                ]);
                 if (id !== requestId.current) return; // a newer search has started
-                setOptions(Array.isArray(data) ? data.slice(0, 20) : []);
+                const list = (r) => (r.status === 'fulfilled' && Array.isArray(r.value.data) ? r.value.data : []);
+                const fromConsultations = list(consultations)
+                    .filter((c) => (mode === 'contact' ? String(c.parentContact || '').includes(query) : String(c.name || '').toLowerCase().includes(query.toLowerCase())))
+                    .map((c) => ({ ...c, kind: 'consultation' }));
+                const fromStudents = list(students).map((s) => ({ ...s, kind: 'student' }));
+                if (students.status === 'rejected' && consultations.status === 'rejected') throw new Error('search failed');
+                setOptions([...fromConsultations, ...fromStudents].slice(0, 20));
             } catch (err) {
                 if (id !== requestId.current) return;
                 setOptions([]);
@@ -128,26 +143,26 @@ const StudentLookup = ({ adminId, onSelect, onClear }) => {
                     onChange={handleSelect}
                     filterOptions={(x) => x}
                     getOptionLabel={optionLabel}
-                    isOptionEqualToValue={(a, b) => a._id === b._id}
+                    isOptionEqualToValue={(a, b) => a._id === b._id && a.kind === b.kind}
                     loading={loading}
                     loadingText="Searching…"
                     noOptionsText={noOptionsText}
                     autoHighlight
                     clearOnBlur={false}
                     renderOption={(props, s) => (
-                        <Box component="li" {...props} key={s._id} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', py: 1 }}>
+                        <Box component="li" {...props} key={`${s.kind}-${s._id}`} sx={{ display: 'flex', gap: 1.5, alignItems: 'center', py: 1 }}>
                             <Avatar sx={{ width: 36, height: 36, fontSize: 14, bgcolor: (t) => alpha(t.palette.primary.main, 0.15), color: 'primary.dark' }}>
                                 {initials(s.name)}
                             </Avatar>
                             <Box sx={{ minWidth: 0, flex: 1 }}>
                                 <Typography sx={{ fontWeight: 600 }} noWrap>
-                                    <Highlight text={s.name} query={mode === 'name' ? input : ''} /> <Typography component="span" variant="body2" color="text.secondary">· {s.rollNum}</Typography>
+                                    <Highlight text={s.name} query={mode === 'name' ? input : ''} /> <Typography component="span" variant="body2" color="text.secondary">· {s.rollNum || s.consultationNo}</Typography>
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" noWrap>
                                     Parent: {s.parentName || 'N/A'} · <Highlight text={s.parentContact || 'no number'} query={mode === 'contact' ? query : ''} />
                                 </Typography>
                             </Box>
-                            <Chip size="small" variant="outlined" color={s.isConsultantStudent ? 'warning' : 'success'} label={s.isConsultantStudent ? 'Consultation' : 'Admitted'} />
+                            <Chip size="small" variant="outlined" color={isConsultation(s) ? 'warning' : 'success'} label={isConsultation(s) ? 'Consultation' : 'Admitted'} />
                         </Box>
                     )}
                     renderInput={(params) => (
@@ -176,14 +191,14 @@ const StudentLookup = ({ adminId, onSelect, onClear }) => {
 
             {selected && (
                 <Alert
-                    severity={selected.isConsultantStudent ? 'success' : 'info'}
+                    severity={isConsultation(selected) ? 'success' : 'info'}
                     sx={{ mt: 2 }}
-                    action={!selected.isConsultantStudent && (
+                    action={!isConsultation(selected) && (
                         <Button color="inherit" size="small" onClick={() => navigate(`/Admin/students/student/${selected._id}`)}>Open profile</Button>
                     )}
                 >
-                    {selected.isConsultantStudent
-                        ? <>Filled in from <strong>{selected.name}</strong>'s consultation ({selected.rollNum}). Choose classes, days and fees to admit them.</>
+                    {isConsultation(selected)
+                        ? <>Filled in from <strong>{selected.name}</strong>'s consultation ({selected.consultationNo || selected.rollNum}). A new roll number has been generated; choose classes, days and fees to admit them.</>
                         : <><strong>{selected.name}</strong> ({selected.rollNum}) is already admitted. Their details are filled in below; to change them, open their profile.</>}
                 </Alert>
             )}
@@ -192,7 +207,12 @@ const StudentLookup = ({ adminId, onSelect, onClear }) => {
 };
 
 function optionLabel(s) {
-    return s ? `${s.name || ''} (${s.rollNum || ''})` : '';
+    return s ? `${s.name || ''} (${s.rollNum || s.consultationNo || ''})` : '';
+}
+
+// New consultations, and older records saved as consultant students before consultations were separated.
+function isConsultation(s) {
+    return !!s && (s.kind === 'consultation' || s.isConsultantStudent === true);
 }
 
 export default StudentLookup;

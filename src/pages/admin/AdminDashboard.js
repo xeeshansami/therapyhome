@@ -28,6 +28,7 @@ import AdminHomePage from './AdminHomePage';
 
 import AddStudent from './studentRelated/AddStudent';
 import AddConsultancy from './studentRelated/AddConsultancy';
+import ShowConsultations from './studentRelated/ShowConsultations';
 import SeeComplains from './studentRelated/SeeComplains';
 import ShowStudents from './studentRelated/ShowStudents';
 import StudentAttendance from './studentRelated/StudentAttendance';
@@ -164,6 +165,7 @@ const AdminDashboard = () => {
                         <Route path="/addstudents" element={<AddStudent situation="Student" />} />
                         <Route path="/students" element={<ShowStudents />} />
                         <Route path="/addConsultancy" element={<AddConsultancy />} />
+                        <Route path="/consultations" element={<ShowConsultations />} />
                         <Route path="/students/student/:id" element={<ViewStudent />} />
                         <Route path="/students/student/attendance/:id" element={<StudentAttendance situation="Student" />} />
                         <Route path="/students/student/marks/:id" element={<StudentExamMarks situation="Student" />} />

@@ -102,7 +102,7 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
         palette,
         shape: { borderRadius: 14 },
         typography: {
-            fontFamily: '"Plus Jakarta Sans", "Inter", "Poppins", "Helvetica", "Arial", sans-serif',
+            fontFamily: '"Telenor Evolution", "Plus Jakarta Sans", "Inter", "Poppins", "Helvetica", "Arial", sans-serif',
             h1: { fontWeight: 800, letterSpacing: '-0.03em' },
             h2: { fontWeight: 800, letterSpacing: '-0.03em' },
             h3: { fontWeight: 800, letterSpacing: '-0.02em' },

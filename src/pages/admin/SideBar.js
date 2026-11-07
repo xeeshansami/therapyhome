@@ -9,6 +9,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
+import NoteAddOutlinedIcon from '@mui/icons-material/NoteAddOutlined';
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
@@ -27,7 +28,8 @@ const MAIN_LINKS = [
     { label: 'Classes', to: '/Admin/classes', icon: ClassOutlinedIcon },
     { label: 'Staff', to: '/Admin/teachers', icon: BadgeOutlinedIcon },
     { label: 'Students', to: '/Admin/students', icon: SchoolOutlinedIcon },
-    { label: 'New Consultancy', to: '/Admin/AddConsultancy', icon: AssignmentIndOutlinedIcon },
+    { label: 'New Consultancy', to: '/Admin/AddConsultancy', icon: NoteAddOutlinedIcon },
+    { label: 'Consultations', to: '/Admin/consultations', icon: AssignmentIndOutlinedIcon },
     { label: 'Add Student', to: '/Admin/addstudents', icon: PersonAddAlt1OutlinedIcon },
     { label: 'Collect Fee', to: '/Admin/Fees', icon: PaymentsOutlinedIcon },
     { label: 'Fee Records', to: '/Admin/FeeRecords', icon: ReceiptLongOutlinedIcon },

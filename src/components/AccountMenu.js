@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     Box, Avatar, Menu, MenuItem, ListItemIcon, Divider, IconButton, Tooltip,
-    Typography, Badge, Stack,
+    Typography, Stack,
 } from '@mui/material';
 import { Settings, Logout } from '@mui/icons-material';
 import { Bell, UserRound } from 'lucide-react';
@@ -46,19 +46,6 @@ const AccountMenu = () => {
     return (
         <>
             <Box sx={{ display: 'flex', alignItems: 'center', textAlign: 'center', gap: 0.5 }}>
-                <Tooltip title="Notifications">
-                    <IconButton
-                        onClick={(e) => setNotifAnchor(e.currentTarget)}
-                        size="small"
-                        aria-label="notifications"
-                        sx={{ color: 'text.secondary' }}
-                    >
-                        <Badge color="error" variant="dot" overlap="circular">
-                            <Bell size={20} />
-                        </Badge>
-                    </IconButton>
-                </Tooltip>
-
                 <Tooltip title="Account settings">
                     <IconButton
                         onClick={handleClick}

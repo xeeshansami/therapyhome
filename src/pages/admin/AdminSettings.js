@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import {
@@ -8,10 +8,16 @@ import {
     Card,
     CardContent,
     CircularProgress,
-    Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
     Divider,
+    FormControlLabel,
     Grid,
+    InputAdornment,
     Stack,
+    Switch,
     TextField,
     ToggleButton,
     ToggleButtonGroup,
@@ -24,6 +30,11 @@ import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import CheckIcon from '@mui/icons-material/Check';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
+import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import VerifyAdminDialog from '../../components/VerifyAdminDialog';
+import PageHeader, { PageShell } from '../../components/PageHeader';
 import { useColorMode } from '../../context/ColorModeContext';
 import { primaryPresets } from '../../theme';
 import { authSuccess } from '../../redux/userRelated/userSlice';
@@ -70,6 +81,50 @@ const AdminSettings = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [saving, setSaving] = useState(false);
     const [feedback, setFeedback] = useState(null); // { severity, text }
+    const [verify, setVerify] = useState(null); // { title, description, run }
+    const [otpStep, setOtpStep] = useState(null); // { challengeId, sentTo, code, error }
+
+    // Admin settings: consultation fee and per-action verification.
+    const [settings, setSettings] = useState(null);
+    const [draft, setDraft] = useState(null);
+    const [settingsFeedback, setSettingsFeedback] = useState(null);
+
+    const loadSettings = useCallback(async () => {
+        try {
+            const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`);
+            setSettings(data);
+            setDraft({ consultationFee: String(data.consultationFee), requireOtp: { ...data.requireOtp } });
+        } catch (err) {
+            setSettingsFeedback({ severity: 'error', text: 'Could not load settings.' });
+        }
+    }, [currentUser._id]);
+
+    useEffect(() => { loadSettings(); }, [loadSettings]);
+
+    const settingsDirty = !!settings && !!draft && (
+        Number(draft.consultationFee) !== settings.consultationFee
+        || Object.keys(draft.requireOtp).some((k) => draft.requireOtp[k] !== settings.requireOtp[k])
+    );
+
+    const handleSaveSettings = () => {
+        const fee = Number(draft.consultationFee);
+        if (draft.consultationFee === '' || !Number.isFinite(fee) || fee < 0) {
+            setSettingsFeedback({ severity: 'error', text: 'Consultation fee must be zero or more.' });
+            return;
+        }
+        setVerify({
+            title: 'Save settings',
+            description: 'Settings change how records are protected, so they need your admin password and admin key.',
+            run: async ({ password, adminKey }) => {
+                const { data } = await axios.put(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`, {
+                    password, adminKey, consultationFee: fee, requireOtp: draft.requireOtp,
+                });
+                setSettings(data.settings);
+                setDraft({ consultationFee: String(data.settings.consultationFee), requireOtp: { ...data.settings.requireOtp } });
+                setSettingsFeedback({ severity: 'success', text: 'Settings saved.' });
+            },
+        });
+    };
 
     useEffect(() => {
         if (currentUser) {
@@ -92,7 +147,7 @@ const AdminSettings = () => {
         setFeedback(null);
     };
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!form.name.trim()) {
             setFeedback({ severity: 'error', text: 'Name is required.' });
             return;
@@ -114,19 +169,39 @@ const AdminSettings = () => {
             return;
         }
 
-        setSaving(true);
         setFeedback(null);
-        try {
-            const payload = {
-                name: form.name.trim(),
-                email: form.email.trim(),
-                schoolName: form.schoolName.trim(),
-            };
-            if (password) payload.password = password;
+        setVerify({
+            title: 'Save account changes',
+            description: 'Enter your current admin password and admin key. A one-time code will then be emailed to your current address.',
+            run: async (secrets) => saveAccount(secrets),
+        });
+    };
 
+    // Step 1: password + admin key check, then an OTP is emailed to the current address.
+    const saveAccount = async ({ password: currentPassword, adminKey }) => {
+        const payload = {
+            name: form.name.trim(),
+            email: form.email.trim(),
+            schoolName: form.schoolName.trim(),
+            currentPassword,
+            adminKey,
+        };
+        if (password) payload.password = password;
+        const { data } = await axios.post(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/account-change`, payload);
+        setOtpStep({ challengeId: data.challengeId, sentTo: data.sentTo, code: '', error: '' });
+    };
+
+    // Step 2: the emailed OTP applies exactly the change it was issued for.
+    const confirmAccountOtp = async () => {
+        if (!/^\d{6}$/.test(otpStep.code.trim())) {
+            setOtpStep((s) => ({ ...s, error: 'Enter the 6-digit code from the email.' }));
+            return;
+        }
+        setSaving(true);
+        try {
             const res = await axios.put(
                 `${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}`,
-                payload,
+                { challengeId: otpStep.challengeId, otp: otpStep.code.trim() },
                 { headers: { 'Content-Type': 'application/json' } }
             );
 
@@ -137,15 +212,13 @@ const AdminSettings = () => {
                 dispatch(authSuccess(merged));
                 setPassword('');
                 setConfirmPassword('');
+                setOtpStep(null);
                 setFeedback({ severity: 'success', text: 'Profile updated successfully.' });
             } else {
-                setFeedback({ severity: 'error', text: res.data?.message || 'Unable to update profile.' });
+                setOtpStep((s) => ({ ...s, error: res.data?.message || 'Unable to update profile.' }));
             }
         } catch (err) {
-            setFeedback({
-                severity: 'error',
-                text: err.response?.data?.message || 'Unable to update profile. Please try again.',
-            });
+            setOtpStep((s) => ({ ...s, error: err.response?.data?.message || 'Unable to update profile. Please try again.' }));
         } finally {
             setSaving(false);
         }
@@ -163,13 +236,8 @@ const AdminSettings = () => {
     };
 
     return (
-        <Container maxWidth="lg" sx={{ py: { xs: 2, md: 3 } }}>
-            <Box sx={{ mb: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>Settings</Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Preferences for how TherapyHome looks on this device.
-                </Typography>
-            </Box>
+        <PageShell>
+            <PageHeader icon={SettingsOutlinedIcon} title="Settings" subtitle="Appearance, account, consultation fee and how changes are verified" />
 
             <Grid container spacing={3}>
                 <Grid item xs={12} md={7}>
@@ -300,8 +368,105 @@ const AdminSettings = () => {
                         </Stack>
                     </SectionCard>
                 </Grid>
+
+                <Grid item xs={12} md={7}>
+                    <SectionCard
+                        icon={VerifiedUserOutlinedIcon}
+                        title="Verification for changes"
+                        description="For each action, choose an emailed OTP or the admin password plus admin key."
+                    >
+                        {!draft ? <CircularProgress size={24} /> : (
+                            <Stack divider={<Divider flexItem />} spacing={1.25}>
+                                {settings.actions.map((a) => (
+                                    <Stack key={a.key} direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+                                        <Box>
+                                            <Typography sx={{ fontWeight: 600 }}>{a.label}</Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {draft.requireOtp[a.key] ? 'Emailed OTP required' : 'Admin password + admin key'}
+                                            </Typography>
+                                        </Box>
+                                        <FormControlLabel
+                                            labelPlacement="start"
+                                            label="OTP"
+                                            control={(
+                                                <Switch
+                                                    checked={!!draft.requireOtp[a.key]}
+                                                    onChange={(e) => setDraft((d) => ({ ...d, requireOtp: { ...d.requireOtp, [a.key]: e.target.checked } }))}
+                                                    inputProps={{ 'aria-label': `Require OTP to ${a.label.toLowerCase()}` }}
+                                                />
+                                            )}
+                                        />
+                                    </Stack>
+                                ))}
+                            </Stack>
+                        )}
+                    </SectionCard>
+                </Grid>
+
+                <Grid item xs={12} md={5}>
+                    <SectionCard
+                        icon={RequestQuoteOutlinedIcon}
+                        title="Consultation fee"
+                        description="Charged on every new consultation. Past consultations keep the fee they were charged."
+                    >
+                        {settingsFeedback && (
+                            <Alert severity={settingsFeedback.severity} sx={{ mb: 2 }} onClose={() => setSettingsFeedback(null)}>
+                                {settingsFeedback.text}
+                            </Alert>
+                        )}
+                        {draft && (
+                            <TextField
+                                label="Consultation fee"
+                                type="number"
+                                fullWidth
+                                value={draft.consultationFee}
+                                onChange={(e) => setDraft((d) => ({ ...d, consultationFee: e.target.value }))}
+                                InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment>, inputProps: { min: 0 } }}
+                            />
+                        )}
+                        <Stack direction="row" spacing={1} sx={{ mt: 3 }} justifyContent="flex-end">
+                            <Button onClick={() => settings && setDraft({ consultationFee: String(settings.consultationFee), requireOtp: { ...settings.requireOtp } })} disabled={!settingsDirty}>Reset</Button>
+                            <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty}>Save settings</Button>
+                        </Stack>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
+                            Saves both the verification choices and the fee. Needs your admin password and admin key.
+                        </Typography>
+                    </SectionCard>
+                </Grid>
             </Grid>
-        </Container>
+
+            <Dialog open={!!otpStep} onClose={() => !saving && setOtpStep(null)} fullWidth maxWidth="xs">
+                <DialogTitle>Enter the OTP</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        A 6-digit code was sent to {otpStep?.sentTo || 'your email'}. It expires in 10 minutes and works once.
+                    </Typography>
+                    <TextField
+                        autoFocus fullWidth label="OTP"
+                        inputProps={{ inputMode: 'numeric', maxLength: 6 }}
+                        value={otpStep?.code || ''}
+                        onChange={(e) => setOtpStep((s) => ({ ...s, code: e.target.value.replace(/\D/g, ''), error: '' }))}
+                        onKeyDown={(e) => e.key === 'Enter' && confirmAccountOtp()}
+                        error={!!otpStep?.error} helperText={otpStep?.error || ' '}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOtpStep(null)} disabled={saving}>Cancel</Button>
+                    <Button variant="contained" onClick={confirmAccountOtp} disabled={saving}>
+                        {saving ? <CircularProgress size={20} color="inherit" /> : 'Verify & Save'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <VerifyAdminDialog
+                open={!!verify}
+                title={verify?.title}
+                description={verify?.description}
+                confirmLabel="Save"
+                onClose={() => setVerify(null)}
+                onConfirm={async (secrets) => { await verify.run(secrets); setVerify(null); }}
+            />
+        </PageShell>
     );
 };
 
