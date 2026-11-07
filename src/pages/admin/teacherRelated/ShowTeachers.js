@@ -37,7 +37,7 @@ const ShowTeachers = () => {
         ...t,
         designationText: t.role || '',
         // Non-teaching staff are filed under a placeholder class; it is not their designation.
-        classText: String(t.role || '').toLowerCase() === 'teacher' ? (t.teachSclass?.sclassName || '') : '',
+        classText: ((t.teachSclasses && t.teachSclasses.length) ? t.teachSclasses : (String(t.role || '').toLowerCase() === 'teacher' && t.teachSclass ? [t.teachSclass] : [])).map((c) => c && c.sclassName).filter(Boolean).join(', '),
     })), [teachersList]);
 
     const handleDeleted = (result) => {
@@ -71,7 +71,7 @@ const ShowTeachers = () => {
             id: 'schedule', label: 'Scheduled Hours',
             render: (r) => (r.scheduledCheckIn ? `${formatTime(r.scheduledCheckIn)} – ${formatTime(r.scheduledCheckOut)}` : '—'),
         },
-        { id: 'classText', label: 'Class', render: (r) => r.classText || '—' },
+        { id: 'classText', label: 'Classes', render: (r) => r.classText || '—' },
     ];
 
     return (

@@ -5,12 +5,13 @@ import { getTeacherDetails } from '../../../redux/teacherRelated/teacherHandle';
 import {
     Box, Button, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField,
-    FormControl, Select, MenuItem, Avatar, InputLabel, RadioGroup, FormControlLabel, Radio, Chip,
+    FormControl, Select, MenuItem, Avatar, InputLabel, RadioGroup, FormControlLabel, Radio, Chip, Stack,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Popup from '../../../components/Popup';
 import OtpActionDialog from '../../../components/OtpActionDialog';
+import ClassMultiSelect from '../../../components/ClassMultiSelect';
 import axios from 'axios';
 import { designationIdFor, isInternTitle, staffRuleError, titleOf, formatTime, internLabel } from '../../../utils/staffForm';
 
@@ -40,6 +41,9 @@ const buildForm = (t, designations = []) => ({
     internType: t.internType || '',
     scheduledCheckIn: t.scheduledCheckIn || '',
     scheduledCheckOut: t.scheduledCheckOut || '',
+    // Classes taught (older records only have the single teachSclass).
+    teachSclasses: ((t.teachSclasses && t.teachSclasses.length) ? t.teachSclasses : (t.teachSclass ? [t.teachSclass] : []))
+        .map((c) => String((c && c._id) || c)),
 });
 
 const TeacherDetails = () => {
@@ -56,6 +60,13 @@ const TeacherDetails = () => {
     const [popup, setPopup] = useState({ open: false, message: '', success: true });
     const [formData, setFormData] = useState(buildForm({}));
     const [designations, setDesignations] = useState([]);
+    const [classes, setClasses] = useState([]);
+    useEffect(() => {
+        if (!currentUser?._id) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/SclassList/${currentUser._id}`)
+            .then(({ data }) => setClasses(Array.isArray(data) ? data : []))
+            .catch(() => setClasses([]));
+    }, [currentUser?._id]);
 
     // --- State for Timings ---
     const [timings, setTimings] = useState([]);
@@ -147,6 +158,10 @@ const TeacherDetails = () => {
         const ruleProblem = staffRuleError({ designationTitle: selectedTitle, internType: current.internType, salary: current.salary, scheduledCheckIn: current.scheduledCheckIn, scheduledCheckOut: current.scheduledCheckOut }, { requireSchedule: false });
         if (ruleProblem) {
             setPopup({ open: true, message: ruleProblem, success: false });
+            return;
+        }
+        if (changes.teachSclasses !== undefined && changes.teachSclasses.length === 0) {
+            setPopup({ open: true, message: 'Choose at least one class.', success: false });
             return;
         }
         if (Object.keys(changes).length === 0) {
@@ -323,7 +338,28 @@ const TeacherDetails = () => {
                                 <DetailItem label="Specific Time (older record)" value={formatTime(teacherDetails.teacherDateTime)} />
                             )}
 
-                            <DetailItem label="Assigned Class" value={teacherDetails?.teachSclass?.sclassName} />
+                            <Grid item xs={12} sx={{ mb: 2 }}>
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', mb: 1 }}>Classes taught (sessions & programs)</Typography>
+                                {isEditMode ? (
+                                    <ClassMultiSelect
+                                        classes={classes}
+                                        value={formData.teachSclasses || []}
+                                        onChange={(ids) => setFormData((prev) => ({ ...prev, teachSclasses: ids }))}
+                                        label="Classes taught"
+                                        error={(formData.teachSclasses || []).length === 0 ? 'Choose at least one class.' : ''}
+                                    />
+                                ) : (
+                                    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                        {(formData.teachSclasses || []).length === 0 && <Typography>—</Typography>}
+                                        {(formData.teachSclasses || []).map((id) => {
+                                            const c = classes.find((x) => x._id === id)
+                                                || (teacherDetails?.teachSclasses || []).find((x) => x && x._id === id)
+                                                || (teacherDetails?.teachSclass?._id === id ? teacherDetails.teachSclass : null);
+                                            return <Chip key={id} color="primary" variant="outlined" label={c ? c.sclassName : 'Unknown class'} />;
+                                        })}
+                                    </Stack>
+                                )}
+                            </Grid>
                         </Grid>
                     </AccordionDetails>
                 </Accordion>

@@ -13,6 +13,7 @@ import axios from 'axios';
 import imageCompression from 'browser-image-compression';
 import { isInternTitle, staffRuleError, titleOf, to24h } from '../../../utils/staffForm';
 import PageHeader from '../../../components/PageHeader';
+import ClassMultiSelect from '../../../components/ClassMultiSelect';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 
 // Class used for staff who are not assigned to a therapy class (it is named "GENERAL").
@@ -60,7 +61,9 @@ const AddTeacher = () => {
     const [designationId, setDesignationId] = useState(designationID || '');
     const [internType, setInternType] = useState('');
     const [classes, setClasses] = useState([]);
-    const [classID, setClassID] = useState(routeClassID || '');
+    // Classes taught; the one chosen on the previous screen is pre-selected.
+    const [classIds, setClassIds] = useState(routeClassID ? [routeClassID] : []);
+    const classID = classIds[0] || '';
     const [scheduledCheckIn, setScheduledCheckIn] = useState('');
     const [scheduledCheckOut, setScheduledCheckOut] = useState('');
     const selectedTitle = titleOf(designationId, designations) || (designationId === designationID ? designationTitle : '');
@@ -196,7 +199,7 @@ const AddTeacher = () => {
             phone.length === 11 && emergencyContact.length === 11 && cnicDigits.length === 13 &&
             photo && gender && maritalStatus && designationId &&
             education && fatherName && occupation && timing &&
-            (!isTeacher || classID)
+            (!isTeacher || classIds.length > 0)
         );
     };
 
@@ -212,7 +215,8 @@ const AddTeacher = () => {
             internType: isIntern ? internType : '',
             scheduledCheckIn, scheduledCheckOut,
             school: currentUser?._id,
-            teachSclass: isTeacher ? classID : UNASSIGNED_CLASS_ID,
+            teachSclass: classIds[0] || UNASSIGNED_CLASS_ID,
+            teachSclasses: classIds,
             // Kept for screens that still read the older single time field.
             teacherDateTime: scheduledCheckIn,
         };
@@ -234,7 +238,7 @@ const AddTeacher = () => {
                 <Box sx={{ mb: 2, textAlign: 'left' }}>
                     <Typography variant="h6">
                         Designation: <Box component="span" sx={{ fontWeight: 'bold' }}>{selectedTitle || 'Not selected'}</Box>
-                        {isTeacher && classDetails?.sclassName && <> · Class: <Box component="span" sx={{ fontWeight: 'bold' }}>{classDetails.sclassName}</Box></>}
+                        {classIds.length > 0 && <> · Classes: <Box component="span" sx={{ fontWeight: 'bold' }}>{classIds.map((id) => (classes.find((c) => c._id === id) || (id === classDetails?._id ? classDetails : {})).sclassName).filter(Boolean).join(', ')}</Box></>}
                     </Typography>
                 </Box>
                 <form onSubmit={submitHandler}>
@@ -271,14 +275,15 @@ const AddTeacher = () => {
                                 </FormControl>
                             )}
 
-                            {isTeacher && (
-                                <FormControl fullWidth required sx={{ mb: 2 }}>
-                                    <InputLabel>Class</InputLabel>
-                                    <Select label="Class" value={classes.some((c) => c._id === classID) ? classID : ''} onChange={(e) => setClassID(e.target.value)}>
-                                        {classes.map((c) => <MenuItem key={c._id} value={c._id}>{c.sclassName}</MenuItem>)}
-                                    </Select>
-                                </FormControl>
-                            )}
+                            <Box sx={{ mb: 2, gridColumn: '1 / -1' }}>
+                                <ClassMultiSelect
+                                    classes={classes}
+                                    value={classIds}
+                                    onChange={setClassIds}
+                                    required={isTeacher}
+                                    error={isTeacher && classIds.length === 0 ? 'Choose at least one class for a teacher.' : ''}
+                                />
+                            </Box>
 
                             <FormControl fullWidth required sx={{ mb: 2 }}>
                                 <InputLabel>Timing</InputLabel>

@@ -7,6 +7,7 @@ import {
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
 import DataTable, { RowButton } from '../../../components/DataTable';
 import PageHeader, { PageShell } from '../../../components/PageHeader';
+import { formatTime } from '../../../utils/staffForm';
 
 const API = process.env.REACT_APP_BASE_URL;
 
@@ -14,7 +15,7 @@ const API = process.env.REACT_APP_BASE_URL;
 export const clinicToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date());
 
 const time = (point) => (point && point.at
-    ? new Date(point.at).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Karachi' })
+    ? new Date(point.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Karachi' })
     : '—');
 
 export const statusChip = (record) => {
@@ -104,7 +105,7 @@ const DayView = () => {
                 )}
                 columns={[
                     { id: 'name', label: 'Staff', render: (r) => <><Typography sx={{ fontWeight: 600 }}>{r.teacher.name}</Typography><Typography variant="caption" color="text.secondary">{r.teacher.designation || ''}</Typography></> },
-                    { id: 'schedule', label: 'Schedule', render: (r) => (r.teacher.scheduledCheckIn ? `${r.teacher.scheduledCheckIn} – ${r.teacher.scheduledCheckOut || ''}` : '—') },
+                    { id: 'schedule', label: 'Schedule', render: (r) => (r.teacher.scheduledCheckIn ? `${formatTime(r.teacher.scheduledCheckIn)} – ${formatTime(r.teacher.scheduledCheckOut)}` : '—') },
                     { id: 'in', label: 'Check-in', render: (r) => time(r.record && r.record.checkIn) },
                     { id: 'out', label: 'Check-out', render: (r) => time(r.record && r.record.checkOut) },
                     { id: 'distance', label: 'Distance', render: (r) => (r.record && r.record.checkIn && r.record.checkIn.distance != null ? `${r.record.checkIn.distance} m` : '—') },
