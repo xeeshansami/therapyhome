@@ -34,6 +34,8 @@ import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
+import PhoneIphoneOutlinedIcon from '@mui/icons-material/PhoneIphoneOutlined';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import VerifyAdminDialog from '../../components/VerifyAdminDialog';
 import PageHeader, { PageShell } from '../../components/PageHeader';
 import { useColorMode } from '../../context/ColorModeContext';
@@ -72,6 +74,28 @@ const SectionCard = ({ icon: Icon, title, description, children }) => (
     </Card>
 );
 
+const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/** Editable copy of the saved settings (numbers as text while typing). */
+const toDraft = (data) => ({
+    consultationFee: String(data.consultationFee),
+    requireOtp: { ...data.requireOtp },
+    payrollPolicy: { ...data.payrollPolicy },
+    geofence: {
+        enabled: !!(data.geofence && data.geofence.enabled),
+        lat: data.geofence && data.geofence.lat !== null && data.geofence.lat !== undefined ? String(data.geofence.lat) : '',
+        lng: data.geofence && data.geofence.lng !== null && data.geofence.lng !== undefined ? String(data.geofence.lng) : '',
+        radiusMeters: String((data.geofence && data.geofence.radiusMeters) || 150),
+    },
+    attendancePolicy: {
+        lateGraceMinutes: String(data.attendancePolicy.lateGraceMinutes),
+        halfDayMinHours: String(data.attendancePolicy.halfDayMinHours),
+        maxAccuracyMeters: String(data.attendancePolicy.maxAccuracyMeters),
+        weekendDays: [...(data.attendancePolicy.weekendDays || [])],
+    },
+    staffDefaultPassword: '',
+});
+
 const AdminSettings = () => {
     const { mode, primary, setMode, setPrimary } = useColorMode();
     const { currentUser } = useSelector((state) => state.user);
@@ -94,7 +118,7 @@ const AdminSettings = () => {
         try {
             const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`);
             setSettings(data);
-            setDraft({ consultationFee: String(data.consultationFee), requireOtp: { ...data.requireOtp }, payrollPolicy: { ...data.payrollPolicy } });
+            setDraft(toDraft(data));
         } catch (err) {
             setSettingsFeedback({ severity: 'error', text: 'Could not load settings.' });
         }
@@ -106,7 +130,30 @@ const AdminSettings = () => {
         Number(draft.consultationFee) !== settings.consultationFee
         || Object.keys(draft.requireOtp).some((k) => draft.requireOtp[k] !== settings.requireOtp[k])
         || Object.keys(draft.payrollPolicy || {}).some((k) => Number(draft.payrollPolicy[k]) !== settings.payrollPolicy[k])
+        || JSON.stringify(toDraft(settings).geofence) !== JSON.stringify(draft.geofence)
+        || JSON.stringify(toDraft(settings).attendancePolicy) !== JSON.stringify(draft.attendancePolicy)
+        || draft.staffDefaultPassword !== ''
     );
+    const [locating, setLocating] = useState(false);
+    const useMyLocation = () => {
+        if (!navigator.geolocation) {
+            setSettingsFeedback({ severity: 'error', text: 'This browser cannot read your location.' });
+            return;
+        }
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocating(false);
+                setDraft((d) => ({ ...d, geofence: { ...d.geofence, lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) } }));
+                setSettingsFeedback({ severity: 'info', text: `Location captured (accuracy ±${Math.round(pos.coords.accuracy)} m). Save settings to apply it.` });
+            },
+            (err) => {
+                setLocating(false);
+                setSettingsFeedback({ severity: 'error', text: err.code === 1 ? 'Location permission was denied.' : 'Could not read your location.' });
+            },
+            { enableHighAccuracy: true, timeout: 15000 }
+        );
+    };
 
     const handleSaveSettings = () => {
         const fee = Number(draft.consultationFee);
@@ -114,6 +161,24 @@ const AdminSettings = () => {
             setSettingsFeedback({ severity: 'error', text: 'Consultation fee must be zero or more.' });
             return;
         }
+        const g = draft.geofence;
+        if (g.enabled && (g.lat === '' || g.lng === '')) {
+            setSettingsFeedback({ severity: 'error', text: 'Set the clinic location (latitude and longitude) before turning the geofence on.' });
+            return;
+        }
+        const sp = draft.staffDefaultPassword;
+        if (sp && (sp.length < 8 || !/[A-Za-z]/.test(sp) || !/\d/.test(sp))) {
+            setSettingsFeedback({ severity: 'error', text: 'Staff first-login password needs at least 8 characters with letters and numbers.' });
+            return;
+        }
+        const geofence = { enabled: g.enabled, radiusMeters: Number(g.radiusMeters) };
+        if (g.lat !== '') geofence.lat = Number(g.lat);
+        if (g.lng !== '') geofence.lng = Number(g.lng);
+        const ap = draft.attendancePolicy;
+        const attendancePolicy = {
+            lateGraceMinutes: Number(ap.lateGraceMinutes), halfDayMinHours: Number(ap.halfDayMinHours),
+            maxAccuracyMeters: Number(ap.maxAccuracyMeters), weekendDays: ap.weekendDays,
+        };
         setVerify({
             title: 'Save settings',
             description: 'Settings change how records are protected, so they need your admin password and admin key.',
@@ -121,9 +186,11 @@ const AdminSettings = () => {
                 const { data } = await axios.put(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`, {
                     password, adminKey, consultationFee: fee, requireOtp: draft.requireOtp,
                     payrollPolicy: Object.fromEntries(Object.entries(draft.payrollPolicy).map(([k, v]) => [k, Number(v)])),
+                    geofence, attendancePolicy,
+                    ...(sp ? { staffDefaultPassword: sp } : {}),
                 });
                 setSettings(data.settings);
-                setDraft({ consultationFee: String(data.settings.consultationFee), requireOtp: { ...data.settings.requireOtp }, payrollPolicy: { ...data.settings.payrollPolicy } });
+                setDraft(toDraft(data.settings));
                 setSettingsFeedback({ severity: 'success', text: 'Settings saved.' });
             },
         });
@@ -163,8 +230,8 @@ const AdminSettings = () => {
             setFeedback({ severity: 'error', text: 'Organisation name is required.' });
             return;
         }
-        if (password && password.length < 6) {
-            setFeedback({ severity: 'error', text: 'Password must be at least 6 characters.' });
+        if (password && (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password))) {
+            setFeedback({ severity: 'error', text: 'Password must be at least 8 characters, with letters and numbers.' });
             return;
         }
         if (password && password !== confirmPassword) {
@@ -324,7 +391,7 @@ const AdminSettings = () => {
                         <Stack spacing={2}>
                             <TextField label="Name" value={form.name} onChange={handleField('name')} fullWidth required />
                             <TextField label="Email" type="email" value={form.email} onChange={handleField('email')} fullWidth required />
-                            <TextField label="Organisation" value={form.schoolName} onChange={handleField('schoolName')} fullWidth required />
+                            <TextField label="Organisation" value={form.schoolName} onChange={handleField('schoolName')} fullWidth required disabled={currentUser?.adminRole === 'admin'} helperText={currentUser?.adminRole === 'admin' ? 'Only the super admin can rename the organisation.' : ' '} />
                             <TextField label="Role" value={currentUser?.role || ''} fullWidth disabled helperText="Role cannot be changed here." />
                         </Stack>
 
@@ -335,7 +402,7 @@ const AdminSettings = () => {
                             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Change password</Typography>
                         </Stack>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                            Leave blank to keep your current password.
+                            Leave blank to keep your current password. At least 8 characters, with letters and numbers.
                         </Typography>
                         <Stack spacing={2}>
                             <TextField
@@ -428,11 +495,11 @@ const AdminSettings = () => {
                             />
                         )}
                         <Stack direction="row" spacing={1} sx={{ mt: 3 }} justifyContent="flex-end">
-                            <Button onClick={() => settings && setDraft({ consultationFee: String(settings.consultationFee), requireOtp: { ...settings.requireOtp }, payrollPolicy: { ...settings.payrollPolicy } })} disabled={!settingsDirty}>Reset</Button>
+                            <Button onClick={() => settings && setDraft(toDraft(settings))} disabled={!settingsDirty}>Reset</Button>
                             <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty}>Save settings</Button>
                         </Stack>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-                            Saves the verification choices, the fee and the salary deduction policy. Needs your admin password and admin key.
+                            Saves every setting on this page (verification, fee, salary deductions, staff app). Needs your admin password and admin key.
                         </Typography>
                     </SectionCard>
                 </Grid>
@@ -462,6 +529,92 @@ const AdminSettings = () => {
                                 ))}
                             </Grid>
                         )}
+                    </SectionCard>
+                </Grid>
+
+                <Grid item xs={12}>
+                    <SectionCard
+                        icon={PhoneIphoneOutlinedIcon}
+                        title="Staff app and attendance"
+                        description="Staff sign in to the TherapyHome app with their email. Attendance is marked from the app inside the clinic's area. Saved with the Save settings button."
+                    >
+                        {draft?.geofence && (
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
+                                    <TextField
+                                        fullWidth type="password" autoComplete="new-password"
+                                        label={settings.staffDefaultPasswordSet ? 'Change staff first-login password' : 'Set staff first-login password'}
+                                        value={draft.staffDefaultPassword}
+                                        onChange={(e) => setDraft((d) => ({ ...d, staffDefaultPassword: e.target.value }))}
+                                        helperText={settings.staffDefaultPasswordSet
+                                            ? 'A password is set. Tell it to new staff in person; each must choose their own on first sign-in. Leave blank to keep it.'
+                                            : 'Not set: staff cannot sign in to the app yet. At least 8 characters with letters and numbers.'}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <FormControlLabel
+                                        control={<Switch checked={draft.geofence.enabled} onChange={(e) => setDraft((d) => ({ ...d, geofence: { ...d.geofence, enabled: e.target.checked } }))} />}
+                                        label={draft.geofence.enabled ? 'Geofence on: attendance only inside the clinic area' : 'Geofence off: attendance from anywhere'}
+                                    />
+                                </Grid>
+                                {[
+                                    ['lat', 'Clinic latitude', 'e.g. 24.860700'],
+                                    ['lng', 'Clinic longitude', 'e.g. 67.001100'],
+                                    ['radiusMeters', 'Allowed radius (metres)', '20 to 5000'],
+                                ].map(([key, label, help]) => (
+                                    <Grid item xs={12} sm={4} md={3} key={key}>
+                                        <TextField
+                                            fullWidth type="number" label={label} helperText={help}
+                                            value={draft.geofence[key]}
+                                            onChange={(e) => setDraft((d) => ({ ...d, geofence: { ...d.geofence, [key]: e.target.value } }))}
+                                        />
+                                    </Grid>
+                                ))}
+                                <Grid item xs={12} md={3}>
+                                    <Button fullWidth variant="outlined" sx={{ height: 56 }} startIcon={locating ? <CircularProgress size={16} /> : <MyLocationIcon />} onClick={useMyLocation} disabled={locating}>
+                                        Use my current location
+                                    </Button>
+                                </Grid>
+                                {[
+                                    ['lateGraceMinutes', 'Late after (minutes)', 'Minutes after the scheduled check-in before a check-in counts as late.'],
+                                    ['halfDayMinHours', 'Half day under (hours)', 'Fewer hours between check-in and check-out count as a half day.'],
+                                    ['maxAccuracyMeters', 'Max GPS error (metres)', 'Less accurate locations are refused.'],
+                                ].map(([key, label, help]) => (
+                                    <Grid item xs={12} sm={4} key={key}>
+                                        <TextField
+                                            fullWidth type="number" label={label} helperText={help}
+                                            value={draft.attendancePolicy[key]}
+                                            onChange={(e) => setDraft((d) => ({ ...d, attendancePolicy: { ...d.attendancePolicy, [key]: e.target.value } }))}
+                                        />
+                                    </Grid>
+                                ))}
+                                <Grid item xs={12}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Weekend days (not counted as absences; used for sandwich deductions)</Typography>
+                                    <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1}>
+                                        {WEEK_DAYS.map((day) => {
+                                            const on = draft.attendancePolicy.weekendDays.includes(day);
+                                            return (
+                                                <Button
+                                                    key={day} size="small" variant={on ? 'contained' : 'outlined'}
+                                                    onClick={() => setDraft((d) => ({
+                                                        ...d,
+                                                        attendancePolicy: {
+                                                            ...d.attendancePolicy,
+                                                            weekendDays: on ? d.attendancePolicy.weekendDays.filter((x) => x !== day) : [...d.attendancePolicy.weekendDays, day],
+                                                        },
+                                                    }))}
+                                                >
+                                                    {day}
+                                                </Button>
+                                            );
+                                        })}
+                                    </Stack>
+                                </Grid>
+                            </Grid>
+                        )}
+                        <Stack direction="row" spacing={1} sx={{ mt: 3 }} justifyContent="flex-end">
+                            <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty}>Save settings</Button>
+                        </Stack>
                     </SectionCard>
                 </Grid>
             </Grid>

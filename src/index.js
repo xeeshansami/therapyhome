@@ -6,6 +6,10 @@ import store from './redux/store';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import ThemeModeProvider from './ThemeModeProvider';
+import { installSession } from './utils/session';
+import { authLogout } from './redux/userRelated/userSlice';
+
+installSession(() => store.dispatch(authLogout()));
 
 // Derive the basename from the homepage field (PUBLIC_URL) so the same build
 // works both locally ("/") and on GitHub Pages ("/therapyhome"). This gives

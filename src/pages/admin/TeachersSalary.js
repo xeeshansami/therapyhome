@@ -88,7 +88,7 @@ const TeachersSalary = () => {
     openModal: false,
     selectedTeacher: null,
     salaryDetails: {
-      date: new Date().toISOString().split('T')[0],
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()),
       baseSalary: 0,
       bonus: '',
       deductions: '',
@@ -177,6 +177,7 @@ const TeachersSalary = () => {
   };
 
   const handleOpenModal = async (teacher) => {
+    setAttendanceNote('');
     setState(prev => ({ ...prev, loading: true }));
     await fetchNextSlipNo();
     try {
@@ -191,7 +192,7 @@ const TeachersSalary = () => {
         errors: {},
         salaryDetails: {
           ...prev.salaryDetails,
-          date: new Date().toISOString().split('T')[0],
+          date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()),
           baseSalary: baseSalary,
           bonus: '',
           deductions: '',
@@ -249,6 +250,30 @@ const TeachersSalary = () => {
   };
 
   const removeDeductionRow = (index) => applyDeductionItems((state.salaryDetails.deductionItems || []).filter((_, i) => i !== index));
+
+  // Builds deduction rows from the staff member's attendance for the slip's month
+  // (check-ins from the staff app plus admin corrections). Amounts stay editable.
+  const [attendanceNote, setAttendanceNote] = useState('');
+  const fillFromAttendance = async () => {
+    const teacher = state.selectedTeacher;
+    const month = String(state.salaryDetails.date || '').slice(0, 7);
+    if (!teacher || !/^\d{4}-\d{2}$/.test(month)) return;
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/attendance/staff/${teacher._id}/summary`, { params: { month } });
+      const sm = data.summary;
+      const base = state.salaryDetails.baseSalary;
+      const rows = [['absent', sm.absent], ['halfDay', sm.halfDay], ['late', sm.late], ['sandwich', sm.sandwich]]
+        .filter(([, count]) => count > 0)
+        .map(([type, count]) => ({ type, count, amount: suggestedAmount(type, count, base, policy), note: `From attendance ${month}` }));
+      const manual = (state.salaryDetails.deductionItems || []).filter((r) => r.type === 'other');
+      applyDeductionItems([...rows, ...manual]);
+      setAttendanceNote(rows.length
+        ? `Filled from ${month}: ${sm.absent} absent, ${sm.halfDay} half day, ${sm.late} late, ${sm.sandwich} sandwiched weekend.${sm.unmarkedWorkingDays ? ` ${sm.unmarkedWorkingDays} working day(s) are unmarked and not deducted.` : ''}`
+        : `No deductions in ${month}.${sm.unmarkedWorkingDays ? ` ${sm.unmarkedWorkingDays} working day(s) are unmarked.` : ''}`);
+    } catch (e) {
+      setAttendanceNote(e.response?.data?.message || 'Could not load attendance.');
+    }
+  };
 
   const handleSaveSalary = async () => {
     const { salaryDetails, selectedTeacher } = state;
@@ -377,8 +402,12 @@ const TeachersSalary = () => {
                     1 day of pay = PKR {Math.round(dailyRate(state.salaryDetails.baseSalary, policy)).toLocaleString()} (basic ÷ {policy.workingDaysPerMonth} days, set in Settings)
                   </Typography>
                 </Box>
-                <Button size="small" startIcon={<AddIcon />} onClick={addDeductionRow}>Add deduction</Button>
+                <Stack direction="row" spacing={0.5}>
+                  <Button size="small" onClick={fillFromAttendance}>Fill from attendance</Button>
+                  <Button size="small" startIcon={<AddIcon />} onClick={addDeductionRow}>Add deduction</Button>
+                </Stack>
               </Stack>
+              {attendanceNote && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{attendanceNote}</Typography>}
               {(state.salaryDetails.deductionItems || []).map((row, i) => {
                 const meta = DEDUCTION_TYPES.find((t) => t.value === row.type) || DEDUCTION_TYPES[0];
                 return (

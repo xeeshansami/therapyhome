@@ -30,7 +30,7 @@ const SeeComplains = () => {
     const date = new Date(complain.date);
     const dateString = date.toString() !== "Invalid Date" ? date.toISOString().substring(0, 10) : "Invalid Date";
     return {
-      user: complain.user.name,
+      user: complain.teacher ? `${complain.teacher.name} (staff)` : (complain.user ? complain.user.name : '—'),
       complaint: complain.complaint,
       date: dateString,
       id: complain._id,

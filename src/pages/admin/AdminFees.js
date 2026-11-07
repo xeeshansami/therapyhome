@@ -106,7 +106,7 @@ const AdminFees = () => {
     // 'agreed' when the rates come from the student's saved fee plan, 'class' for older students without one.
     feeSource: 'class',
     feeDetails: {
-      date: new Date().toISOString().split('T')[0],
+      date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()),
       paid: '',
       remark: '',
       netAmount: 0,
@@ -231,7 +231,7 @@ const AdminFees = () => {
         feeSource: agreedItems.length > 0 ? 'agreed' : 'class',
         feeDetails: {
           ...prev.feeDetails,
-          date: new Date().toISOString().split('T')[0],
+          date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()),
           paid: '', remark: '',
           netAmount: initialNetAmount, balance: initialNetAmount,
           lineItems: agreedItems.length > 0 ? agreedItems : planItems,
@@ -266,7 +266,7 @@ const AdminFees = () => {
         feeSource: 'class',
         feeDetails: {
           ...prev.feeDetails,
-          date: new Date().toISOString().split('T')[0],
+          date: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()),
           paid: '', remark: '',
           netAmount: initialNetAmount,
           balance: initialNetAmount,
@@ -326,6 +326,39 @@ const AdminFees = () => {
       return withTotals(prev, { ...prev.feeDetails, lineItems }, prev.isMonthlyFee);
     });
   };
+
+  // Sets each therapy line's session count to the sessions the student
+  // attended in the slip's month (marked by therapists in the staff app).
+  const handleUseAttendedSessions = async () => {
+    const student = state.selectedStudent;
+    const month = String(state.feeDetails.date || '').slice(0, 7);
+    if (!student || !/^\d{4}-\d{2}$/.test(month)) return;
+    try {
+      const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/attendance/students/${student._id}/summary`, { params: { month } });
+      const attended = new Map(data.byClass.map((c) => [String(c.sclass), c.attended]));
+      let changed = 0;
+      let missing = 0;
+      setState(prev => {
+        const lineItems = prev.feeDetails.lineItems.map(item => {
+          if (!item.classId) return item;
+          const count = attended.get(String(item.classId)) || 0;
+          if (count < 1) { missing += 1; return item; }
+          changed += 1;
+          return { ...item, sessions: count };
+        });
+        return { ...withTotals(prev, { ...prev.feeDetails, lineItems }, prev.isMonthlyFee) };
+      });
+      const total = data.byClass.reduce((n, c) => n + c.attended, 0);
+      setAttendanceNote(total === 0
+        ? `No attended sessions are marked for ${month}. Session counts were not changed.`
+        : `Used ${total} attended session(s) from ${month}.${missing ? ' Lines with no attended sessions were left unchanged; remove them if they should not be billed.' : ''}`);
+      return changed;
+    } catch (e) {
+      setAttendanceNote(e.response?.data?.message || 'Could not load attended sessions.');
+      return 0;
+    }
+  };
+  const [attendanceNote, setAttendanceNote] = useState('');
 
   const handleRemoveLineItem = (key) => {
     setState(prev => {
@@ -493,6 +526,10 @@ const AdminFees = () => {
                     ? "Rates agreed for this student at admission. Changes here apply to this slip only; to change the student's default fee, edit it on the student's profile."
                     : 'No agreed fee is saved for this student, so rates start from the class fee. Fee per session can be changed for this slip.'}
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <Button size="small" variant="outlined" onClick={handleUseAttendedSessions}>Use attended sessions for {String(state.feeDetails.date || '').slice(0, 7) || 'this month'}</Button>
+                  {attendanceNote && <Typography variant="caption" color="text.secondary">{attendanceNote}</Typography>}
+                </Box>
 
                 {lineItems.length === 0 ? (
                   <Typography variant="body2" sx={{ fontStyle: 'italic', py: 1 }}>

@@ -19,6 +19,10 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
+import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';
+import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
+import { useSelector } from 'react-redux';
 
 import logo from '../../assets/logo.png';
 
@@ -27,10 +31,12 @@ const MAIN_LINKS = [
     { label: 'Dashboard', to: '/Admin/dashboard', icon: SpaceDashboardOutlinedIcon, match: (p) => p === '/' || p === '/Admin' || p === '/Admin/' || p.startsWith('/Admin/dashboard') },
     { label: 'Classes', to: '/Admin/classes', icon: ClassOutlinedIcon },
     { label: 'Staff', to: '/Admin/teachers', icon: BadgeOutlinedIcon },
+    { label: 'Staff Attendance', to: '/Admin/attendance', icon: EventAvailableOutlinedIcon },
     { label: 'Students', to: '/Admin/students', icon: SchoolOutlinedIcon },
     { label: 'New Consultancy', to: '/Admin/AddConsultancy', icon: NoteAddOutlinedIcon },
     { label: 'Consultations', to: '/Admin/consultations', icon: AssignmentIndOutlinedIcon },
     { label: 'Add Student', to: '/Admin/addstudents', icon: PersonAddAlt1OutlinedIcon },
+    { label: 'Therapy Sessions', to: '/Admin/sessions', icon: EventNoteOutlinedIcon },
     { label: 'Collect Fee', to: '/Admin/Fees', icon: PaymentsOutlinedIcon },
     { label: 'Fee Records', to: '/Admin/FeeRecords', icon: ReceiptLongOutlinedIcon },
     { label: 'Pay Salary', to: '/Admin/TeachersSalary', icon: AccountBalanceWalletOutlinedIcon },
@@ -92,6 +98,10 @@ const NavItem = ({ link, active, onNavigate }) => {
  */
 const SideBar = ({ onNavigate }) => {
     const { pathname } = useLocation();
+    const { currentUser } = useSelector((s) => s.user);
+    const accountLinks = currentUser && currentUser.adminRole === 'admin'
+        ? ACCOUNT_LINKS
+        : [...ACCOUNT_LINKS, { label: 'Admins', to: '/Admin/admins', icon: AdminPanelSettingsOutlinedIcon }];
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#ffffff' }}>
             <Box sx={{ px: 3, pt: 3.5, pb: 2.5, textAlign: 'center' }}>
@@ -123,7 +133,7 @@ const SideBar = ({ onNavigate }) => {
                 </List>
                 <Box sx={{ mx: 3, my: 1.5, borderTop: `1px solid ${alpha('#ffffff', 0.16)}` }} />
                 <List component="nav" aria-label="Account" disablePadding>
-                    {ACCOUNT_LINKS.map((link) => (
+                    {accountLinks.map((link) => (
                         <NavItem key={link.to} link={link} active={isActive(link, pathname)} onNavigate={onNavigate} />
                     ))}
                 </List>

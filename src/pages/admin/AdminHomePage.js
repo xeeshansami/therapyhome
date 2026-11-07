@@ -15,6 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import SeeNotice from '../../components/SeeNotice';
 import FinanceOverview from '../../components/FinanceOverview';
+import AttendanceToday from '../../components/AttendanceToday';
 import { getAllSclasses } from '../../redux/sclassRelated/sclassHandle';
 import { getAllStudents } from '../../redux/studentRelated/studentHandle';
 import { getAllTeachers } from '../../redux/teacherRelated/teacherHandle';
@@ -181,6 +182,9 @@ const AdminHomePage = () => {
                         <StatCard {...card} loading={card.value === null || (studentsLoading && !list(studentsList).length)} />
                     </Grid>
                 ))}
+                <Grid item xs={12}>
+                    <AttendanceToday refreshKey={updatedAt ? updatedAt.getTime() : 0} />
+                </Grid>
                 <Grid item xs={12}>
                     <FinanceOverview />
                 </Grid>

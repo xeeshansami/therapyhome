@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, Button, Chip, Stack, Typography } from '@mui/material';
@@ -18,6 +19,17 @@ const ShowTeachers = () => {
     const { currentUser } = useSelector((state) => state.user);
     const [toDelete, setToDelete] = useState(null); // { id, name }
     const [message, setMessage] = useState('');
+
+    // Signs the staff member out of the app; they sign in again with the shared first-login password.
+    const resetAppPassword = async (r) => {
+        if (!window.confirm(`Reset ${r.name}'s app password? They will be signed out and must sign in with the staff first-login password, then choose a new one.`)) return;
+        try {
+            const { data } = await axios.post(`${process.env.REACT_APP_BASE_URL}/Teacher/${r._id}/reset-app-password`);
+            setMessage(data.message);
+        } catch (e) {
+            setMessage(e.response?.data?.message || 'Could not reset the app password.');
+        }
+    };
 
     useEffect(() => { dispatch(getAllTeachers(currentUser._id)); }, [currentUser._id, dispatch]);
 
@@ -80,6 +92,7 @@ const ShowTeachers = () => {
                 actions={(r) => (
                     <>
                         <RowButton onClick={() => navigate(`/Admin/teachers/teacher/${r._id}`)}>View</RowButton>
+                        <RowButton onClick={() => resetAppPassword(r)}>Reset app password</RowButton>
                         <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: r.name })}>Delete</RowButton>
                     </>
                 )}

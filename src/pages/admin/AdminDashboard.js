@@ -52,10 +52,17 @@ import AddClass from './classRelated/AddClass';
 import ClassDetails from './classRelated/ClassDetails';
 import ShowClasses from './classRelated/ShowClasses';
 import AccountMenu from '../../components/AccountMenu';
+import { useSelector } from 'react-redux';
+import StaffAttendance from './attendance/StaffAttendance';
+import TherapySessions from './attendance/TherapySessions';
+import AdminUsers from './AdminUsers';
+import ChangeTemporaryPassword from './ChangeTemporaryPassword';
 
 export const SIDEBAR_WIDTH = 264;
 
 const AdminDashboard = () => {
+    const { currentUser } = useSelector((s) => s.user);
+    const isSuper = !currentUser || currentUser.adminRole !== 'admin';
     // Desktop: the sidebar opens and closes completely and the page reflows.
     // Phones/tablets: it slides over the page and closes after choosing a link.
     const isNarrow = useMediaQuery((t) => t.breakpoints.down('md'));
@@ -64,6 +71,8 @@ const AdminDashboard = () => {
     const toggleDrawer = () => setOpen((o) => !o);
     const closeOnMobile = () => { if (isNarrow) setOpen(false); };
     const shifted = open && !isNarrow;
+
+    if (currentUser && currentUser.mustChangePassword) return <ChangeTemporaryPassword />;
 
     return (
         <>
@@ -129,6 +138,9 @@ const AdminDashboard = () => {
                         <Route path="/dashboard" element={<AdminHomePage />} />
                         <Route path="/profile" element={<AdminProfile />} />
                         <Route path="/settings" element={<AdminSettings />} />
+                        <Route path="/attendance" element={<StaffAttendance />} />
+                        <Route path="/sessions" element={<TherapySessions />} />
+                        {isSuper && <Route path="/admins" element={<AdminUsers />} />}
                         <Route path="/complains" element={<SeeComplains />} />
 
                         {/* Notice */}

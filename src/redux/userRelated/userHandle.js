@@ -21,13 +21,16 @@ export const loginUser = (fields, role) => async (dispatch) => {
             headers: { 'Content-Type': 'application/json' },
         });
         
-        if (result.data.role) {
+        if (result.data.role && result.data.token) {
             dispatch(authSuccess(result.data));
         } else {
-            dispatch(authFailed(result.data.message));
+            dispatch(authFailed(result.data.message || 'Sign-in failed.'));
         }
     } catch (error) {
-        dispatch(authError(error));
+        // Show the server's reason (wrong password, too many attempts, disabled account).
+        const message = error?.response?.data?.message;
+        if (message) dispatch(authFailed(message));
+        else dispatch(authError(error));
     }
 };
 
