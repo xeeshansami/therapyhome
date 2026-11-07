@@ -21,6 +21,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
 import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';
+import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import { useSelector } from 'react-redux';
 
@@ -32,6 +33,7 @@ const MAIN_LINKS = [
     { label: 'Classes', to: '/Admin/classes', icon: ClassOutlinedIcon },
     { label: 'Staff', to: '/Admin/teachers', icon: BadgeOutlinedIcon },
     { label: 'Staff Attendance', to: '/Admin/attendance', icon: EventAvailableOutlinedIcon },
+    { label: 'Leave Requests', to: '/Admin/leaves', icon: EventBusyOutlinedIcon },
     { label: 'Students', to: '/Admin/students', icon: SchoolOutlinedIcon },
     { label: 'New Consultancy', to: '/Admin/AddConsultancy', icon: NoteAddOutlinedIcon },
     { label: 'Consultations', to: '/Admin/consultations', icon: AssignmentIndOutlinedIcon },

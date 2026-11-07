@@ -21,7 +21,7 @@ const time = (point) => (point && point.at
 export const statusChip = (record) => {
     if (!record) return <Chip size="small" label="Not marked" variant="outlined" />;
     if (record.status === 'absent') return <Chip size="small" color="error" label="Absent" />;
-    if (record.status === 'leave') return <Chip size="small" color="info" label="Leave" />;
+    if (record.status === 'leave') return <Chip size="small" color={record.leaveType === 'unpaid' ? 'warning' : 'info'} label={record.leaveType ? `Leave (${record.leaveType})` : 'Leave'} />;
     return (
         <Stack direction="row" spacing={0.5}>
             <Chip size="small" color="success" label="Present" />
@@ -187,6 +187,7 @@ const MonthView = () => {
                     { id: 'late', label: 'Late', align: 'center' },
                     { id: 'sandwich', label: 'Sandwiched weekends', align: 'center' },
                     { id: 'leave', label: 'Leave', align: 'center' },
+                    { id: 'unpaidLeave', label: 'Unpaid leave', align: 'center' },
                     { id: 'unmarkedWorkingDays', label: 'Unmarked days', align: 'center' },
                 ]}
             />

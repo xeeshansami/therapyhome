@@ -55,6 +55,7 @@ import AccountMenu from '../../components/AccountMenu';
 import { useSelector } from 'react-redux';
 import StaffAttendance from './attendance/StaffAttendance';
 import TherapySessions from './attendance/TherapySessions';
+import LeaveRequests from './attendance/LeaveRequests';
 import AdminUsers from './AdminUsers';
 import ChangeTemporaryPassword from './ChangeTemporaryPassword';
 
@@ -140,6 +141,7 @@ const AdminDashboard = () => {
                         <Route path="/settings" element={<AdminSettings />} />
                         <Route path="/attendance" element={<StaffAttendance />} />
                         <Route path="/sessions" element={<TherapySessions />} />
+                        <Route path="/leaves" element={<LeaveRequests />} />
                         {isSuper && <Route path="/admins" element={<AdminUsers />} />}
                         <Route path="/complains" element={<SeeComplains />} />
 

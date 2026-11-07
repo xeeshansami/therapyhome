@@ -262,13 +262,15 @@ const TeachersSalary = () => {
       const { data } = await axios.get(`${API_BASE_URL}/attendance/staff/${teacher._id}/summary`, { params: { month } });
       const sm = data.summary;
       const base = state.salaryDetails.baseSalary;
-      const rows = [['absent', sm.absent], ['halfDay', sm.halfDay], ['late', sm.late], ['sandwich', sm.sandwich]]
+      // Unpaid leave is deducted like an absence (one day of pay per day).
+      const unpaid = sm.unpaidLeave || 0;
+      const rows = [['absent', sm.absent + unpaid], ['halfDay', sm.halfDay], ['late', sm.late], ['sandwich', sm.sandwich]]
         .filter(([, count]) => count > 0)
-        .map(([type, count]) => ({ type, count, amount: suggestedAmount(type, count, base, policy), note: `From attendance ${month}` }));
+        .map(([type, count]) => ({ type, count, amount: suggestedAmount(type, count, base, policy), note: type === 'absent' && unpaid ? `From attendance ${month} (incl. ${unpaid} unpaid leave)` : `From attendance ${month}` }));
       const manual = (state.salaryDetails.deductionItems || []).filter((r) => r.type === 'other');
       applyDeductionItems([...rows, ...manual]);
       setAttendanceNote(rows.length
-        ? `Filled from ${month}: ${sm.absent} absent, ${sm.halfDay} half day, ${sm.late} late, ${sm.sandwich} sandwiched weekend.${sm.unmarkedWorkingDays ? ` ${sm.unmarkedWorkingDays} working day(s) are unmarked and not deducted.` : ''}`
+        ? `Filled from ${month}: ${sm.absent} absent, ${unpaid} unpaid leave, ${sm.halfDay} half day, ${sm.late} late, ${sm.sandwich} sandwiched weekend.${sm.leave - unpaid > 0 ? ` ${sm.leave - unpaid} paid leave day(s) are not deducted.` : ''}${sm.unmarkedWorkingDays ? ` ${sm.unmarkedWorkingDays} working day(s) are unmarked and not deducted.` : ''}`
         : `No deductions in ${month}.${sm.unmarkedWorkingDays ? ` ${sm.unmarkedWorkingDays} working day(s) are unmarked.` : ''}`);
     } catch (e) {
       setAttendanceNote(e.response?.data?.message || 'Could not load attendance.');

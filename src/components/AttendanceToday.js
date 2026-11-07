@@ -36,6 +36,11 @@ const AttendanceToday = ({ refreshKey }) => {
                         </Box>
                     </Stack>
                     <Stack direction="row" spacing={1}>
+                        {data && data.pendingLeaves > 0 && (
+                            <Button size="small" color="warning" variant="contained" component={RouterLink} to="/Admin/leaves">
+                                {data.pendingLeaves} leave request{data.pendingLeaves === 1 ? '' : 's'}
+                            </Button>
+                        )}
                         <Button size="small" component={RouterLink} to="/Admin/attendance">Staff</Button>
                         <Button size="small" component={RouterLink} to="/Admin/sessions">Sessions</Button>
                     </Stack>
