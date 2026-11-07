@@ -8,15 +8,13 @@ import Popup from '../../../components/Popup';
 import axios from 'axios';
 import { getAllSclasses } from '../../../redux/sclassRelated/sclassHandle';
 import InvoiceDialog from '../../../components/InvoiceDialog';
+import StudentLookup from '../../../components/StudentLookup';
 import { lineTotal, sumLineItems, toMoney } from '../../../utils/feeCalc';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { Box, FormControlLabel, ListItemText, FormGroup, Checkbox, Typography, TextField, Button, Grid, Paper, FormControl, InputLabel, Select, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Stack, Divider } from '@mui/material';
+import { Box, FormControlLabel, ListItemText, FormGroup, Checkbox, Typography, TextField, Button, Grid, Paper, FormControl, InputLabel, Select, MenuItem, Stack, Divider } from '@mui/material';
 
 const AddStudent = ({ situation }) => {
-    const [searchContact, setSearchContact] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [searchLoading, setSearchLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const [days, setSelectedDays] = useState([]);
@@ -465,33 +463,22 @@ const AddStudent = ({ situation }) => {
         setShowPopup(false);
     };
 
+    // Clearing the lookup returns the form to a blank new-student entry.
     const handleClearSearch = () => {
-        setSearchContact('');
-        setSearchResults([]);
-    };
-
-    const handleSearch = async () => {
-        if (!searchContact) {
-            setMessage("Please enter a contact number to search");
-            setShowPopup(true);
-            return;
-        }
-        setSearchLoading(true);
-        try {
-            const result = await axios.post(`${process.env.REACT_APP_BASE_URL}/getConsStudents`, { parentContact: searchContact });
-            if (result.data && result.data.length > 0) {
-                setSearchResults(result.data);
-            } else {
-                setMessage("No students found with this contact number");
-                setShowPopup(true);
-                setSearchResults([]);
-            }
-        } catch (error) {
-            setMessage("Error searching for students: " + (error.response?.data?.message || error.message));
-            setShowPopup(true);
-        } finally {
-            setSearchLoading(false);
-        }
+        setName('');
+        setRollNum('');
+        setparentName('');
+        setFormData(prevState => ({
+            ...prevState,
+            parent: {
+                ...prevState.parent,
+                parentName: '', parentContact: '', parentCNIC: '', profession: '',
+                parentGender: '', parentMaritalStatus: '', parentAddress: '',
+            },
+            reference: { ...prevState.reference, details: '' },
+        }));
+        setButtonName('');
+        setUpdateName('');
     };
 
     const handleSelectStudent = (student) => {
@@ -587,51 +574,11 @@ const AddStudent = ({ situation }) => {
         <>
             <Box sx={{ padding: { xs: 2, md: 4 } }}>
                 <Paper elevation={3} sx={{ padding: { xs: 2, md: 3 }, mb: 3 }}>
-                    <Typography variant="h6" gutterBottom>Search Existing Consultant Students</Typography>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <TextField
-                            label="Parent's Contact Number"
-                            variant="outlined"
-                            value={searchContact}
-                            onChange={(e) => setSearchContact(e.target.value)}
-                            sx={{ flexGrow: 1, minWidth: '200px' }}
-                        />
-                        <Button variant="contained" onClick={handleSearch} disabled={searchLoading} sx={{ height: '56px' }}>
-                            {searchLoading ? <CircularProgress size={24} /> : 'Search'}
-                        </Button>
-                        <Button variant="outlined" onClick={handleClearSearch} disabled={searchLoading} sx={{ height: '56px' }}>
-                            Clear
-                        </Button>
-                    </Box>
-
-                    {searchResults.length > 0 && (
-                        <TableContainer component={Paper} sx={{ mt: 2 }}>
-                            <Table stickyHeader>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Student Name</TableCell>
-                                        <TableCell>Parent's Name</TableCell>
-                                        <TableCell>Contact</TableCell>
-                                        <TableCell>Roll No.</TableCell>
-                                        <TableCell>Action</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {searchResults.map((student) => (
-                                        <TableRow hover key={student._id}>
-                                            <TableCell>{student.name}</TableCell>
-                                            <TableCell>{student.parentName}</TableCell>
-                                            <TableCell>{student.parentContact}</TableCell>
-                                            <TableCell>{student.rollNum}</TableCell>
-                                            <TableCell>
-                                                <Button variant="outlined" size="small" onClick={() => handleSelectStudent(student)}>Select</Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    )}
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Find an Existing Student</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        Search by the student's name or the parent's number. Choosing a student fills in the form below.
+                    </Typography>
+                    <StudentLookup adminId={adminID} onSelect={handleSelectStudent} onClear={handleClearSearch} />
                 </Paper>
 
                 <Paper elevation={3} sx={{ padding: { xs: 2, md: 4 } }}>
