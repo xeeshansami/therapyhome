@@ -211,7 +211,12 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
                     },
                 },
             },
+            // Labels always sit above the field with a gap cut in the outline, so a
+            // label can never be drawn over a selected value, a placeholder such as
+            // "Select a class", a date/time mask or browser autofill.
+            MuiInputLabel: { defaultProps: { shrink: true }, styleOverrides: { root: { fontWeight: 500 } } },
             MuiOutlinedInput: {
+                defaultProps: { notched: true },
                 styleOverrides: {
                     root: {
                         borderRadius: 12,
@@ -224,7 +229,6 @@ export const createAppTheme = (mode = 'light', primary = tokens.primary) => {
                     },
                 },
             },
-            MuiInputLabel: { styleOverrides: { root: { fontWeight: 500 } } },
             MuiTextField: { defaultProps: { variant: 'outlined' } },
             MuiChip: {
                 styleOverrides: {

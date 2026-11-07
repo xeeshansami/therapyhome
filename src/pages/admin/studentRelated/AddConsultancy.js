@@ -625,7 +625,7 @@ const AddConsultancy = () => {
     };
 
     return (
-        <Box sx={{ padding: { xs: 1, sm: 2, md: 3 }, maxWidth: 800, margin: 'auto' }}>
+        <Box sx={{ padding: { xs: 1, sm: 2, md: 3 }, width: '100%' }}>
             <Paper elevation={3} sx={{ padding: { xs: 1, sm: 2, md: 3 } }}>
                 <Box sx={{
                     display: 'flex',

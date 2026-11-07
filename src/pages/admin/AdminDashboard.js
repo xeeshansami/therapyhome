@@ -3,20 +3,20 @@ import {
     CssBaseline,
     Box,
     Toolbar,
-    List,
     Typography,
-    Divider,
     IconButton,
+    Drawer,
+    AppBar,
+    Tooltip,
     useMediaQuery,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AppBar, Drawer } from '../../components/styles';
 import GlobalSearch from '../../components/GlobalSearch';
 import SettingsLauncher from '../../components/SettingsLauncher';
 import Logout from '../Logout';
-import SideBar from './SideBar';
+import SideBar, { sidebarBackground } from './SideBar';
 import AdminProfile from './AdminProfile';
 import AdminSettings from './AdminSettings';
 import AdminInvoice from './AdminInvoice';
@@ -51,70 +51,75 @@ import AddClass from './classRelated/AddClass';
 import ClassDetails from './classRelated/ClassDetails';
 import ShowClasses from './classRelated/ShowClasses';
 import AccountMenu from '../../components/AccountMenu';
-import logo from "../../assets/logo.png";
-import { SpaceBar } from '@mui/icons-material';
+
+export const SIDEBAR_WIDTH = 264;
 
 const AdminDashboard = () => {
-    // Sidebar starts expanded on desktop; it still collapses to the icon rail on
-    // narrow screens, where a 240px drawer would leave almost no room for content.
+    // Desktop: the sidebar opens and closes completely and the page reflows.
+    // Phones/tablets: it slides over the page and closes after choosing a link.
     const isNarrow = useMediaQuery((t) => t.breakpoints.down('md'));
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(!isNarrow);
     useEffect(() => { setOpen(!isNarrow); }, [isNarrow]);
-    const toggleDrawer = () => {
-        setOpen(!open);
-    };
+    const toggleDrawer = () => setOpen((o) => !o);
+    const closeOnMobile = () => { if (isNarrow) setOpen(false); };
+    const shifted = open && !isNarrow;
 
     return (
         <>
             <Box sx={{ display: 'flex' }}>
                 <CssBaseline />
-                <AppBar open={open} position='absolute'>
-                    <Toolbar sx={{ pr: '24px' }}>
-                        <IconButton
-                            edge="start"
-                            color="inherit"
-                            aria-label="open drawer"
-                            onClick={toggleDrawer}
-                            sx={{
-                                marginRight: '36px',
-                                ...(open && { display: 'none' }),
-                            }}
-                        >
-                            <MenuIcon />
-                        </IconButton>
-                        <img
-                            src={logo}
-                            alt="Logo"
-                            style={styles.StyledLogo}></img>
-                        <Typography
-                            component="h1"
-                            variant="h6"
-                            color="inherit"
-                            noWrap
-                            sx={{ ml: 2, mr: 3, display: { xs: 'none', md: 'block' } }}
-                        >
-                            Admin Dashboard
-                        </Typography>
+                <AppBar
+                    position="fixed"
+                    elevation={0}
+                    sx={(theme) => ({
+                        zIndex: theme.zIndex.drawer - (isNarrow ? 1 : -1),
+                        width: shifted ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%',
+                        ml: shifted ? `${SIDEBAR_WIDTH}px` : 0,
+                        backgroundColor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        transition: theme.transitions.create(['width', 'margin'], { duration: theme.transitions.duration.standard }),
+                    })}
+                >
+                    <Toolbar sx={{ gap: 1.5, pr: { xs: 1.5, sm: 3 } }}>
+                        <Tooltip title={open ? 'Close menu' : 'Open menu'}>
+                            <IconButton edge="start" color="inherit" aria-label={open ? 'close menu' : 'open menu'} onClick={toggleDrawer}>
+                                {open && !isNarrow ? <MenuOpenIcon /> : <MenuIcon />}
+                            </IconButton>
+                        </Tooltip>
+                        <Box sx={{ minWidth: 0, mr: { xs: 0, md: 2 } }}>
+                            <Typography component="h1" noWrap sx={{ fontWeight: 700, fontSize: { xs: '1rem', sm: '1.15rem' }, lineHeight: 1.2 }}>
+                                Therapy Home
+                            </Typography>
+                            <Typography noWrap variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                Admin Panel
+                            </Typography>
+                        </Box>
                         <GlobalSearch />
                         <Box sx={{ flexGrow: 1 }} />
                         <SettingsLauncher />
                         <AccountMenu />
                     </Toolbar>
                 </AppBar>
-                <Drawer variant="permanent" open={open} sx={open ? styles.drawerStyled : styles.hideDrawer}>
-                    <Toolbar sx={styles.toolBarStyled}>
-                        <IconButton onClick={toggleDrawer}>
-                            <img
-                                src={logo}
-                                alt="Logo"
-                                style={styles.StyledLogo} // Apply styles using inline style
-                            /><ChevronLeftIcon />
-                        </IconButton>
-                    </Toolbar>
-                    <Divider />
-                    <List component="nav">
-                        <SideBar />
-                    </List>
+                <Drawer
+                    variant={isNarrow ? 'temporary' : 'persistent'}
+                    open={open}
+                    onClose={() => setOpen(false)}
+                    ModalProps={{ keepMounted: true }}
+                    sx={(theme) => ({
+                        width: shifted ? SIDEBAR_WIDTH : 0,
+                        flexShrink: 0,
+                        transition: theme.transitions.create('width', { duration: theme.transitions.duration.standard }),
+                        '& .MuiDrawer-paper': {
+                            width: SIDEBAR_WIDTH,
+                            boxSizing: 'border-box',
+                            border: 'none',
+                            background: sidebarBackground(theme),
+                            boxShadow: '4px 0 24px rgba(0,0,0,0.12)',
+                        },
+                    })}
+                >
+                    <SideBar onNavigate={closeOnMobile} />
                 </Drawer>
                 <Box component="main" sx={styles.boxStyled}>
                     <Toolbar />
@@ -191,6 +196,7 @@ const styles = {
                 ? theme.palette.grey[100]
                 : theme.palette.grey[900],
         flexGrow: 1,
+        minWidth: 0,
         height: '100vh',
         overflow: 'auto',
     },

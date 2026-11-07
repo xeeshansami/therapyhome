@@ -226,9 +226,9 @@ const AddTeacher = () => {
     };
 
     return (
-        <Box sx={{ p: 4 }}>
-            <Paper elevation={3} sx={{ p: 4 }}>
-                <Typography variant="h4" align="left" gutterBottom>Add New Staff Member</Typography>
+        <Box sx={{ p: { xs: 2, md: 4 } }}>
+            <Paper elevation={3} sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+                <Typography variant="h4" align="left" gutterBottom sx={{ fontSize: { xs: '1.6rem', md: '2.1rem' } }}>Add New Staff Member</Typography>
                 <Box sx={{ mb: 2, textAlign: 'left' }}>
                     <Typography variant="h6">
                         Designation: <Box component="span" sx={{ fontWeight: 'bold' }}>{selectedTitle || 'Not selected'}</Box>
@@ -249,7 +249,8 @@ const AddTeacher = () => {
                                 {!photo && <Typography color="error" variant="caption" mt={1}>Photo is required</Typography>}
                             </Box>
                             
-                            {/* Form fields */}
+                            {/* Form fields: one column on phones, two on laptops, three on large screens. */}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(3, minmax(0, 1fr))' }, columnGap: 2.5, alignItems: 'start' }}>
                             <FormControl fullWidth required sx={{ mb: 2 }}>
                                 <InputLabel>Designation</InputLabel>
                                 <Select label="Designation" value={designations.some((d) => d._id === designationId) ? designationId : ''} onChange={(e) => { setDesignationId(e.target.value); setInternType(''); }}>
@@ -258,7 +259,7 @@ const AddTeacher = () => {
                             </FormControl>
 
                             {isIntern && (
-                                <FormControl required sx={{ mb: 2 }}>
+                                <FormControl required sx={{ mb: 2, gridColumn: '1 / -1' }}>
                                     <FormLabel>Internship</FormLabel>
                                     <RadioGroup row value={internType} onChange={(e) => setInternType(e.target.value)}>
                                         <FormControlLabel value="paid" control={<Radio />} label="Paid Intern" />
@@ -291,7 +292,7 @@ const AddTeacher = () => {
                             </FormControl>
                             
                             {/* Scheduled working hours. Actual check-in/out is recorded by attendance. */}
-                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                            <Grid container spacing={2} sx={{ mb: 2, gridColumn: '1 / -1' }}>
                                 <Grid item xs={12} sm={6}>
                                     <TextField label="Scheduled Check-in Time" type="time" fullWidth required value={scheduledCheckIn} onChange={(e) => setScheduledCheckIn(e.target.value)} InputLabelProps={{ shrink: true }} />
                                 </Grid>
@@ -330,6 +331,7 @@ const AddTeacher = () => {
                             {!(isIntern && internType === 'unpaid') && (
                                 <TextField label="Salary" type="number" fullWidth required value={salary} onChange={(e) => setSalary(e.target.value)} sx={{ mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start">Rs:</InputAdornment>, endAdornment: <InputAdornment position="end">PKR</InputAdornment> }} />
                             )}
+                            </Box>
                             {ruleError && designationId && <Typography color="error" variant="body2" sx={{ mb: 2 }}>{ruleError}</Typography>}
                             
                             <Button type="submit" variant="contained" color="primary" fullWidth disabled={!isFormValid() || loader}>

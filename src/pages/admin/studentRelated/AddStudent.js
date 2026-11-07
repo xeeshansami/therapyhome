@@ -640,21 +640,30 @@ const AddStudent = ({ situation }) => {
                     </Typography>
                     <form onSubmit={submitHandler}>
                         <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
+                            <Grid item xs={12}>
+                                <Grid container spacing={2}>
+                                <Grid item xs={12} md={6}>
                                 <TextField fullWidth required label="Student Name" variant="outlined" value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
                                 <TextField fullWidth required label="Father's/Parent's Name" variant="outlined" value={parentName} onChange={(e) => setparentName(e.target.value)} sx={{ mb: 2 }} />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
                                     <TextField fullWidth required label="Roll Number" variant="outlined" value={rollNum} error={!!rollNumError} helperText={rollNumError || "Click button to generate if new student."} InputProps={{ readOnly: true }} sx={{ mr: 1, flexGrow: 1 }} />
                                     <Button variant="contained" onClick={handleGenerateRollNumClick} disabled={rollNumLoading} startIcon={rollNumLoading ? <CircularProgress size={20} color="inherit" /> : <AutorenewIcon />} sx={{ height: '56px' }}>
                                         {rollNumLoading ? "..." : "Generate"}
                                     </Button>
                                 </Box>
+                                </Grid>
                                 {situation === "Student" && (
                                     <>
+                                        <Grid item xs={12} md={6}>
                                         <FormControl fullWidth required sx={{ mb: 2 }}>
                                             <InputLabel id="multi-class-label">Class</InputLabel>
                                             <Select
                                                 labelId="multi-class-label"
+                                                label="Class"
                                                 multiple
                                                 value={selectedClasses}
                                                 onChange={handleChange}
@@ -672,8 +681,10 @@ const AddStudent = ({ situation }) => {
                                                 )}
                                             </Select>
                                         </FormControl>
+                                        </Grid>
 
                                         {selectedClassDetails && (
+                                            <Grid item xs={12}>
                                             <TextField
                                                 fullWidth
                                                 label="Selected Class Details"
@@ -684,18 +695,22 @@ const AddStudent = ({ situation }) => {
                                                 variant="outlined"
                                                 sx={{ mb: 2 }}
                                             />
+                                            </Grid>
                                         )}
                                     </>
                                 )}
+                                </Grid>
                                 <Section title="Parent/Guardian Details">
+                                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                                    <Grid item xs={12} md={4}>
                                     <TextField
                                         fullWidth
                                         label="Full Name"
-                                        sx={{ mb: 2 }}
                                         onChange={handleChangeParent('parent', 'parentName')}
                                         value={formData.parent.parentName}
                                     />
-                                    <Grid item xs={12} sx={{ mb: 2 }}>
+                                    </Grid>
+                                    <Grid item xs={12} sm={6} md={4}>
                                         <FormControl fullWidth>
                                             <InputLabel id="parent-gender-select-label">Gender</InputLabel>
                                             <Select
@@ -711,7 +726,7 @@ const AddStudent = ({ situation }) => {
                                             </Select>
                                         </FormControl>
                                     </Grid>
-                                    <Grid item xs={12} sx={{ mb: 2 }}>
+                                    <Grid item xs={12} sm={6} md={4}>
                                         <FormControl fullWidth>
                                             <InputLabel id="maritalStatus-select-label">Marital Status</InputLabel>
                                             <Select
@@ -727,6 +742,7 @@ const AddStudent = ({ situation }) => {
                                                 <MenuItem value="Other">Other</MenuItem>
                                             </Select>
                                         </FormControl>
+                                    </Grid>
                                     </Grid>
                                     <Grid container spacing={2} sx={{ mb: 2 }}>
                                         <Grid item xs={12} sm={6} md={4}>
