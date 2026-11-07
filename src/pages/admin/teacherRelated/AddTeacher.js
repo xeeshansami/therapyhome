@@ -6,11 +6,15 @@ import { registerUser } from '../../../redux/userRelated/userHandle';
 import { underControl } from '../../../redux/userRelated/userSlice';
 import {
     CircularProgress, Box, TextField, InputAdornment, Button, Typography, Paper, Grid, Avatar,
-    FormControl, InputLabel, Select, MenuItem
+    FormControl, InputLabel, Select, MenuItem, FormLabel, RadioGroup, FormControlLabel, Radio, FormHelperText
 } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axios from 'axios';
 import imageCompression from 'browser-image-compression';
+import { isInternTitle, staffRuleError, titleOf, to24h } from '../../../utils/staffForm';
+
+// Class used for staff who are not assigned to a therapy class (it is named "GENERAL").
+const UNASSIGNED_CLASS_ID = "68b7dbc567099ec00b0cd82e";
 
 const AddTeacher = () => {
     const dispatch = useDispatch();
@@ -21,7 +25,7 @@ const AddTeacher = () => {
     // Data from previous page
     const { designationID, designationTitle } = location.state || {};
 
-    const classID = params.id === 'noclass' ? null : params.id;
+    const routeClassID = params.id === 'noclass' ? null : params.id;
 
     // Form input states
     const [fatherName, setFatherName] = useState('');
@@ -48,8 +52,18 @@ const AddTeacher = () => {
     const [timings, setTimings] = useState([]);
     const [timingLoader, setTimingLoader] = useState(true);
     
-    // 1. ADD NEW STATE FOR THE TIME PICKER
-    const [selectedTime, setSelectedTime] = useState('');
+    // Designation is chosen on the previous step but can be changed here; the
+    // exact choice is what gets saved.
+    const [designations, setDesignations] = useState([]);
+    const [designationId, setDesignationId] = useState(designationID || '');
+    const [internType, setInternType] = useState('');
+    const [classes, setClasses] = useState([]);
+    const [classID, setClassID] = useState(routeClassID || '');
+    const [scheduledCheckIn, setScheduledCheckIn] = useState('');
+    const [scheduledCheckOut, setScheduledCheckOut] = useState('');
+    const selectedTitle = titleOf(designationId, designations) || (designationId === designationID ? designationTitle : '');
+    const isIntern = isInternTitle(selectedTitle);
+    const isTeacher = String(selectedTitle).trim().toLowerCase() === 'teacher';
 
     const { currentUser } = useSelector(state => state.user);
     // Form validation states
@@ -76,6 +90,29 @@ const AddTeacher = () => {
         };
         fetchTimings();
     }, []);
+
+    useEffect(() => {
+        axios.get(`${process.env.REACT_APP_BASE_URL}/designations`)
+            .then(({ data }) => setDesignations(Array.isArray(data) ? data : []))
+            .catch((err) => console.error("Designations fetch error:", err.message));
+    }, []);
+
+    useEffect(() => {
+        if (!currentUser?._id) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/SclassList/${currentUser._id}`)
+            .then(({ data }) => setClasses(Array.isArray(data) ? data : []))
+            .catch(() => setClasses([]));
+    }, [currentUser?._id]);
+
+    // Picking a shift fills the scheduled times when they are still empty.
+    const handleTimingChange = (value) => {
+        setTiming(value);
+        const shift = timings.find((t) => t._id === value);
+        if (shift) {
+            if (!scheduledCheckIn) setScheduledCheckIn(to24h(shift.startTime));
+            if (!scheduledCheckOut) setScheduledCheckOut(to24h(shift.endTime));
+        }
+    };
 
     // Effect to fetch Class Details (only if a real classID was passed)
     useEffect(() => {
@@ -148,14 +185,16 @@ const AddTeacher = () => {
         setCnicError(numericValue.length > 0 && numericValue.length < 13 ? "CNIC must be 13 digits long." : "");
     };
 
+    const ruleError = staffRuleError({ designationTitle: selectedTitle, internType, salary, scheduledCheckIn, scheduledCheckOut });
+
     const isFormValid = () => {
         const cnicDigits = cnic.replace(/[^\d]/g, '');
         return (
-            !phoneError && !emergencyError && !cnicError &&
+            !phoneError && !emergencyError && !cnicError && !ruleError &&
             phone.length === 11 && emergencyContact.length === 11 && cnicDigits.length === 13 &&
-            photo && gender && maritalStatus && designationID &&
+            photo && gender && maritalStatus && designationId &&
             education && fatherName && occupation && timing &&
-            selectedTime
+            (!isTeacher || classID)
         );
     };
 
@@ -163,13 +202,17 @@ const AddTeacher = () => {
         event.preventDefault();
         setLoader(true);
         const fields = {
-            name, email, phone, address, emergencyContact, education, salary,
+            name, email, phone, address, emergencyContact, education,
+            salary: isIntern && internType === 'unpaid' ? '0' : salary,
             photo, gender, maritalStatus, cnic, fatherName, occupation, timing,
-            designation: designationID,
-            role: designationTitle,
+            // The server sets the displayed role from this designation.
+            designation: designationId,
+            internType: isIntern ? internType : '',
+            scheduledCheckIn, scheduledCheckOut,
             school: currentUser?._id,
-            teachSclass: classID ?? "68b7dbc567099ec00b0cd82e",
-            teacherDateTime: selectedTime,
+            teachSclass: isTeacher ? classID : UNASSIGNED_CLASS_ID,
+            // Kept for screens that still read the older single time field.
+            teacherDateTime: scheduledCheckIn,
         };
         dispatch(registerUser(fields, "Teacher"));
     };
@@ -188,11 +231,8 @@ const AddTeacher = () => {
                 <Typography variant="h4" align="left" gutterBottom>Add New Staff Member</Typography>
                 <Box sx={{ mb: 2, textAlign: 'left' }}>
                     <Typography variant="h6">
-                        {classID ? (
-                            <>Class: <Box component="span" sx={{ fontWeight: 'bold' }}>{classDetails?.sclassName}</Box></>
-                        ) : (
-                            <>Designation: <Box component="span" sx={{ fontWeight: 'bold' }}>{designationTitle}</Box></>
-                        )}
+                        Designation: <Box component="span" sx={{ fontWeight: 'bold' }}>{selectedTitle || 'Not selected'}</Box>
+                        {isTeacher && classDetails?.sclassName && <> · Class: <Box component="span" sx={{ fontWeight: 'bold' }}>{classDetails.sclassName}</Box></>}
                     </Typography>
                 </Box>
                 <form onSubmit={submitHandler}>
@@ -211,8 +251,35 @@ const AddTeacher = () => {
                             
                             {/* Form fields */}
                             <FormControl fullWidth required sx={{ mb: 2 }}>
+                                <InputLabel>Designation</InputLabel>
+                                <Select label="Designation" value={designations.some((d) => d._id === designationId) ? designationId : ''} onChange={(e) => { setDesignationId(e.target.value); setInternType(''); }}>
+                                    {designations.map((d) => <MenuItem key={d._id} value={d._id}>{d.title}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+
+                            {isIntern && (
+                                <FormControl required sx={{ mb: 2 }}>
+                                    <FormLabel>Internship</FormLabel>
+                                    <RadioGroup row value={internType} onChange={(e) => setInternType(e.target.value)}>
+                                        <FormControlLabel value="paid" control={<Radio />} label="Paid Intern" />
+                                        <FormControlLabel value="unpaid" control={<Radio />} label="Unpaid Intern" />
+                                    </RadioGroup>
+                                    {internType === 'unpaid' && <FormHelperText>Unpaid interns have no salary and are not included in payroll. Attendance is still recorded.</FormHelperText>}
+                                </FormControl>
+                            )}
+
+                            {isTeacher && (
+                                <FormControl fullWidth required sx={{ mb: 2 }}>
+                                    <InputLabel>Class</InputLabel>
+                                    <Select label="Class" value={classes.some((c) => c._id === classID) ? classID : ''} onChange={(e) => setClassID(e.target.value)}>
+                                        {classes.map((c) => <MenuItem key={c._id} value={c._id}>{c.sclassName}</MenuItem>)}
+                                    </Select>
+                                </FormControl>
+                            )}
+
+                            <FormControl fullWidth required sx={{ mb: 2 }}>
                                 <InputLabel>Timing</InputLabel>
-                                <Select label="Timing" value={timing} onChange={(e) => setTiming(e.target.value)} disabled={timingLoader}>
+                                <Select label="Timing" value={timing} onChange={(e) => handleTimingChange(e.target.value)} disabled={timingLoader}>
                                     {timingLoader ? (
                                         <MenuItem disabled value=""><em>Loading...</em></MenuItem>
                                     ) : (
@@ -223,19 +290,15 @@ const AddTeacher = () => {
                                 </Select>
                             </FormControl>
                             
-                            {/* 2. ADD THE TIME PICKER TEXTFIELD */}
-                            <TextField
-                                label="Select Time"
-                                type="time"
-                                fullWidth
-                                required
-                                value={selectedTime}
-                                onChange={(e) => setSelectedTime(e.target.value)}
-                                sx={{ mb: 2 }}
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                            />
+                            {/* Scheduled working hours. Actual check-in/out is recorded by attendance. */}
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField label="Scheduled Check-in Time" type="time" fullWidth required value={scheduledCheckIn} onChange={(e) => setScheduledCheckIn(e.target.value)} InputLabelProps={{ shrink: true }} />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField label="Scheduled Check-out Time" type="time" fullWidth required value={scheduledCheckOut} onChange={(e) => setScheduledCheckOut(e.target.value)} InputLabelProps={{ shrink: true }} />
+                                </Grid>
+                            </Grid>
 
                             <TextField label="Name" fullWidth required value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
                             <TextField label="Father's Name" fullWidth required value={fatherName} onChange={(e) => setFatherName(e.target.value)} sx={{ mb: 2 }} />
@@ -264,7 +327,10 @@ const AddTeacher = () => {
                             <TextField label="Emergency Contact#" type="tel" fullWidth required value={emergencyContact} onChange={handleEmergencyChange} sx={{ mb: 2 }} inputProps={{ maxLength: 11 }} error={!!emergencyError} helperText={emergencyError} />
                             <TextField label="Address" fullWidth required value={address} onChange={(e) => setAddress(e.target.value)} sx={{ mb: 2 }} />
                             <TextField label="Education" fullWidth required value={education} onChange={(e) => setEducation(e.target.value)} sx={{ mb: 2 }} />
-                            <TextField label="Salary" type="number" fullWidth required value={salary} onChange={(e) => setSalary(e.target.value)} sx={{ mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start">Rs:</InputAdornment>, endAdornment: <InputAdornment position="end">PKR</InputAdornment> }} />
+                            {!(isIntern && internType === 'unpaid') && (
+                                <TextField label="Salary" type="number" fullWidth required value={salary} onChange={(e) => setSalary(e.target.value)} sx={{ mb: 2 }} InputProps={{ startAdornment: <InputAdornment position="start">Rs:</InputAdornment>, endAdornment: <InputAdornment position="end">PKR</InputAdornment> }} />
+                            )}
+                            {ruleError && designationId && <Typography color="error" variant="body2" sx={{ mb: 2 }}>{ruleError}</Typography>}
                             
                             <Button type="submit" variant="contained" color="primary" fullWidth disabled={!isFormValid() || loader}>
                                 {loader ? <CircularProgress size={24} color="inherit" /> : 'Add Staff Member'}

@@ -18,12 +18,13 @@ import {
 import { Select, MenuItem, InputLabel } from '@mui/material';
 import logo from "../../../assets/logo.png"; // Assuming you have a logo image
 // import { consultancyRegister } from '../../../redux/userRelated/userHandle'; // Not used in the provided snippet
-// import { useDispatch, useSelector } from 'react-redux'; // Not used in the provided snippet
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import InvoiceDialog from './../../../components/InvoiceDialog'; // adjust path as needed
 
 const AddConsultancy = () => {
+    const { currentUser } = useSelector((state) => state.user);
     const navigate = useNavigate();
     // const dispatch = useDispatch(); // Not used
     const [showInvoice, setShowInvoice] = useState(false);
@@ -333,9 +334,8 @@ const AddConsultancy = () => {
             // If you have studentEmail in your form: studentEmail: student.email,
 
             // --- Academic & Schedule Information ---
-            className: ["687e03f6ec426d80aa75da28"],
-            sclassName: "687e03f6ec426d80aa75da28",
-            school: "68795ab802f2887382d217b0",
+            // The organisation is the signed-in admin; classes are chosen later at admission.
+            adminID: currentUser?._id,
             // If you collect sessionTime, days, feeStructure:
             // sessionTime: student.sessionTime,
             // days: student.days,
@@ -428,7 +428,7 @@ const AddConsultancy = () => {
     const handleSaveFee = (selectedStudent, consultancy, date, rollNum) => {
         
         const fields = {
-            adminID: '68795ab802f2887382d217b0',
+            adminID: currentUser?._id,
             attendance: [],
             parentName: selectedStudent.parentName,
             name: selectedStudent.name,

@@ -14,7 +14,7 @@ import Popup from '../../../components/Popup';
 import OtpActionDialog from '../../../components/OtpActionDialog';
 import InvoiceDialog from '../../../components/InvoiceDialog';
 import { lineTotal, sumLineItems, toMoney } from '../../../utils/feeCalc';
-import { buildStudentForm as buildForm, studentChanges, feeLineKey } from '../../../utils/studentForm';
+import { buildStudentForm as buildForm, studentChanges, feeLineKey, feeStatus, THERAPY_OPTIONS } from '../../../utils/studentForm';
 import axios from 'axios';
 
 // Shows "N/A" for null/undefined/empty instead of the literal text "undefined".
@@ -25,6 +25,30 @@ const DetailItem = ({ label, value }) => ( <Grid item xs={12} sm={6} sx={{ mb: 2
 const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => ( <Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? ( <TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} InputLabelProps={type === 'date' ? { shrink: true } : undefined} /> ) : ( <Typography variant="body1" gutterBottom>{show(value)}</Typography> )}</Grid> );
 
 const idOf = (v) => (v && typeof v === 'object' ? (v._id || v.$oid) : v);
+
+// A yes/no answer: a checkbox while editing, "Yes"/"No" otherwise.
+const BoolItem = ({ label, name, value, isEditMode, onToggle, xs = 12, sm = 6 }) => (
+    <Grid item xs={xs} sm={sm} sx={{ mb: 1 }}>
+        {isEditMode ? (
+            <FormControlLabel control={<Checkbox name={name} checked={!!value} onChange={onToggle} />} label={label} />
+        ) : (
+            <>
+                <Typography variant="subtitle2" color="text.secondary">{label}</Typography>
+                <Typography variant="body1">{value ? 'Yes' : 'No'}</Typography>
+            </>
+        )}
+    </Grid>
+);
+
+const RECOMMENDATIONS = [
+    ['Speech', [['rec_speech_difficultyPronouncing', 'Difficulty pronouncing words'], ['rec_speech_stuttering', 'Stuttering'], ['rec_speech_followInstructions', 'Difficulty following instructions']]],
+    ['Behaviour', [['rec_behavior_concern', 'Behavioural concerns'], ['rec_behavior_diagnosis', 'Diagnosed (Autism, ADHD, etc.)'], ['rec_behavior_socialChallenges', 'Social challenges']]],
+    ['Occupational', [['rec_occupational_dailyActivities', 'Difficulty with daily activities'], ['rec_occupational_sensoryIssue', 'Sensory issues']]],
+    ['Remedial', [['rec_remedial_difficultiesLearning', 'Learning difficulties'], ['rec_remedial_specialEducation', 'Needs special education']]],
+    ['Additional programme', [['rec_additional_iep', 'Inclusive Edification Programme (IEP)'], ['rec_additional_fl', 'Fun & Learn']]],
+];
+
+const STATUS_COLOR = { Paid: 'success.main', 'Partially Paid': 'warning.main', Unpaid: 'error.main' };
 
 const FEE_TYPE_LABEL = { '0': 'Consultancy', '1': 'Admission', '2': 'Monthly' };
 
@@ -69,30 +93,33 @@ const ViewStudent = () => {
         }
     }, [studentID]);
 
+    // Always loads the complete, latest record by id (never the partial list row).
+    const loadStudent = useCallback(async (isCancelled = () => false) => {
+        try {
+            const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/Student/${studentID}`);
+            if (isCancelled()) return;
+            if (!data || !data._id) {
+                setLoadError(data?.message || 'Student not found.');
+                return;
+            }
+            setStudent(data);
+            setFormData(buildForm(data));
+        } catch (err) {
+            if (isCancelled()) return;
+            setLoadError(err?.response?.status === 404 ? 'This student was not found. It may have been deleted.' : (err?.response?.data?.message || 'Error loading student details.'));
+        }
+    }, [studentID]);
+
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
         setLoadError('');
         setStudent(null);
         setIsEditMode(false);
-        axios.get(`${process.env.REACT_APP_BASE_URL}/Student/${studentID}`)
-            .then(({ data }) => {
-                if (cancelled) return;
-                if (!data || !data._id) {
-                    setLoadError(data?.message || 'Student not found.');
-                    return;
-                }
-                setStudent(data);
-                setFormData(buildForm(data));
-            })
-            .catch((err) => {
-                if (cancelled) return;
-                setLoadError(err?.response?.status === 404 ? 'This student was not found. It may have been deleted.' : (err?.response?.data?.message || 'Error loading student details.'));
-            })
-            .finally(() => { if (!cancelled) setLoading(false); });
+        loadStudent(() => cancelled).finally(() => { if (!cancelled) setLoading(false); });
         loadFeeHistory();
         return () => { cancelled = true; };
-    }, [studentID, loadFeeHistory]);
+    }, [studentID, loadFeeHistory, loadStudent]);
 
     useEffect(() => {
         if (!currentUser?._id) return;
@@ -122,6 +149,14 @@ const ViewStudent = () => {
     const handleDayChange = (event) => {
         const { name, checked } = event.target;
         setFormData((prev) => ({ ...prev, days: checked ? [...prev.days, name] : prev.days.filter((day) => day !== name) }));
+    };
+    const handleToggle = (event) => {
+        const { name, checked } = event.target;
+        setFormData((prev) => ({ ...prev, [name]: checked }));
+    };
+    const handleTherapyToggle = (event) => {
+        const { name, checked } = event.target;
+        setFormData((prev) => ({ ...prev, therapiesSeeking: checked ? [...prev.therapiesSeeking, name] : prev.therapiesSeeking.filter((t) => t !== name) }));
     };
     const handleCancel = () => {
         // Discard unsaved edits and go back to the saved values.
@@ -155,6 +190,8 @@ const ViewStudent = () => {
         if (changes.name !== undefined && !changes.name.trim()) return 'Student name is required.';
         if (changes.parentContact && !/^03\d{9}$/.test(changes.parentContact)) return 'Parent contact must start with 03 and be 11 digits.';
         if (changes.parentCNIC && changes.parentCNIC.replace(/\D/g, '').length !== 13) return 'Parent CNIC must be 13 digits.';
+        if (changes.studentEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(changes.studentEmail)) return 'Enter a valid student email address.';
+        if (changes.className && changes.className.length === 0) return 'Select at least one class.';
         if (changes.feePlan) {
             for (const l of changes.feePlan) {
                 if (!String(l.serviceName || '').trim()) return 'Every agreed fee line needs a session/service name.';
@@ -186,13 +223,9 @@ const ViewStudent = () => {
             navigate('/Admin/students', { replace: true });
             return;
         }
-        // Show exactly what the server saved.
-        if (result?.data?._id) {
-            const merged = { ...student, ...result.data, sclassName: student?.sclassName, school: student?.school };
-            setStudent(merged);
-            setFormData(buildForm(merged));
-        }
+        // Re-fetch so the page shows exactly what the server saved.
         setIsEditMode(false);
+        loadStudent();
         setPopup({ open: true, message: result?.message || 'Details Updated Successfully.', success: true });
         loadFeeHistory();
     };
@@ -220,9 +253,48 @@ const ViewStudent = () => {
             </Paper>
 
             <form onSubmit={(e) => { e.preventDefault(); handleUpdateClick(); }}>
-                <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Student Profile</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><EditableDetailItem label="Name" name="name" value={formData.name} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Roll Number" value={student.rollNum} /><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Gender</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="gender" value={formData.gender} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Male">Male</MenuItem><MenuItem value="Female">Female</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.gender)}</Typography>)}</Grid><EditableDetailItem label="Age" name="age" value={formData.age} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Date of Birth" name="dob" value={formData.dob} isEditMode={isEditMode} onChange={handleInputChange} type="date" /><EditableDetailItem label="Reference" name="reference" value={formData.reference} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Admission Date" value={student.admissionDate} /></Grid></AccordionDetails></Accordion>
+                <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Student Profile</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><EditableDetailItem label="Name" name="name" value={formData.name} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Roll Number" value={student.rollNum} /><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Gender</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="gender" value={formData.gender} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Male">Male</MenuItem><MenuItem value="Female">Female</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.gender)}</Typography>)}</Grid><EditableDetailItem label="Age" name="age" value={formData.age} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Date of Birth" name="dob" value={formData.dob} isEditMode={isEditMode} onChange={handleInputChange} type="date" /><EditableDetailItem label="Reference" name="reference" value={formData.reference} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Student Email" name="studentEmail" value={formData.studentEmail} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Session Time" name="sessionTime" value={formData.sessionTime} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Assigned Teacher" name="assignedTeacher" value={formData.assignedTeacher} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Admission Date" value={student.admissionDate} /><DetailItem label="Registered Through" value={student.isConsultantStudent ? 'Consultant (not yet admitted)' : (student.consultancyDate ? 'Consultant, then admitted' : 'Add Student')} /></Grid></AccordionDetails></Accordion>
                 <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Parent & Contact Information</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><EditableDetailItem label="Parent's Name" name="parentName" value={formData.parentName} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Parent's Contact" name="parentContact" value={formData.parentContact} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Parent's CNIC" name="parentCNIC" value={formData.parentCNIC} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Parent's Profession" name="parentProfession" value={formData.parentProfession} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Home Address" name="parentAddress" value={formData.parentAddress} isEditMode={isEditMode} onChange={handleInputChange} /><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Parent's Gender</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="parentGender" value={formData.parentGender} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Male">Male</MenuItem><MenuItem value="Female">Female</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.parentGender)}</Typography>)}</Grid><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Marital Status</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="parentMaritalStatus" value={formData.parentMaritalStatus} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Single">Single</MenuItem><MenuItem value="Married">Married</MenuItem><MenuItem value="Widow">Widow</MenuItem><MenuItem value="Divorced">Divorced</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.parentMaritalStatus)}</Typography>)}</Grid></Grid></AccordionDetails></Accordion>
-                <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Enrolled Courses & Schedule</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><DetailItem label="Consultancy Date" value={student.consultancyDate} /><Grid item xs={12}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Scheduled Days</Typography>{isEditMode ? (<FormGroup row>{weekdays.map(day => (<FormControlLabel key={day} control={<Checkbox checked={formData.days.includes(day)} onChange={handleDayChange} name={day} />} label={day} />))}</FormGroup>) : (<Typography variant="body1" gutterBottom>{formData.days.length ? formData.days.join(', ') : 'N/A'}</Typography>)}</Grid></Grid><Typography variant="subtitle1" sx={{ mt: 3, mb: 2, fontWeight: 'bold' }}>Class Details:</Typography>{classDetailsLoading ? <CircularProgress /> : classDetailsError ? <Typography color="error">{classDetailsError}</Typography> : classDetails.length === 0 ? <Typography variant="body2">No classes.</Typography> : (<Grid container spacing={2}>{classDetails.map((sClass) => (<Grid item xs={12} md={6} key={sClass._id}><Card variant="outlined"><CardContent><Typography variant="h6">{sClass.sclassName}</Typography><DetailItem label="Timing" value={`${sClass.timingSlot} (${sClass.timingType})`} /><DetailItem label="Class Default Fee" value={`Rs. ${sClass.sclassFee}`} /></CardContent></Card></Grid>))}</Grid>)}</AccordionDetails></Accordion>
+                <Accordion defaultExpanded>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Medical History</Typography></AccordionSummary>
+                    <AccordionDetails>
+                        <Grid container spacing={2}>
+                            <BoolItem label="Doctor diagnosed a condition" name="doctorDiagnosisCondition" value={formData.doctorDiagnosisCondition} isEditMode={isEditMode} onToggle={handleToggle} />
+                            <EditableDetailItem label="Diagnosis Details" name="doctorDiagnosisDetails" value={formData.doctorDiagnosisDetails} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <BoolItem label="Taken therapies before" name="takingTherapiesBefore" value={formData.takingTherapiesBefore} isEditMode={isEditMode} onToggle={handleToggle} />
+                            <EditableDetailItem label="Previous Therapies" name="therapiesBeforeDetails" value={formData.therapiesBeforeDetails} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <BoolItem label="Currently on medication" name="onMedication" value={formData.onMedication} isEditMode={isEditMode} onToggle={handleToggle} />
+                            <EditableDetailItem label="Medication Details" name="medicationDetails" value={formData.medicationDetails} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <BoolItem label="Attends school elsewhere" name="childAttendsSchool" value={formData.childAttendsSchool} isEditMode={isEditMode} onToggle={handleToggle} />
+                            <EditableDetailItem label="School Details" name="schoolDetails" value={formData.schoolDetails} isEditMode={isEditMode} onChange={handleInputChange} />
+                            <Grid item xs={12} sx={{ mb: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Therapies Sought</Typography>
+                                {isEditMode ? (
+                                    <FormGroup row>{THERAPY_OPTIONS.map((t) => (<FormControlLabel key={t} control={<Checkbox name={t} checked={formData.therapiesSeeking.includes(t)} onChange={handleTherapyToggle} />} label={t} />))}</FormGroup>
+                                ) : (<Typography variant="body1">{formData.therapiesSeeking.length ? formData.therapiesSeeking.join(', ') : 'N/A'}</Typography>)}
+                            </Grid>
+                            <EditableDetailItem label="Specific Requirements" name="therapiesSeekingSpecific" value={formData.therapiesSeekingSpecific} isEditMode={isEditMode} onChange={handleInputChange} />
+                        </Grid>
+                    </AccordionDetails>
+                </Accordion>
+                <Accordion defaultExpanded={!!student.consultancyDate || student.isConsultantStudent}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Consultant Assessment</Typography></AccordionSummary>
+                    <AccordionDetails>
+                        <Grid container spacing={2}>
+                            <DetailItem label="Consultancy Date" value={student.consultancyDate} />
+                            <DetailItem label="Therapy Plan" value={student.therapyPlan?.label ? `${student.therapyPlan.label} (Rs. ${toMoney(student.therapyPlan.perSessionCost).toLocaleString()}/session, Rs. ${toMoney(student.therapyPlan.perMonthCost).toLocaleString()}/month)` : ''} />
+                        </Grid>
+                        {RECOMMENDATIONS.map(([group, items]) => (
+                            <Box key={group} sx={{ mt: 1 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>{group}</Typography>
+                                <Grid container spacing={1}>
+                                    {items.map(([name, label]) => <BoolItem key={name} label={label} name={name} value={formData[name]} isEditMode={isEditMode} onToggle={handleToggle} sm={4} />)}
+                                </Grid>
+                            </Box>
+                        ))}
+                    </AccordionDetails>
+                </Accordion>
+                <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Enrolled Courses & Schedule</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><Grid item xs={12}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Scheduled Days</Typography>{isEditMode ? (<FormGroup row>{weekdays.map(day => (<FormControlLabel key={day} control={<Checkbox checked={formData.days.includes(day)} onChange={handleDayChange} name={day} />} label={day} />))}</FormGroup>) : (<Typography variant="body1" gutterBottom>{formData.days.length ? formData.days.join(', ') : 'N/A'}</Typography>)}</Grid></Grid><Typography variant="subtitle1" sx={{ mt: 3, mb: 2, fontWeight: 'bold' }}>Class Details:</Typography>{isEditMode && (<FormControl fullWidth size="small" sx={{ mb: 2 }}><InputLabel id="student-classes">Classes</InputLabel><Select labelId="student-classes" label="Classes" multiple value={formData.className.filter((id) => allClasses.some((c) => c._id === id))} onChange={(e) => setFormData((prev) => ({ ...prev, className: typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value }))} renderValue={(sel) => sel.map((id) => allClasses.find((c) => c._id === id)?.sclassName || id).join(', ')}>{allClasses.map((c) => <MenuItem key={c._id} value={c._id}><Checkbox checked={formData.className.includes(c._id)} />{c.sclassName}</MenuItem>)}</Select><Typography variant="caption" color="text.secondary">The first class is the primary class. Saved classes are shown below.</Typography></FormControl>)}{classDetailsLoading ? <CircularProgress /> : classDetailsError ? <Typography color="error">{classDetailsError}</Typography> : classDetails.length === 0 ? <Typography variant="body2">No classes.</Typography> : (<Grid container spacing={2}>{classDetails.map((sClass) => (<Grid item xs={12} md={6} key={sClass._id}><Card variant="outlined"><CardContent><Typography variant="h6">{sClass.sclassName}</Typography><DetailItem label="Timing" value={`${sClass.timingSlot} (${sClass.timingType})`} /><DetailItem label="Class Default Fee" value={`Rs. ${sClass.sclassFee}`} /></CardContent></Card></Grid>))}</Grid>)}</AccordionDetails></Accordion>
 
                 <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Fees</Typography></AccordionSummary>
@@ -275,13 +347,13 @@ const ViewStudent = () => {
                         <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Monthly Session Fee: Rs. {planTotal.toLocaleString()}</Typography>
 
                         <Divider sx={{ my: 2 }} />
-                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Fee History</Typography>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Fee History{feeHistory.length > 0 && ` · Outstanding: Rs. ${feeHistory.reduce((sum, r) => sum + feeStatus(r).outstanding, 0).toLocaleString()}`}</Typography>
                         {feeHistoryError ? <Typography color="error">{feeHistoryError}</Typography> : feeHistory.length === 0 ? (
                             <Typography variant="body2">No fee slips yet.</Typography>
                         ) : (
                             <TableContainer>
                                 <Table size="small">
-                                    <TableHead><TableRow><TableCell>Invoice</TableCell><TableCell>Type</TableCell><TableCell>Date</TableCell><TableCell align="right">Net</TableCell><TableCell align="right">Paid</TableCell><TableCell /></TableRow></TableHead>
+                                    <TableHead><TableRow><TableCell>Invoice</TableCell><TableCell>Type</TableCell><TableCell>Date</TableCell><TableCell align="right">Net</TableCell><TableCell align="right">Paid</TableCell><TableCell>Status</TableCell><TableCell align="right">Balance</TableCell><TableCell /></TableRow></TableHead>
                                     <TableBody>
                                         {feeHistory.map((r) => (
                                             <TableRow key={r._id}>
@@ -290,6 +362,8 @@ const ViewStudent = () => {
                                                 <TableCell>{show(r.date)}</TableCell>
                                                 <TableCell align="right">Rs. {toMoney(r.netTotalFee).toLocaleString()}</TableCell>
                                                 <TableCell align="right">Rs. {toMoney(r.paidFee).toLocaleString()}</TableCell>
+                                                <TableCell sx={{ color: STATUS_COLOR[feeStatus(r).status], fontWeight: 'bold' }}>{feeStatus(r).status}</TableCell>
+                                                <TableCell align="right">Rs. {feeStatus(r).outstanding.toLocaleString()}</TableCell>
                                                 <TableCell><Button size="small" onClick={() => setInvoiceData({ ...student, ...r })}>View / Print</Button></TableCell>
                                             </TableRow>
                                         ))}

@@ -3,7 +3,6 @@ import { IconButton, Box, Menu, MenuItem, ListItemIcon, Tooltip } from '@mui/mat
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { deleteUser } from '../../../redux/userRelated/userHandle';
 import { getAllSclasses } from '../../../redux/sclassRelated/sclassHandle';
 import { BlueButton, GreenButton } from '../../../components/buttonStyles';
 import TableTemplate from '../../../components/TableTemplate';
@@ -14,6 +13,7 @@ import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import AddCardIcon from '@mui/icons-material/AddCard';
 import styled from 'styled-components';
 import Popup from '../../../components/Popup';
+import OtpActionDialog from '../../../components/OtpActionDialog';
 
 const ShowClasses = () => {
   const navigate = useNavigate()
@@ -34,17 +34,15 @@ const ShowClasses = () => {
 
   const [showPopup, setShowPopup] = useState(false);
   const [message, setMessage] = useState("");
+  const [toDelete, setToDelete] = useState(null); // { id, name }
 
-  const deleteHandler = (deleteID, address) => {
-    console.log(deleteID);
-    console.log(address);
-    setMessage("Sorry the delete function has been disabled for now.")
-    setShowPopup(true)
-    // dispatch(deleteUser(deleteID, address))
-    //   .then(() => {
-    //     dispatch(getAllSclasses(adminID, "Sclass"));
-    //   })
-  }
+  // The server refuses while any student, staff member or fee slip still uses the class.
+  const handleDeleted = (result) => {
+    setToDelete(null);
+    setMessage(result?.message || 'Class Deleted Successfully.');
+    setShowPopup(true);
+    dispatch(getAllSclasses(adminID, "Sclass"));
+  };
 
   const sclassColumns = [
     { id: 'name', label: 'Class Name', minWidth: 170 },
@@ -64,9 +62,11 @@ const ShowClasses = () => {
     ];
     return (
       <ButtonContainer>
-        {/* <IconButton onClick={() => deleteHandler(row.id, "Sclass")} color="secondary">
-          <DeleteIcon color="error" />
-        </IconButton> */}
+        <Tooltip title="Delete class">
+          <IconButton aria-label={`Delete ${row.name}`} onClick={() => setToDelete({ id: row.id, name: row.name })}>
+            <DeleteIcon color="error" />
+          </IconButton>
+        </Tooltip>
         <BlueButton variant="contained"
           onClick={() => navigate("/Admin/classes/class/" + row.id)}>
           View
@@ -163,7 +163,17 @@ const ShowClasses = () => {
             }
         </>
       }
-      <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+      <Popup open={showPopup} message={message} success onClose={() => setShowPopup(false)} />
+      <OtpActionDialog
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        onSuccess={handleDeleted}
+        adminId={adminID}
+        actionType="delete"
+        targetType="sclass"
+        targetId={toDelete?.id}
+        targetName={toDelete?.name}
+      />
 
     </>
   );

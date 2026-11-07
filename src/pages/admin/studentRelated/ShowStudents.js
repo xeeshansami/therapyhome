@@ -11,6 +11,7 @@ import { BlueButton, GreenButton } from '../../../components/buttonStyles';
 import TableTemplate from '../../../components/TableTemplate';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import Popup from '../../../components/Popup';
+import OtpActionDialog from '../../../components/OtpActionDialog';
 import axios from 'axios';
 
 // Style for the modal
@@ -37,6 +38,7 @@ const ShowStudents = () => {
     // --- SECTION: UI State (Popups & Modals) ---
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
+    const [toDelete, setToDelete] = useState(null); // { id, name }
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalData, setModalData] = useState([]);
@@ -91,9 +93,12 @@ const ShowStudents = () => {
 
     // --- SECTION: Event Handlers ---
 
-    const deleteHandler = (deleteID, address) => {
-        setMessage("Sorry, the delete function has been disabled for now.");
+    // Deleting archives the student and keeps all fee slips (see the server's verified flow).
+    const handleDeleted = (result) => {
+        setToDelete(null);
+        setMessage(result?.message || 'Record Deleted Successfully.');
         setShowPopup(true);
+        dispatch(getAllStudents(currentUser._id));
     };
 
     const handleViewClasses = (classes) => {
@@ -148,12 +153,15 @@ const ShowStudents = () => {
             >
                 View Classes
             </GreenButton>
+            <IconButton aria-label={`Delete ${row.name}`} color="error" sx={{ ml: 1 }}
+                onClick={() => setToDelete({ id: row.id, name: `${row.name} (${row.rollNum})` })}>
+                <PersonRemoveIcon />
+            </IconButton>
         </>
     );
 
     const actions = [
         { icon: <PersonAddAlt1Icon color="primary" />, name: 'Add New Student', action: () => navigate("/Admin/addstudents") },
-        { icon: <PersonRemoveIcon color="error" />, name: 'Delete All Students', action: () => deleteHandler(currentUser._id, "Students") },
     ];
 
     // --- SECTION: Main Component Render ---
@@ -176,7 +184,17 @@ const ShowStudents = () => {
                     )}
                 </Paper>
             )}
-            <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+            <Popup open={showPopup} message={message} success onClose={() => setShowPopup(false)} />
+            <OtpActionDialog
+                open={!!toDelete}
+                onClose={() => setToDelete(null)}
+                onSuccess={handleDeleted}
+                adminId={currentUser?._id}
+                actionType="delete"
+                targetType="student"
+                targetId={toDelete?.id}
+                targetName={toDelete?.name}
+            />
 
             <Modal
                 open={isModalOpen}

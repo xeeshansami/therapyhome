@@ -48,8 +48,10 @@ export const registerUser = (fields, role) => async (dispatch) => {
             return { status: result.data.status, message: result.data.message };
         }
     } catch (error) {
-        dispatch(authError(error.message));
-        return { status: "99", message: error.message }; // Use fallback status code
+        // Show the server's reason (e.g. "Choose Paid Intern or Unpaid Intern.") rather than "status code 400".
+        const message = error?.response?.data?.message || error.message;
+        dispatch(authError(message));
+        return { status: error?.response?.data?.status || "99", message };
     }
 };
 

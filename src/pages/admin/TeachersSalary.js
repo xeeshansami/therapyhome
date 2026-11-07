@@ -28,6 +28,7 @@ import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SalarySlipDialog from '../../components/SalarySlipDialog';
+import { isUnpaidIntern } from '../../utils/staffForm';
 
 // --- Helper Components & Functions ---
 const CustomPopup = ({ open, success, message, onConfirm, onClose }) => {
@@ -106,7 +107,10 @@ const TeachersSalary = () => {
     setState(prev => ({ ...prev, loading: true, error: '' }));
     try {
       const response = await axios.get(`${API_BASE_URL}/Teachers/${SCHOOL_ID}`);
-      const data = response.data?.length > 0 ? response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) : [];
+      // Unpaid interns never receive payroll payments, so they are not listed here.
+      const data = response.data?.length > 0
+        ? response.data.filter((t) => !isUnpaidIntern(t)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        : [];
       setState(prev => ({
         ...prev,
         teacherData: data,

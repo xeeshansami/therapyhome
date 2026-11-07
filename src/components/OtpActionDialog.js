@@ -11,6 +11,16 @@ import {
 //   2. the admin enters the OTP; the server applies the change it stored.
 // The OTP is generated, stored and checked only on the server.
 
+// What each kind of record is called, and what a delete keeps.
+const TARGETS = {
+    student: { label: 'student', note: 'The student is archived. Fee slips and payment history are kept.' },
+    teacher: { label: 'staff member', note: 'Salary slips already issued are kept.' },
+    sclass: { label: 'class', note: 'A class can only be deleted when no student, staff member or fee slip uses it.' },
+    notice: { label: 'notice', note: '' },
+};
+
+const RESEND_COOLDOWN_S = 30; // matches the server's cooldown
+
 const errorText = (error, fallback) => error?.response?.data?.message || (error?.request && !error?.response
     ? 'Could not reach the server. Check your connection and try again.'
     : fallback);
@@ -26,9 +36,18 @@ const OtpActionDialog = ({
     const [challenge, setChallenge] = useState(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [resendIn, setResendIn] = useState(0);
+    const target = TARGETS[targetType] || { label: 'record', note: '' };
+
+    useEffect(() => {
+        if (resendIn <= 0) return undefined;
+        const timer = setTimeout(() => setResendIn((n) => n - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [resendIn]);
 
     useEffect(() => {
         if (open) {
+            setResendIn(0);
             setStep(isDelete ? 'confirm' : 'password');
             setPassword('');
             setOtp('');
@@ -59,7 +78,12 @@ const OtpActionDialog = ({
             setChallenge(data);
             setOtp('');
             setStep('otp');
+            setResendIn(RESEND_COOLDOWN_S);
         } catch (err) {
+            if (err?.response?.data?.code === 'OTP_RESEND_COOLDOWN') {
+                const wait = parseInt(String(err.response.data.message).match(/\d+/)?.[0], 10);
+                if (wait > 0) setResendIn(wait);
+            }
             setError(errorText(err, 'Password verification failed.'));
         } finally {
             setBusy(false);
@@ -101,12 +125,12 @@ const OtpActionDialog = ({
 
     return (
         <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
-            <DialogTitle>{isDelete ? 'Delete record' : 'Confirm update'}</DialogTitle>
+            <DialogTitle>{isDelete ? `Delete ${target.label}` : `Confirm ${target.label} update`}</DialogTitle>
             <DialogContent>
                 {step === 'confirm' && (
                     <DialogContentText>
-                        Delete <strong>{targetName || 'this record'}</strong>? This cannot be undone from the portal.
-                        {targetType === 'student' && ' Fee slips and payment history for this student are kept.'}
+                        Delete the {target.label} <strong>{targetName || 'this record'}</strong>? This cannot be undone from the portal.
+                        {target.note && <><br /><br />{target.note}</>}
                     </DialogContentText>
                 )}
                 {step === 'password' && (
@@ -141,7 +165,9 @@ const OtpActionDialog = ({
                         />
                         <Typography variant="body2" sx={{ mt: 1 }}>
                             Didn't get it?{' '}
-                            <Button size="small" onClick={requestOtp} disabled={busy}>Resend code</Button>
+                            <Button size="small" onClick={requestOtp} disabled={busy || resendIn > 0}>
+                                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+                            </Button>
                         </Typography>
                     </>
                 )}
@@ -149,7 +175,7 @@ const OtpActionDialog = ({
             <DialogActions>
                 <Button onClick={handleClose} color="secondary" disabled={busy}>Cancel</Button>
                 {step === 'confirm' && (
-                    <Button color="error" variant="contained" onClick={() => setStep('password')}>Continue</Button>
+                    <Button color="error" variant="contained" onClick={() => setStep('password')}>Confirm Delete</Button>
                 )}
                 {step === 'password' && (
                     <Button onClick={requestOtp} variant="contained" disabled={busy}>

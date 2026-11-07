@@ -1,4 +1,4 @@
-import { buildStudentForm, studentChanges, toInputDate } from './studentForm';
+import { buildStudentForm, studentChanges, toInputDate, feeStatus } from './studentForm';
 
 const saved = {
     _id: 's1',
@@ -55,5 +55,37 @@ describe('student change detection', () => {
         expect(studentChanges(saved, form)).toEqual({
             feePlan: [{ sclassName: 'c1', serviceName: 'Speech', feePerSession: 3000, sessions: 4 }],
         });
+    });
+});
+
+describe('consultant fields, classes and fee status', () => {
+    const consultant = {
+        ...saved,
+        doctorDiagnosisCondition: true, doctorDiagnosisDetails: 'ASD', onMedication: false,
+        therapiesSeeking: ['Speech Therapy'], rec_speech_stuttering: true, schoolDetails: 'Grade 1',
+        className: [{ _id: 'c1' }, 'c2'], sessionTime: '10:00-11:00',
+    };
+
+    it('pre-fills medical history, recommendations and classes', () => {
+        const form = buildStudentForm(consultant);
+        expect(form).toMatchObject({
+            doctorDiagnosisCondition: true, doctorDiagnosisDetails: 'ASD', onMedication: false,
+            therapiesSeeking: ['Speech Therapy'], rec_speech_stuttering: true, rec_additional_iep: false,
+            schoolDetails: 'Grade 1', className: ['c1', 'c2'], sessionTime: '10:00-11:00',
+        });
+    });
+
+    it('sends only the consultant fields that changed', () => {
+        const form = { ...buildStudentForm(consultant), onMedication: true, therapiesSeeking: ['Speech Therapy', 'Remedial Therapy'], className: ['c2'] };
+        expect(studentChanges(consultant, form)).toEqual({
+            onMedication: true, therapiesSeeking: ['Speech Therapy', 'Remedial Therapy'], className: ['c2'],
+        });
+    });
+
+    it('derives Paid / Partially Paid / Unpaid and the balance', () => {
+        expect(feeStatus({ netTotalFee: '4000', paidFee: '4000' })).toEqual({ status: 'Paid', outstanding: 0 });
+        expect(feeStatus({ netTotalFee: '4000', paidFee: '1500' })).toEqual({ status: 'Partially Paid', outstanding: 2500 });
+        expect(feeStatus({ netTotalFee: '4000', paidFee: '0' })).toEqual({ status: 'Unpaid', outstanding: 4000 });
+        expect(feeStatus({ paymentStatus: 'Paid', outstanding: 0 })).toEqual({ status: 'Paid', outstanding: 0 });
     });
 });

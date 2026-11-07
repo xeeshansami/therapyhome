@@ -9,12 +9,13 @@ import {
     // ✅ 1. IMPORT CircularProgress
     CircularProgress,
 } from '@mui/material';
-import { deleteUser } from '../../../redux/userRelated/userHandle';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { StyledTableCell, StyledTableRow } from '../../../components/styles';
 import { BlueButton, GreenButton } from '../../../components/buttonStyles';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import Popup from '../../../components/Popup';
+import OtpActionDialog from '../../../components/OtpActionDialog';
+import { internLabel } from '../../../utils/staffForm';
 
 const ShowTeachers = () => {
     const [page, setPage] = useState(0);
@@ -31,6 +32,14 @@ const ShowTeachers = () => {
 
     const [showPopup, setShowPopup] = useState(false);
     const [message, setMessage] = useState("");
+    const [toDelete, setToDelete] = useState(null); // { id, name }
+
+    const handleDeleted = (result) => {
+        setToDelete(null);
+        setMessage(result?.message || 'Record Deleted Successfully.');
+        setShowPopup(true);
+        dispatch(getAllTeachers(currentUser._id));
+    };
 
     // ✅ 2. UPDATE THE LOADING BLOCK TO SHOW THE SPINNER
     if (loading) {
@@ -51,15 +60,11 @@ const ShowTeachers = () => {
         console.log(error);
     }
 
-    const deleteHandler = (deleteID, address) => {
-        setMessage("Sorry, the delete function has been disabled for now.");
-        setShowPopup(true);
-    };
-
     const columns = [
         { id: 'photo', label: 'Photo', minWidth: 70, align: 'center' },
         { id: 'name', label: 'Name', minWidth: 170 },
-        { id: 'teachSclass', label: 'Class', minWidth: 170 },
+        { id: 'designation', label: 'Designation', minWidth: 150 },
+        { id: 'teachSclass', label: 'Class', minWidth: 140 },
     ];
 
     const rows = teachersList.map((teacher) => {
@@ -67,7 +72,9 @@ const ShowTeachers = () => {
             photo: teacher.photo,
             name: teacher.name,
             teachSubject: teacher.teachSubject?.subName || null,
-            teachSclass: teacher.teachSclass?.sclassName || 'N/A',
+            designation: [teacher.role || 'N/A', internLabel(teacher) && `(${internLabel(teacher)})`].filter(Boolean).join(' '),
+            // Non-teaching staff are filed under a placeholder class; it is not their designation.
+            teachSclass: String(teacher.role || '').toLowerCase() === 'teacher' ? (teacher.teachSclass?.sclassName || 'N/A') : '—',
             teachSclassID: teacher.teachSclass?._id,
             id: teacher._id,
         };
@@ -146,6 +153,10 @@ const ShowTeachers = () => {
                                                 onClick={() => navigate("/Admin/teachers/teacher/" + row.id)}>
                                                 View
                                             </BlueButton>
+                                            <IconButton aria-label={`Delete ${row.name}`} color="error" sx={{ ml: 1 }}
+                                                onClick={() => setToDelete({ id: row.id, name: row.name })}>
+                                                <PersonRemoveIcon />
+                                            </IconButton>
                                         </StyledTableCell>
                                     </StyledTableRow>
                                 );
@@ -168,7 +179,17 @@ const ShowTeachers = () => {
                 }}
             />
 
-            <Popup message={message} setShowPopup={setShowPopup} showPopup={showPopup} />
+            <Popup open={showPopup} message={message} success onClose={() => setShowPopup(false)} />
+            <OtpActionDialog
+                open={!!toDelete}
+                onClose={() => setToDelete(null)}
+                onSuccess={handleDeleted}
+                adminId={currentUser?._id}
+                actionType="delete"
+                targetType="teacher"
+                targetId={toDelete?.id}
+                targetName={toDelete?.name}
+            />
         </Paper >
     );
 };

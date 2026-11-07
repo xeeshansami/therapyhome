@@ -5,13 +5,14 @@ import { getTeacherDetails } from '../../../redux/teacherRelated/teacherHandle';
 import {
     Box, Button, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField,
-    FormControl, Select, MenuItem, Avatar, InputLabel,
+    FormControl, Select, MenuItem, Avatar, InputLabel, RadioGroup, FormControlLabel, Radio, Chip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Popup from '../../../components/Popup';
 import OtpActionDialog from '../../../components/OtpActionDialog';
 import axios from 'axios';
+import { designationIdFor, isInternTitle, staffRuleError, titleOf, formatTime, internLabel } from '../../../utils/staffForm';
 
 // Shows "N/A" for null/undefined/empty instead of the literal text "undefined".
 const show = (value) => (value === null || value === undefined || value === '' ? 'N/A' : String(value));
@@ -20,7 +21,7 @@ const DetailItem = ({ label, value }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 
 const EditableDetailItem = ({ label, value, isEditMode, onChange, name, type = 'text' }) => (<Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>{label}</Typography>{isEditMode ? (<TextField fullWidth variant="outlined" size="small" value={value} onChange={onChange} name={name} type={type} InputLabelProps={type === 'time' ? { shrink: true } : {}} />) : (<Typography variant="body1" gutterBottom>{show(value)}</Typography>)}</Grid>);
 
 // The single source for the editable form, used on load and on Cancel.
-const buildForm = (t) => ({
+const buildForm = (t, designations = []) => ({
     name: t.name || '',
     email: t.email || '',
     phone: t.phone || '',
@@ -35,6 +36,10 @@ const buildForm = (t) => ({
     occupation: t.occupation || '',
     timing: (t.timing && (t.timing._id || t.timing)) || '',
     teacherDateTime: t.teacherDateTime || '',
+    designation: designationIdFor(t, designations),
+    internType: t.internType || '',
+    scheduledCheckIn: t.scheduledCheckIn || '',
+    scheduledCheckOut: t.scheduledCheckOut || '',
 });
 
 const TeacherDetails = () => {
@@ -50,6 +55,7 @@ const TeacherDetails = () => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [popup, setPopup] = useState({ open: false, message: '', success: true });
     const [formData, setFormData] = useState(buildForm({}));
+    const [designations, setDesignations] = useState([]);
 
     // --- State for Timings ---
     const [timings, setTimings] = useState([]);
@@ -63,6 +69,12 @@ const TeacherDetails = () => {
 
     // --- SECTION: Data Fetching & Form Initialization ---
     useEffect(() => { dispatch(getTeacherDetails(teacherID)); }, [dispatch, teacherID]);
+
+    useEffect(() => {
+        axios.get(`${process.env.REACT_APP_BASE_URL}/designations`)
+            .then(({ data }) => setDesignations(Array.isArray(data) ? data : []))
+            .catch((err) => console.error("Designations fetch error:", err.message));
+    }, []);
 
     useEffect(() => {
         const fetchTimings = async () => {
@@ -85,10 +97,23 @@ const TeacherDetails = () => {
     // every field stayed blank.
     useEffect(() => {
         if (isLoaded) {
-            setFormData(buildForm(teacherDetails));
+            setFormData(buildForm(teacherDetails, designations));
             setIsEditMode(false);
         }
+        // designations are applied by the next effect without leaving edit mode
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoaded, teacherDetails]);
+
+    // Older records store only the designation title; once the list arrives the
+    // matching designation is pre-selected (unsaved edits are kept).
+    useEffect(() => {
+        if (isLoaded && designations.length) {
+            setFormData((prev) => (prev.designation ? prev : { ...prev, designation: designationIdFor(teacherDetails, designations) }));
+        }
+    }, [designations, isLoaded, teacherDetails]);
+
+    const selectedTitle = titleOf(formData.designation, designations) || teacherDetails?.role || '';
+    const isIntern = isInternTitle(selectedTitle);
 
     const timingDetails = useMemo(() => {
         const id = teacherDetails?.timing?._id || teacherDetails?.timing;
@@ -101,16 +126,29 @@ const TeacherDetails = () => {
     const handleCancel = () => {
         // Discard unsaved edits and go back to the saved values.
         setIsEditMode(false);
-        if (isLoaded) setFormData(buildForm(teacherDetails));
+        if (isLoaded) setFormData(buildForm(teacherDetails, designations));
+    };
+
+    const handleDesignationChange = (event) => {
+        const value = event.target.value;
+        // Leaving or entering Intern resets the intern type so it is chosen deliberately.
+        setFormData((prev) => ({ ...prev, designation: value, internType: isInternTitle(titleOf(value, designations)) ? prev.internType : '' }));
     };
 
     // Only changed fields are sent, so untouched values are never rewritten.
     const handleUpdateClick = () => {
-        const original = buildForm(teacherDetails);
+        const original = buildForm(teacherDetails, designations);
+        const current = { ...formData };
+        if (isIntern && current.internType === 'unpaid') current.salary = '0';
         const changes = {};
-        Object.keys(formData).forEach((k) => {
-            if (String(formData[k] ?? '') !== String(original[k] ?? '')) changes[k] = formData[k];
+        Object.keys(current).forEach((k) => {
+            if (String(current[k] ?? '') !== String(original[k] ?? '')) changes[k] = current[k];
         });
+        const ruleProblem = staffRuleError({ designationTitle: selectedTitle, internType: current.internType, salary: current.salary, scheduledCheckIn: current.scheduledCheckIn, scheduledCheckOut: current.scheduledCheckOut }, { requireSchedule: false });
+        if (ruleProblem) {
+            setPopup({ open: true, message: ruleProblem, success: false });
+            return;
+        }
         if (Object.keys(changes).length === 0) {
             setPopup({ open: true, message: 'No changes to save.', success: false });
             return;
@@ -162,7 +200,8 @@ const TeacherDetails = () => {
                     </Avatar>
                     <div>
                         <Typography variant="h4" gutterBottom>{teacherDetails?.name || 'Teacher Details'}</Typography>
-                        <Typography variant="h6" color="text.secondary">{teacherDetails?.role}</Typography>
+                        <Typography variant="h6" color="text.secondary">{teacherDetails?.role || 'No designation'}</Typography>
+                        {internLabel(teacherDetails) && <Chip size="small" label={internLabel(teacherDetails)} color={teacherDetails.internType === 'unpaid' ? 'default' : 'primary'} sx={{ mt: 0.5 }} />}
                     </div>
                 </Box>
                 {!isEditMode && (
@@ -217,7 +256,33 @@ const TeacherDetails = () => {
                         <Grid container spacing={2}>
                             <EditableDetailItem label="Phone" name="phone" value={formData.phone || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             <EditableDetailItem label="Emergency Contact" name="emergencyContact" value={formData.emergencyContact || ''} isEditMode={isEditMode} onChange={handleInputChange} />
-                            <EditableDetailItem label="Salary" name="salary" value={formData.salary || ''} isEditMode={isEditMode} onChange={handleInputChange} type="number" />
+                            <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
+                                <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Designation</Typography>
+                                {isEditMode ? (
+                                    <FormControl fullWidth size="small">
+                                        <Select name="designation" value={designations.some((d) => d._id === formData.designation) ? formData.designation : ''} onChange={handleDesignationChange} displayEmpty>
+                                            <MenuItem value="" disabled><em>Select a designation</em></MenuItem>
+                                            {designations.map((d) => <MenuItem key={d._id} value={d._id}>{d.title}</MenuItem>)}
+                                        </Select>
+                                    </FormControl>
+                                ) : (<Typography variant="body1" gutterBottom>{selectedTitle || 'N/A'}</Typography>)}
+                            </Grid>
+                            {isIntern && (
+                                <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Internship</Typography>
+                                    {isEditMode ? (
+                                        <RadioGroup row name="internType" value={formData.internType} onChange={handleInputChange}>
+                                            <FormControlLabel value="paid" control={<Radio size="small" />} label="Paid Intern" />
+                                            <FormControlLabel value="unpaid" control={<Radio size="small" />} label="Unpaid Intern" />
+                                        </RadioGroup>
+                                    ) : (<Typography variant="body1" gutterBottom>{formData.internType === 'unpaid' ? 'Unpaid Intern' : formData.internType === 'paid' ? 'Paid Intern' : 'N/A'}</Typography>)}
+                                </Grid>
+                            )}
+                            {isIntern && formData.internType === 'unpaid' ? (
+                                <DetailItem label="Salary" value="Unpaid (not included in payroll)" />
+                            ) : (
+                                <EditableDetailItem label="Salary" name="salary" value={formData.salary || ''} isEditMode={isEditMode} onChange={handleInputChange} type="number" />
+                            )}
                             <EditableDetailItem label="Education" name="education" value={formData.education || ''} isEditMode={isEditMode} onChange={handleInputChange} />
                             
                             <Grid item xs={12} sm={6} sx={{ mb: 2 }}>
@@ -242,15 +307,21 @@ const TeacherDetails = () => {
                                 )}
                             </Grid>
                             
-                            {/* ✅ 3. ADD THE NEW EDITABLE ITEM FOR teacherDateTime */}
-                            <EditableDetailItem
-                                label="Specific Time"
-                                name="teacherDateTime"
-                                value={formData.teacherDateTime || ''}
-                                isEditMode={isEditMode}
-                                onChange={handleInputChange}
-                                type="time"
-                            />
+                            {isEditMode ? (
+                                <>
+                                    <EditableDetailItem label="Scheduled Check-in" name="scheduledCheckIn" value={formData.scheduledCheckIn || ''} isEditMode onChange={handleInputChange} type="time" />
+                                    <EditableDetailItem label="Scheduled Check-out" name="scheduledCheckOut" value={formData.scheduledCheckOut || ''} isEditMode onChange={handleInputChange} type="time" />
+                                </>
+                            ) : (
+                                <>
+                                    <DetailItem label="Scheduled Check-in" value={formatTime(formData.scheduledCheckIn)} />
+                                    <DetailItem label="Scheduled Check-out" value={formatTime(formData.scheduledCheckOut)} />
+                                </>
+                            )}
+                            {/* The older single time field, shown only for records that have it. */}
+                            {teacherDetails?.teacherDateTime && !teacherDetails?.scheduledCheckIn && (
+                                <DetailItem label="Specific Time (older record)" value={formatTime(teacherDetails.teacherDateTime)} />
+                            )}
 
                             <DetailItem label="Assigned Class" value={teacherDetails?.teachSclass?.sclassName} />
                         </Grid>

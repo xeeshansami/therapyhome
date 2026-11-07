@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,7 +7,8 @@ import {
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import DeleteIcon from "@mui/icons-material/Delete";
 import { getAllNotices } from '../../../redux/noticeRelated/noticeHandle';
-import { deleteUser } from '../../../redux/userRelated/userHandle';
+import OtpActionDialog from '../../../components/OtpActionDialog';
+import Popup from '../../../components/Popup';
 import TableTemplate from '../../../components/TableTemplate';
 import { GreenButton } from '../../../components/buttonStyles';
 import SpeedDialTemplate from '../../../components/SpeedDialTemplate';
@@ -27,12 +28,14 @@ const ShowNotices = () => {
         console.log(error);
     }
 
-    const deleteHandler = (deleteID, address) => {
-        dispatch(deleteUser(deleteID, address))
-            .then(() => {
-                dispatch(getAllNotices(currentUser._id, "Notice"));
-            })
-    }
+    const [toDelete, setToDelete] = useState(null); // { id, name }
+    const [done, setDone] = useState('');
+
+    const handleDeleted = (result) => {
+        setToDelete(null);
+        setDone(result?.message || 'Notice Deleted Successfully.');
+        dispatch(getAllNotices(currentUser._id, "Notice"));
+    };
 
     const noticeColumns = [
         { id: 'title', label: 'Title', minWidth: 170 },
@@ -54,7 +57,7 @@ const ShowNotices = () => {
     const NoticeButtonHaver = ({ row }) => {
         return (
             <>
-                <IconButton onClick={() => deleteHandler(row.id, "Notice")}>
+                <IconButton aria-label={`Delete ${row.title}`} onClick={() => setToDelete({ id: row.id, name: row.title })}>
                     <DeleteIcon color="error" />
                 </IconButton>
             </>
@@ -66,10 +69,6 @@ const ShowNotices = () => {
             icon: <NoteAddIcon color="primary" />, name: 'Add New Notice',
             action: () => navigate("/Admin/addnotice")
         },
-        {
-            icon: <DeleteIcon color="error" />, name: 'Delete All Notices',
-            action: () => deleteHandler(currentUser._id, "Notices")
-        }
     ];
 
     return (
@@ -95,6 +94,17 @@ const ShowNotices = () => {
                     }
                 </>
             }
+            <OtpActionDialog
+                open={!!toDelete}
+                onClose={() => setToDelete(null)}
+                onSuccess={handleDeleted}
+                adminId={currentUser?._id}
+                actionType="delete"
+                targetType="notice"
+                targetId={toDelete?.id}
+                targetName={toDelete?.name}
+            />
+            <Popup open={!!done} message={done} success onClose={() => setDone('')} />
         </>
     );
 };
