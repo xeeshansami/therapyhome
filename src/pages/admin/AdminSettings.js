@@ -33,6 +33,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
 import VerifyAdminDialog from '../../components/VerifyAdminDialog';
 import PageHeader, { PageShell } from '../../components/PageHeader';
 import { useColorMode } from '../../context/ColorModeContext';
@@ -93,7 +94,7 @@ const AdminSettings = () => {
         try {
             const { data } = await axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`);
             setSettings(data);
-            setDraft({ consultationFee: String(data.consultationFee), requireOtp: { ...data.requireOtp } });
+            setDraft({ consultationFee: String(data.consultationFee), requireOtp: { ...data.requireOtp }, payrollPolicy: { ...data.payrollPolicy } });
         } catch (err) {
             setSettingsFeedback({ severity: 'error', text: 'Could not load settings.' });
         }
@@ -104,6 +105,7 @@ const AdminSettings = () => {
     const settingsDirty = !!settings && !!draft && (
         Number(draft.consultationFee) !== settings.consultationFee
         || Object.keys(draft.requireOtp).some((k) => draft.requireOtp[k] !== settings.requireOtp[k])
+        || Object.keys(draft.payrollPolicy || {}).some((k) => Number(draft.payrollPolicy[k]) !== settings.payrollPolicy[k])
     );
 
     const handleSaveSettings = () => {
@@ -118,9 +120,10 @@ const AdminSettings = () => {
             run: async ({ password, adminKey }) => {
                 const { data } = await axios.put(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`, {
                     password, adminKey, consultationFee: fee, requireOtp: draft.requireOtp,
+                    payrollPolicy: Object.fromEntries(Object.entries(draft.payrollPolicy).map(([k, v]) => [k, Number(v)])),
                 });
                 setSettings(data.settings);
-                setDraft({ consultationFee: String(data.settings.consultationFee), requireOtp: { ...data.settings.requireOtp } });
+                setDraft({ consultationFee: String(data.settings.consultationFee), requireOtp: { ...data.settings.requireOtp }, payrollPolicy: { ...data.settings.payrollPolicy } });
                 setSettingsFeedback({ severity: 'success', text: 'Settings saved.' });
             },
         });
@@ -425,12 +428,40 @@ const AdminSettings = () => {
                             />
                         )}
                         <Stack direction="row" spacing={1} sx={{ mt: 3 }} justifyContent="flex-end">
-                            <Button onClick={() => settings && setDraft({ consultationFee: String(settings.consultationFee), requireOtp: { ...settings.requireOtp } })} disabled={!settingsDirty}>Reset</Button>
+                            <Button onClick={() => settings && setDraft({ consultationFee: String(settings.consultationFee), requireOtp: { ...settings.requireOtp }, payrollPolicy: { ...settings.payrollPolicy } })} disabled={!settingsDirty}>Reset</Button>
                             <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty}>Save settings</Button>
                         </Stack>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-                            Saves both the verification choices and the fee. Needs your admin password and admin key.
+                            Saves the verification choices, the fee and the salary deduction policy. Needs your admin password and admin key.
                         </Typography>
+                    </SectionCard>
+                </Grid>
+
+                <Grid item xs={12}>
+                    <SectionCard
+                        icon={PaymentsOutlinedIcon}
+                        title="Salary deductions"
+                        description="Used by Pay Salary to suggest deductions. One day of pay = basic salary ÷ working days per month. Saved with the button above."
+                    >
+                        {draft?.payrollPolicy && (
+                            <Grid container spacing={2}>
+                                {[
+                                    ['workingDaysPerMonth', 'Working days per month', 'Divides basic salary into one day of pay.', 1, 31, 1],
+                                    ['halfDayFraction', 'Half day counts as', 'Fraction of a day, e.g. 0.5.', 0, 1, 0.25],
+                                    ['latesPerDayDeduction', 'Late arrivals per day of pay', 'Every N lates deduct one day.', 1, 31, 1],
+                                    ['sandwichDays', 'Days per sandwiched weekend', 'Absent before and after a weekend counts the weekend too.', 0, 7, 1],
+                                ].map(([key, label, help, min, max, step]) => (
+                                    <Grid item xs={12} sm={6} md={3} key={key}>
+                                        <TextField
+                                            fullWidth type="number" label={label} helperText={help}
+                                            value={draft.payrollPolicy[key]}
+                                            inputProps={{ min, max, step }}
+                                            onChange={(e) => setDraft((d) => ({ ...d, payrollPolicy: { ...d.payrollPolicy, [key]: e.target.value } }))}
+                                        />
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        )}
                     </SectionCard>
                 </Grid>
             </Grid>

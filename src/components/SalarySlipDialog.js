@@ -7,6 +7,7 @@ import html2pdf from 'html2pdf.js';
 import stampImage from '../assets/stamp.png';
 import signatureImg from '../assets/signofadmin.png';
 import appIcon from '../assets/logo.png';
+import { typeLabel } from '../utils/payroll';
 
 // --- Style Definitions (No Changes) ---
 const salarySlipStyle = { fontFamily: 'Arial, sans-serif', fontSize: '10px', color: '#333', padding: '20px', width: '8.5in', margin: '0 auto', backgroundColor: 'white', border: '1px solid #ddd', boxSizing: 'border-box' };
@@ -175,18 +176,23 @@ const SalarySlipDialog = ({ open, onClose, data = {} }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td style={tdStyle}>Base Salary</td>
-                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.baseSalary || 0).toFixed(2)}</td>
-                                            <td style={tdStyle}>Deductions</td>
-                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.deductions || 0).toFixed(2)}</td>
-                                        </tr>
-                                        <tr>
-                                            <td style={tdStyle}>Bonus</td>
-                                            <td style={{ ...tdStyle, textAlign: 'right' }}>{parseFloat(currentData.bonus || 0).toFixed(2)}</td>
-                                            <td style={tdStyle}></td>
-                                            <td style={{ ...tdStyle, textAlign: 'right' }}></td>
-                                        </tr>
+                                        {/* Earnings on the left; each deduction row (attendance policy or manual) on the right. */}
+                                        {(() => {
+                                            const earnings = [['Base Salary', currentData.baseSalary], ['Bonus', currentData.bonus]];
+                                            const items = Array.isArray(currentData.deductionItems) ? currentData.deductionItems : [];
+                                            const deductionLines = items.length
+                                                ? items.map((i) => [`${typeLabel(i.type)}${i.count ? ` (${i.count})` : ''}${i.note ? ` – ${i.note}` : ''}`, i.amount])
+                                                : [['Deductions', currentData.deductions]];
+                                            const rows = Math.max(earnings.length, deductionLines.length);
+                                            return Array.from({ length: rows }, (_, n) => (
+                                                <tr key={n}>
+                                                    <td style={tdStyle}>{earnings[n] ? earnings[n][0] : ''}</td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>{earnings[n] ? parseFloat(earnings[n][1] || 0).toFixed(2) : ''}</td>
+                                                    <td style={tdStyle}>{deductionLines[n] ? deductionLines[n][0] : ''}</td>
+                                                    <td style={{ ...tdStyle, textAlign: 'right' }}>{deductionLines[n] ? parseFloat(deductionLines[n][1] || 0).toFixed(2) : ''}</td>
+                                                </tr>
+                                            ));
+                                        })()}
                                         <tr style={{ fontWeight: 'bold' }}>
                                             <td style={tdStyle}>Gross Salary</td>
                                             <td style={{ ...tdStyle, textAlign: 'right' }}>{grossSalary.toFixed(2)}</td>

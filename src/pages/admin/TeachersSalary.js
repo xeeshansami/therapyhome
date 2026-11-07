@@ -22,13 +22,22 @@ import {
   FormLabel,
   Divider,
   InputAdornment,
-  Avatar // Import Avatar component
+  Avatar, // Import Avatar component
+  IconButton,
+  MenuItem,
+  Select,
+  InputLabel,
+  Stack,
 } from '@mui/material';
 import axios from 'axios';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SalarySlipDialog from '../../components/SalarySlipDialog';
 import { isUnpaidIntern } from '../../utils/staffForm';
+import { useSelector } from 'react-redux';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { DEDUCTION_TYPES, DEFAULT_PAYROLL_POLICY, suggestedAmount, ruleText, totalDeductions, dailyRate } from '../../utils/payroll';
 
 // --- Helper Components & Functions ---
 const CustomPopup = ({ open, success, message, onConfirm, onClose }) => {
@@ -91,7 +100,15 @@ const TeachersSalary = () => {
 
   // --- API & Data Fetching ---
   const API_BASE_URL = process.env.REACT_APP_BASE_URL;
-  const SCHOOL_ID = '68795ab802f2887382d217b0';
+  const { currentUser } = useSelector((s) => s.user);
+  const SCHOOL_ID = currentUser?._id || '68795ab802f2887382d217b0';
+  // Deduction policy from Settings (defaults until it loads).
+  const [policy, setPolicy] = useState(DEFAULT_PAYROLL_POLICY);
+  useEffect(() => {
+    axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${SCHOOL_ID}/settings`)
+      .then(({ data }) => data?.payrollPolicy && setPolicy({ ...DEFAULT_PAYROLL_POLICY, ...data.payrollPolicy }))
+      .catch(() => {});
+  }, [SCHOOL_ID]);
 
   const fetchNextSlipNo = async () => {
     try {
@@ -178,6 +195,7 @@ const TeachersSalary = () => {
           baseSalary: baseSalary,
           bonus: '',
           deductions: '',
+          deductionItems: [],
           netSalary: baseSalary,
           paidAmount: baseSalary,
           remark: '',
@@ -202,6 +220,36 @@ const TeachersSalary = () => {
     });
   };
 
+  // --- Deduction rows: amounts follow the policy and stay editable ---
+  const applyDeductionItems = (items) => {
+    setState(prev => {
+      const total = totalDeductions(items);
+      const details = { ...prev.salaryDetails, deductionItems: items, deductions: items.length ? String(total) : prev.salaryDetails.deductions };
+      const net = calculateNetSalary(details);
+      return { ...prev, salaryDetails: { ...details, netSalary: net, paidAmount: net }, errors: {} };
+    });
+  };
+
+  const addDeductionRow = () => {
+    const base = state.salaryDetails.baseSalary;
+    applyDeductionItems([...(state.salaryDetails.deductionItems || []), { type: 'absent', count: 1, amount: suggestedAmount('absent', 1, base, policy), note: '' }]);
+  };
+
+  const updateDeductionRow = (index, field, value) => {
+    const base = state.salaryDetails.baseSalary;
+    const items = (state.salaryDetails.deductionItems || []).map((row, i) => {
+      if (i !== index) return row;
+      const next = { ...row, [field]: value };
+      // Changing the type or count re-applies the policy; typing an amount overrides it.
+      if ((field === 'type' || field === 'count') && next.type !== 'other') next.amount = suggestedAmount(next.type, next.count, base, policy);
+      if (field === 'type' && value === 'other') { next.count = 0; next.amount = ''; }
+      return next;
+    });
+    applyDeductionItems(items);
+  };
+
+  const removeDeductionRow = (index) => applyDeductionItems((state.salaryDetails.deductionItems || []).filter((_, i) => i !== index));
+
   const handleSaveSalary = async () => {
     const { salaryDetails, selectedTeacher } = state;
     if (salaryDetails.paidAmount === '' || isNaN(parseFloat(salaryDetails.paidAmount))) {
@@ -225,6 +273,8 @@ const TeachersSalary = () => {
       baseSalary: salaryDetails.baseSalary,
       bonus: parseFloat(salaryDetails.bonus) || 0,
       deductions: parseFloat(salaryDetails.deductions) || 0,
+      // The server totals these rows and works out the net itself.
+      deductionItems: (salaryDetails.deductionItems || []).map((r) => ({ type: r.type, count: Number(r.count) || 0, amount: Number(r.amount) || 0, note: r.note || '' })),
       netSalary: salaryDetails.netSalary,
       isPaid: "1",
       paidAmount: parseFloat(salaryDetails.paidAmount),
@@ -319,7 +369,48 @@ const TeachersSalary = () => {
             <TextField label="Date" type="date" name="date" value={state.salaryDetails.date} onChange={handleSalaryDetailChange} InputLabelProps={{ shrink: true }} />
             <TextField label="Basic Salary" value={state.salaryDetails.baseSalary} disabled InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000' } }} />
             <TextField label="Bonus" type="number" name="bonus" value={state.salaryDetails.bonus} onChange={handleSalaryDetailChange} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} />
-            <TextField label="Deductions" type="number" name="deductions" value={state.salaryDetails.deductions} onChange={handleSalaryDetailChange} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} />
+            <Box sx={{ border: (t) => `1px solid ${t.palette.divider}`, borderRadius: '12px', p: 2 }}>
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700 }}>Attendance deductions</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    1 day of pay = PKR {Math.round(dailyRate(state.salaryDetails.baseSalary, policy)).toLocaleString()} (basic ÷ {policy.workingDaysPerMonth} days, set in Settings)
+                  </Typography>
+                </Box>
+                <Button size="small" startIcon={<AddIcon />} onClick={addDeductionRow}>Add deduction</Button>
+              </Stack>
+              {(state.salaryDetails.deductionItems || []).map((row, i) => {
+                const meta = DEDUCTION_TYPES.find((t) => t.value === row.type) || DEDUCTION_TYPES[0];
+                return (
+                  <Stack key={i} direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'flex-start' }} sx={{ mt: 1.5 }}>
+                    <FormControl size="small" sx={{ minWidth: 170 }}>
+                      <InputLabel id={`ded-type-${i}`}>Type</InputLabel>
+                      <Select labelId={`ded-type-${i}`} label="Type" value={row.type} onChange={(e) => updateDeductionRow(i, 'type', e.target.value)}>
+                        {DEDUCTION_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                    {row.type === 'other' ? (
+                      <TextField size="small" label="Reason" value={row.note} onChange={(e) => updateDeductionRow(i, 'note', e.target.value)} sx={{ flex: 1 }} />
+                    ) : (
+                      <TextField size="small" type="number" label={meta.countLabel} value={row.count} onChange={(e) => updateDeductionRow(i, 'count', e.target.value)}
+                        inputProps={{ min: 0, step: 1 }} helperText={ruleText(row.type, policy)} sx={{ flex: 1 }} />
+                    )}
+                    <TextField size="small" type="number" label="Amount" value={row.amount} onChange={(e) => updateDeductionRow(i, 'amount', e.target.value)}
+                      inputProps={{ min: 0 }} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} sx={{ width: { sm: 160 } }} />
+                    <IconButton aria-label="Remove deduction" color="error" onClick={() => removeDeductionRow(i)}><DeleteOutlineIcon /></IconButton>
+                  </Stack>
+                );
+              })}
+            </Box>
+            <TextField
+              label="Total Deductions"
+              type="number"
+              name="deductions"
+              value={state.salaryDetails.deductions}
+              onChange={handleSalaryDetailChange}
+              InputProps={{ readOnly: (state.salaryDetails.deductionItems || []).length > 0, startAdornment: <InputAdornment position="start">PKR</InputAdornment> }}
+              helperText={(state.salaryDetails.deductionItems || []).length > 0 ? 'Total of the rows above. Edit a row to change it.' : 'Enter an amount, or add deduction rows above.'}
+            />
             <Divider sx={{ my: 1 }} />
             <TextField label="Net Salary" value={state.salaryDetails.netSalary} disabled InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} sx={{ '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: '#000', backgroundColor: '#f0f0f0' } }} />
             <TextField label="Paid Amount" type="number" name="paidAmount" value={state.salaryDetails.paidAmount} onChange={handleSalaryDetailChange} error={!!state.errors.paidAmount} helperText={state.errors.paidAmount} InputProps={{ startAdornment: <InputAdornment position="start">PKR</InputAdornment> }} />

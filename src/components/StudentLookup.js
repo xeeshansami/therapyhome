@@ -139,7 +139,14 @@ const StudentLookup = ({ adminId, onSelect, onClear, selection }) => {
                     options={options}
                     value={selected}
                     inputValue={input}
-                    onInputChange={(_, value, reason) => { if (reason !== 'reset' || value) setInput(value); }}
+                    onInputChange={(_, value, reason) => {
+                        if (reason === 'input' && mode === 'contact') {
+                            // Parent's number: digits only, at most 11 (03XXXXXXXXX).
+                            setInput(value.replace(/\D/g, '').slice(0, 11));
+                            return;
+                        }
+                        if (reason !== 'reset' || value) setInput(value);
+                    }}
                     onChange={handleSelect}
                     filterOptions={(x) => x}
                     getOptionLabel={optionLabel}
@@ -172,7 +179,11 @@ const StudentLookup = ({ adminId, onSelect, onClear, selection }) => {
                             placeholder={config.placeholder}
                             helperText={error || 'Suggestions appear as you type. Pick one to fill in the form.'}
                             error={!!error}
-                            inputProps={{ ...params.inputProps, inputMode: mode === 'contact' ? 'numeric' : 'text' }}
+                            inputProps={{
+                                ...params.inputProps,
+                                inputMode: mode === 'contact' ? 'numeric' : 'text',
+                                ...(mode === 'contact' && !selected ? { pattern: '[0-9]*', type: 'tel', autoComplete: 'off' } : {}),
+                            }}
                             InputProps={{
                                 ...params.InputProps,
                                 startAdornment: <SearchIcon color="action" sx={{ ml: 0.5, mr: 0.5 }} />,
