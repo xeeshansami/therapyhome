@@ -50,6 +50,13 @@ import {
     YAxis,
 } from 'recharts';
 import InvoiceDialog from '../../components/InvoiceDialog';
+import PeriodFilter from '../../components/PeriodFilter';
+import RecordPaymentDialog from '../../components/RecordPaymentDialog';
+import OtpActionDialog from '../../components/OtpActionDialog';
+import Popup from '../../components/Popup';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import AddCardIcon from '@mui/icons-material/AddCard';
+import { useSelector } from 'react-redux';
 
 // Fee type codes already used by the fee portal and the registration flow.
 const FEE_TYPES = [
@@ -120,7 +127,13 @@ const ChartCard = ({ title, subtitle, loading, empty, children }) => (
     </Paper>
 );
 
-const RecordRow = ({ record, onView }) => {
+const PAYMENT_STATUS = [
+    { value: 'all', label: 'All slips' },
+    { value: 'outstanding', label: 'Outstanding only' },
+    { value: 'paid', label: 'Paid in full' },
+];
+
+const RecordRow = ({ record, onView, onPay, onDelete }) => {
     const [open, setOpen] = useState(false);
     const items = Array.isArray(record.lineItems) ? record.lineItems : [];
     const paid = num(record.paidFee);
@@ -153,10 +166,18 @@ const RecordRow = ({ record, onView }) => {
                 <TableCell align="right" sx={{ color: balance > 0 ? 'error.main' : 'success.main', fontWeight: 600 }}>
                     {money(balance)}
                 </TableCell>
-                <TableCell align="center">
+                <TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>
                     <Button size="small" variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => onView(record)}>
                         Slip
                     </Button>
+                    {balance > 0 && (
+                        <IconButton size="small" color="success" onClick={() => onPay(record)} aria-label="Record payment" title="Record payment">
+                            <AddCardIcon fontSize="small" />
+                        </IconButton>
+                    )}
+                    <IconButton size="small" color="error" onClick={() => onDelete(record)} aria-label="Delete invoice" title="Delete invoice">
+                        <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
                 </TableCell>
             </TableRow>
 
@@ -165,7 +186,7 @@ const RecordRow = ({ record, onView }) => {
                     <TableCell sx={{ py: 0, border: 0 }} colSpan={10}>
                         <Collapse in={open} timeout="auto" unmountOnExit>
                             <Box sx={{ my: 2, ml: 6 }}>
-                                <Typography variant="subtitle2" sx={{ mb: 1 }}>Sessions / Services</Typography>
+                                <Typography variant="subtitle2" sx={{ mb: 1 }}>Sessions / Services{num(record.lateFee) > 0 ? ` · Late fee ${money(record.lateFee)}` : ''}</Typography>
                                 <Table size="small">
                                     <TableHead>
                                         <TableRow>
@@ -186,6 +207,12 @@ const RecordRow = ({ record, onView }) => {
                                         ))}
                                     </TableBody>
                                 </Table>
+                                {Array.isArray(record.payments) && record.payments.length > 0 && (
+                                    <Box sx={{ mt: 1.5 }}>
+                                        <Typography variant="subtitle2">Later payments</Typography>
+                                        {record.payments.map((p, i) => <Typography key={i} variant="body2">{p.date}: {money(p.amount)}{p.note ? ` · ${p.note}` : ''}</Typography>)}
+                                    </Box>
+                                )}
                             </Box>
                         </Collapse>
                     </TableCell>
@@ -209,6 +236,12 @@ const FeeRecords = () => {
     const [searchBy, setSearchBy] = useState('rollNum');
     const [searchValue, setSearchValue] = useState('');
     const [feeTypeFilter, setFeeTypeFilter] = useState('All');
+    const [period, setPeriod] = useState({ year: new Date().getFullYear(), month: '' });
+    const [paymentStatus, setPaymentStatus] = useState('all');
+    const [paySlip, setPaySlip] = useState(null);
+    const [deleteSlip, setDeleteSlip] = useState(null);
+    const [popup, setPopup] = useState({ open: false, message: '', success: true });
+    const { currentUser } = useSelector((state) => state.user);
 
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -221,7 +254,7 @@ const FeeRecords = () => {
     const [showInvoice, setShowInvoice] = useState(false);
     const [invoiceData, setInvoiceData] = useState({});
 
-    const runSearch = useCallback(async (value, by, type) => {
+    const runSearch = useCallback(async (value, by, type, when = { year: '', month: '' }, status = 'all') => {
         setLoading(true);
         setError('');
         try {
@@ -229,6 +262,9 @@ const FeeRecords = () => {
                 searchBy: by,
                 searchValue: value,
                 feeTypeFilter: type,
+                year: when.year,
+                month: when.month,
+                paymentStatus: status === 'all' ? undefined : status,
             });
             // The endpoint answers with { message } instead of [] when nothing matches.
             const data = Array.isArray(res.data) ? res.data : [];
@@ -247,9 +283,9 @@ const FeeRecords = () => {
         }
     }, []);
 
-    useEffect(() => { runSearch('', 'rollNum', 'All'); }, [runSearch]);
+    useEffect(() => { runSearch('', 'rollNum', 'All', { year: new Date().getFullYear(), month: '' }); }, [runSearch]);
 
-    const handleSearch = () => runSearch(searchValue.trim(), searchBy, feeTypeFilter);
+    const handleSearch = () => runSearch(searchValue.trim(), searchBy, feeTypeFilter, period, paymentStatus);
 
     const handleView = (record) => {
         setInvoiceData(record);
@@ -299,12 +335,12 @@ const FeeRecords = () => {
             <Box sx={{ mb: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>Fee Records</Typography>
                 <Typography variant="body2" color="text.secondary">
-                    Every fee slip generated for a student, searchable by roll number.
+                    Every fee slip generated for a student. Filter by year and month, record later payments against outstanding balances, or delete an invoice.
                 </Typography>
             </Box>
 
             <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }} flexWrap="wrap" useFlexGap>
                     <FormControl sx={{ minWidth: 180 }}>
                         <InputLabel id="search-by">Search by</InputLabel>
                         <Select labelId="search-by" label="Search by" value={searchBy} onChange={(e) => setSearchBy(e.target.value)}>
@@ -324,6 +360,15 @@ const FeeRecords = () => {
                         <InputLabel id="fee-type">Fee type</InputLabel>
                         <Select labelId="fee-type" label="Fee type" value={feeTypeFilter} onChange={(e) => setFeeTypeFilter(e.target.value)}>
                             {FEE_TYPES.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+
+                    <PeriodFilter value={period} onChange={setPeriod} />
+
+                    <FormControl sx={{ minWidth: 160 }}>
+                        <InputLabel id="pay-status">Payment</InputLabel>
+                        <Select labelId="pay-status" label="Payment" value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)}>
+                            {PAYMENT_STATUS.map((t) => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
                         </Select>
                     </FormControl>
 
@@ -454,7 +499,7 @@ const FeeRecords = () => {
                                 </TableHead>
                                 <TableBody>
                                     {visible.map((record) => (
-                                        <RecordRow key={record._id || record.invoiceID} record={record} onView={handleView} />
+                                        <RecordRow key={record._id || record.invoiceID} record={record} onView={handleView} onPay={setPaySlip} onDelete={setDeleteSlip} />
                                     ))}
                                 </TableBody>
                             </Table>
@@ -476,6 +521,21 @@ const FeeRecords = () => {
             </Paper>
 
             <InvoiceDialog open={showInvoice} onClose={() => setShowInvoice(false)} data={invoiceData} />
+            <RecordPaymentDialog
+                open={!!paySlip} slip={paySlip} onClose={() => setPaySlip(null)}
+                onSaved={(data) => { setPaySlip(null); setPopup({ open: true, message: data.message, success: true }); handleSearch(); }}
+            />
+            <OtpActionDialog
+                open={!!deleteSlip}
+                onClose={() => setDeleteSlip(null)}
+                onSuccess={(result) => { setDeleteSlip(null); setPopup({ open: true, message: result?.message || 'Invoice deleted.', success: true }); handleSearch(); }}
+                adminId={currentUser?._id}
+                actionType="delete"
+                targetType="fee"
+                targetId={deleteSlip?._id}
+                targetName={deleteSlip ? `${deleteSlip.invoiceID} – ${deleteSlip.name}` : ''}
+            />
+            <Popup open={popup.open} message={popup.message} success={popup.success} onClose={() => setPopup((p) => ({ ...p, open: false }))} />
         </Container>
     );
 };

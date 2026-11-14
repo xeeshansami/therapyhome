@@ -6,14 +6,22 @@ import {
     Box, Button, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField,
     FormControl, Select, MenuItem, Avatar, InputLabel, RadioGroup, FormControlLabel, Radio, Chip, Stack,
+    Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
 } from '@mui/material';
+import StaffExtraFields from '../../../components/StaffExtraFields';
+import PeopleMultiSelect from '../../../components/PeopleMultiSelect';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Popup from '../../../components/Popup';
 import OtpActionDialog from '../../../components/OtpActionDialog';
 import ClassMultiSelect from '../../../components/ClassMultiSelect';
 import axios from 'axios';
-import { designationIdFor, isInternTitle, staffRuleError, titleOf, formatTime, internLabel } from '../../../utils/staffForm';
+import {
+    designationIdFor, isInternTitle, staffRuleError, titleOf, formatTime, internLabel,
+    internDurationLabel, joiningDateInput, bankDetailsError, emptyBankDetails,
+} from '../../../utils/staffForm';
+
+const API = process.env.REACT_APP_BASE_URL;
 
 // Shows "N/A" for null/undefined/empty instead of the literal text "undefined".
 const show = (value) => (value === null || value === undefined || value === '' ? 'N/A' : String(value));
@@ -44,7 +52,20 @@ const buildForm = (t, designations = []) => ({
     // Classes taught (older records only have the single teachSclass).
     teachSclasses: ((t.teachSclasses && t.teachSclasses.length) ? t.teachSclasses : (t.teachSclass ? [t.teachSclass] : []))
         .map((c) => String((c && c._id) || c)),
+    joiningDate: joiningDateInput(t),
+    internDuration: t.internDuration || '',
+    internDurationUnit: t.internDurationUnit || '',
+    bankDetails: {
+        ...emptyBankDetails(),
+        ...(t.bankDetails ? {
+            bankName: t.bankDetails.bankName || '', accountTitle: t.bankDetails.accountTitle || '',
+            accountNumber: t.bankDetails.accountNumber || '', iban: t.bankDetails.iban || '',
+        } : {}),
+    },
 });
+
+// Objects (bank details) are compared by value.
+const same = (a, b) => (a && typeof a === 'object' ? JSON.stringify(a) === JSON.stringify(b) : String(a ?? '') === String(b ?? ''));
 
 const TeacherDetails = () => {
     // --- SECTION: Core Component State & Hooks ---
@@ -73,7 +94,59 @@ const TeacherDetails = () => {
     const [timingLoader, setTimingLoader] = useState(true);
 
     // --- OTP-verified update/delete ---
-    const [otpAction, setOtpAction] = useState(null); // { type, payload }
+    const [otpAction, setOtpAction] = useState(null); // { type, payload, impact }
+
+    // --- Assigned students and withdrawal ---
+    const [allStudents, setAllStudents] = useState([]);
+    const [assigned, setAssigned] = useState([]);
+    const [assignedDraft, setAssignedDraft] = useState(null); // ids while editing
+    const [lifecycle, setLifecycle] = useState(null); // { action: 'withdraw'|'reactivate', reason }
+    const [busy, setBusy] = useState(false);
+    const loadAssigned = () => axios.get(`${API}/Teacher/${teacherID}/students`).then(({ data }) => setAssigned(Array.isArray(data) ? data : [])).catch(() => setAssigned([]));
+    useEffect(() => {
+        loadAssigned();
+        if (currentUser?._id) {
+            axios.get(`${API}/AllStudents/${currentUser._id}`).then(({ data }) => setAllStudents(Array.isArray(data) ? data : [])).catch(() => setAllStudents([]));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [teacherID, currentUser?._id]);
+
+    const saveAssigned = async () => {
+        setBusy(true);
+        try {
+            const { data } = await axios.put(`${API}/Teacher/${teacherID}/students`, { studentIds: assignedDraft });
+            setAssigned(data.students || []);
+            setAssignedDraft(null);
+            setPopup({ open: true, message: data.message || 'Assigned students saved.', success: true });
+        } catch (err) {
+            setPopup({ open: true, message: err?.response?.data?.message || 'Could not save the assigned students.', success: false });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const runLifecycle = async () => {
+        setBusy(true);
+        try {
+            const { data } = await axios.post(`${API}/Teacher/${teacherID}/${lifecycle.action}`, lifecycle.action === 'withdraw' ? { reason: lifecycle.reason } : {});
+            setLifecycle(null);
+            setPopup({ open: true, message: data.message, success: true });
+            dispatch(getTeacherDetails(teacherID));
+        } catch (err) {
+            setPopup({ open: true, message: err?.response?.data?.message || 'Could not update the status.', success: false });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const startDelete = async () => {
+        let impact = '';
+        try {
+            const { data } = await axios.get(`${API}/Teacher/${teacherID}/delete-impact`);
+            impact = data.message;
+        } catch (e) { /* the dialog still explains what is kept */ }
+        setOtpAction({ type: 'delete', payload: null, impact });
+    };
 
     // teacherDetails is shared redux state; only trust it once it is this staff member.
     const isLoaded = !!teacherDetails && teacherDetails._id === teacherID;
@@ -152,10 +225,17 @@ const TeacherDetails = () => {
         const current = { ...formData };
         if (isIntern && current.internType === 'unpaid') current.salary = '0';
         const changes = {};
+        if (!isIntern) {
+            current.internDuration = '';
+            current.internDurationUnit = '';
+        }
         Object.keys(current).forEach((k) => {
-            if (String(current[k] ?? '') !== String(original[k] ?? '')) changes[k] = current[k];
+            if (!same(current[k], original[k])) changes[k] = current[k];
         });
-        const ruleProblem = staffRuleError({ designationTitle: selectedTitle, internType: current.internType, salary: current.salary, scheduledCheckIn: current.scheduledCheckIn, scheduledCheckOut: current.scheduledCheckOut }, { requireSchedule: false });
+        const ruleProblem = staffRuleError({
+            designationTitle: selectedTitle, internType: current.internType, salary: current.salary, scheduledCheckIn: current.scheduledCheckIn, scheduledCheckOut: current.scheduledCheckOut,
+            internDuration: current.internDuration, internDurationUnit: current.internDurationUnit,
+        }, { requireSchedule: false }) || bankDetailsError(current.bankDetails);
         if (ruleProblem) {
             setPopup({ open: true, message: ruleProblem, success: false });
             return;
@@ -216,13 +296,27 @@ const TeacherDetails = () => {
                     <div>
                         <Typography variant="h4" gutterBottom>{teacherDetails?.name || 'Teacher Details'}</Typography>
                         <Typography variant="h6" color="text.secondary">{teacherDetails?.role || 'No designation'}</Typography>
-                        {internLabel(teacherDetails) && <Chip size="small" label={internLabel(teacherDetails)} color={teacherDetails.internType === 'unpaid' ? 'default' : 'primary'} sx={{ mt: 0.5 }} />}
+                        <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                            {internLabel(teacherDetails) && <Chip size="small" label={`${internLabel(teacherDetails)}${internDurationLabel(teacherDetails) ? ` · ${internDurationLabel(teacherDetails)}` : ''}`} color={teacherDetails.internType === 'unpaid' ? 'default' : 'primary'} />}
+                            <Chip size="small" label={teacherDetails?.status === 'withdrawn' ? 'Withdrawn' : 'Active'} color={teacherDetails?.status === 'withdrawn' ? 'warning' : 'success'} variant="outlined" />
+                        </Stack>
                     </div>
                 </Box>
                 {!isEditMode && (
-                    <Button variant="contained" onClick={() => setIsEditMode(true)}>Edit Details</Button>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                        {teacherDetails?.status === 'withdrawn'
+                            ? <Button variant="outlined" color="success" onClick={() => setLifecycle({ action: 'reactivate' })}>Reactivate</Button>
+                            : <Button variant="outlined" color="warning" onClick={() => setLifecycle({ action: 'withdraw', reason: '' })}>Withdraw</Button>}
+                        <Button variant="contained" onClick={() => setIsEditMode(true)}>Edit Details</Button>
+                    </Stack>
                 )}
             </Paper>
+            {teacherDetails?.status === 'withdrawn' && (
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                    Withdrawn{teacherDetails.withdrawnAt ? ` on ${new Date(teacherDetails.withdrawnAt).toLocaleDateString()}` : ''}{teacherDetails.withdrawalReason ? ` — ${teacherDetails.withdrawalReason}` : ''}.
+                    {' '}Not counted in attendance or dashboards and cannot sign in to the app. All history is kept.
+                </Alert>
+            )}
 
             <form onSubmit={(e) => { e.preventDefault(); handleUpdateClick(); }}>
                 <Accordion defaultExpanded>
@@ -364,6 +458,63 @@ const TeacherDetails = () => {
                     </AccordionDetails>
                 </Accordion>
 
+                <Accordion defaultExpanded>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Joining, Internship & Bank Account</Typography></AccordionSummary>
+                    <AccordionDetails>
+                        {isEditMode ? (
+                            <StaffExtraFields
+                                value={formData}
+                                onChange={(next) => setFormData((prev) => ({ ...prev, joiningDate: next.joiningDate, internDuration: next.internDuration, internDurationUnit: next.internDurationUnit, bankDetails: next.bankDetails }))}
+                                isIntern={isIntern}
+                            />
+                        ) : (
+                            <Grid container spacing={2}>
+                                <DetailItem label="Joining Date" value={formData.joiningDate ? new Date(formData.joiningDate).toLocaleDateString() : ''} />
+                                {isIntern && <DetailItem label="Internship Duration" value={internDurationLabel(formData)} />}
+                                <DetailItem label="Bank Name" value={formData.bankDetails?.bankName} />
+                                <DetailItem label="Account Title" value={formData.bankDetails?.accountTitle} />
+                                <DetailItem label="Account Number" value={formData.bankDetails?.accountNumber} />
+                                <DetailItem label="IBAN" value={formData.bankDetails?.iban} />
+                            </Grid>
+                        )}
+                    </AccordionDetails>
+                </Accordion>
+
+                <Accordion defaultExpanded>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Assigned Students ({assigned.length})</Typography></AccordionSummary>
+                    <AccordionDetails>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            In the staff app, this staff member sees and marks sessions only for these students.
+                        </Typography>
+                        {assignedDraft ? (
+                            <>
+                                <PeopleMultiSelect
+                                    options={allStudents}
+                                    value={assignedDraft}
+                                    onChange={setAssignedDraft}
+                                    label="Assigned students"
+                                    subtitle={(st) => st.rollNum}
+                                />
+                                <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
+                                    <Button onClick={() => setAssignedDraft(null)} disabled={busy}>Cancel</Button>
+                                    <Button variant="contained" onClick={saveAssigned} disabled={busy}>{busy ? <CircularProgress size={20} color="inherit" /> : 'Save assigned students'}</Button>
+                                </Stack>
+                            </>
+                        ) : (
+                            <>
+                                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                    {assigned.length === 0 && <Typography color="text.secondary">No students assigned yet.</Typography>}
+                                    {assigned.map((st) => (
+                                        <Chip key={st._id} label={`${st.name}${st.rollNum ? ` (${st.rollNum})` : ''}`} variant="outlined"
+                                            color={st.status === 'withdrawn' ? 'default' : 'primary'} onClick={() => navigate(`/Admin/students/student/${st._id}`)} />
+                                    ))}
+                                </Stack>
+                                <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setAssignedDraft(assigned.map((st) => String(st._id)))}>Manage assigned students</Button>
+                            </>
+                        )}
+                    </AccordionDetails>
+                </Accordion>
+
                 {isEditMode && (
                     <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
                         <Button variant="outlined" color="secondary" onClick={handleCancel}>Cancel</Button>
@@ -374,7 +525,7 @@ const TeacherDetails = () => {
 
             {!isEditMode && (
                 <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button variant="contained" color="error" onClick={() => setOtpAction({ type: 'delete', payload: null })}>Delete Teacher</Button>
+                    <Button variant="contained" color="error" onClick={startDelete}>Delete Staff Member</Button>
                 </Box>
             )}
             <Popup open={popup.open} message={popup.message} success={popup.success} onClose={() => setPopup((p) => ({ ...p, open: false }))} />
@@ -389,7 +540,29 @@ const TeacherDetails = () => {
                 targetId={teacherID}
                 targetName={teacherDetails?.name}
                 payload={otpAction?.payload}
+                impact={otpAction?.impact}
             />
+
+            <Dialog open={!!lifecycle} onClose={() => !busy && setLifecycle(null)} fullWidth maxWidth="xs">
+                <DialogTitle>{lifecycle?.action === 'withdraw' ? `Withdraw ${teacherDetails?.name}?` : `Reactivate ${teacherDetails?.name}?`}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText sx={{ mb: 2 }}>
+                        {lifecycle?.action === 'withdraw'
+                            ? 'They are signed out of the staff app and left out of attendance and dashboard totals. Salary, attendance and session history is kept, and they can be reactivated later.'
+                            : 'They will be active again and can sign in to the staff app.'}
+                    </DialogContentText>
+                    {lifecycle?.action === 'withdraw' && (
+                        <TextField fullWidth label="Reason (optional)" value={lifecycle.reason} inputProps={{ maxLength: 300 }}
+                            onChange={(e) => setLifecycle((l) => ({ ...l, reason: e.target.value }))} />
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setLifecycle(null)} disabled={busy}>Cancel</Button>
+                    <Button variant="contained" color={lifecycle?.action === 'withdraw' ? 'warning' : 'success'} onClick={runLifecycle} disabled={busy}>
+                        {busy ? <CircularProgress size={20} color="inherit" /> : (lifecycle?.action === 'withdraw' ? 'Withdraw' : 'Reactivate')}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 };

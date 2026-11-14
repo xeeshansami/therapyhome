@@ -534,6 +534,22 @@ const InvoiceDialog = ({ open, onClose, data = {} }) => {
                                     </div>
                                 )}
 
+                                {/* Base fee / late fee / other charges / total, for monthly slips that carry them */}
+                                {feeType === '2' && (
+                                    <div className="info-row" style={infoRowStyle}>
+                                        <div className="fee-label" style={feeLabelStyle}>Base Fee:</div>
+                                        <div className="fee-value" style={feeValueStyle}>Rs. {money(sessionSubtotal)}</div>
+                                        <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Late Fee:</div>
+                                        <div className="fee-value" style={{ ...feeValueStyle, color: Number(currentData.lateFee) > 0 ? '#c62828' : undefined }}>Rs. {money(currentData.lateFee || 0)}</div>
+                                        {currentData.billingMonth && (
+                                            <>
+                                                <div className="fee-label" style={{ ...feeLabelStyle, marginLeft: '10px' }}>Month:</div>
+                                                <div className="fee-value" style={feeValueStyle}>{currentData.billingMonth}</div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="info-row" style={infoRowStyle}>
                                     <div className="fee-label" style={{ ...feeLabelStyle, fontWeight: 'bold' }}>Net Amount:</div>
                                     <div className="fee-value" style={{ ...feeValueStyle, fontWeight: 'bold' }}>

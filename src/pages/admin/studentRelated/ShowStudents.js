@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button } from '@mui/material';
+import { Button, Chip, Stack, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { getAllStudents } from '../../../redux/studentRelated/studentHandle';
@@ -22,6 +22,7 @@ const ShowStudents = () => {
     const [classes, setClasses] = useState([]);
     const [toDelete, setToDelete] = useState(null); // { id, name }
     const [message, setMessage] = useState('');
+    const [view, setView] = useState('active'); // active | withdrawn | all
 
     useEffect(() => {
         dispatch(getAllStudents(currentUser._id));
@@ -32,11 +33,13 @@ const ShowStudents = () => {
 
     const classNameById = useMemo(() => Object.fromEntries(classes.map((c) => [c._id, c.sclassName])), [classes]);
 
-    const rows = useMemo(() => (Array.isArray(studentsList) ? studentsList : []).map((s) => ({
+    const allStudents = useMemo(() => (Array.isArray(studentsList) ? studentsList : []), [studentsList]);
+    const withdrawnCount = allStudents.filter((s) => s.status === 'withdrawn').length;
+    const rows = useMemo(() => allStudents.filter((s) => (view === 'all' ? true : view === 'withdrawn' ? s.status === 'withdrawn' : s.status !== 'withdrawn')).map((s) => ({
         ...s,
         classNames: (s.className || []).map((c) => classNameById[idOf(c)]).filter(Boolean).join(', ')
             || (s.sclassName && (s.sclassName.sclassName || classNameById[idOf(s.sclassName)])) || '',
-    })), [studentsList, classNameById]);
+    })), [allStudents, classNameById, view]);
 
     // Deleting archives the student and keeps all fee slips (see the server's verified flow).
     const handleDeleted = (result) => {
@@ -47,7 +50,7 @@ const ShowStudents = () => {
 
     const columns = [
         { id: 'rollNum', label: 'Roll No.', highlight: true },
-        { id: 'name', label: 'Student', minWidth: 160 },
+        { id: 'name', label: 'Student', minWidth: 160, render: (r) => (r.status === 'withdrawn' ? <Stack direction="row" spacing={1} alignItems="center"><span>{r.name}</span><Chip size="small" color="warning" label="Withdrawn" /></Stack> : r.name) },
         { id: 'parentName', label: 'Parent / Guardian', minWidth: 150, render: (r) => r.parentName || '—' },
         { id: 'parentContact', label: 'Contact', render: (r) => r.parentContact || '—' },
         { id: 'classNames', label: 'Classes', minWidth: 160, render: (r) => r.classNames || '—' },
@@ -59,8 +62,17 @@ const ShowStudents = () => {
             <PageHeader
                 icon={SchoolOutlinedIcon}
                 title="Students"
-                subtitle={`${rows.length} admitted student${rows.length === 1 ? '' : 's'}`}
-                actions={<Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/addstudents')}>Add Student</Button>}
+                subtitle={`${rows.length} ${view === 'withdrawn' ? 'withdrawn' : 'admitted'} student${rows.length === 1 ? '' : 's'}${view === 'active' && withdrawnCount ? ` · ${withdrawnCount} withdrawn hidden` : ''}`}
+                actions={(
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <ToggleButtonGroup size="small" exclusive value={view} onChange={(e, v) => v && setView(v)}>
+                            <ToggleButton value="active">Active</ToggleButton>
+                            <ToggleButton value="withdrawn">Withdrawn</ToggleButton>
+                            <ToggleButton value="all">All</ToggleButton>
+                        </ToggleButtonGroup>
+                        <Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/addstudents')}>Add Student</Button>
+                    </Stack>
+                )}
             />
             <DataTable
                 columns={columns}

@@ -11,7 +11,9 @@ import {
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import axios from 'axios';
 import imageCompression from 'browser-image-compression';
-import { isInternTitle, staffRuleError, titleOf, to24h } from '../../../utils/staffForm';
+import { isInternTitle, staffRuleError, titleOf, to24h, bankDetailsError, emptyBankDetails } from '../../../utils/staffForm';
+import StaffExtraFields from '../../../components/StaffExtraFields';
+import PeopleMultiSelect from '../../../components/PeopleMultiSelect';
 import PageHeader from '../../../components/PageHeader';
 import ClassMultiSelect from '../../../components/ClassMultiSelect';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
@@ -64,6 +66,12 @@ const AddTeacher = () => {
     // Classes taught; the one chosen on the previous screen is pre-selected.
     const [classIds, setClassIds] = useState(routeClassID ? [routeClassID] : []);
     const classID = classIds[0] || '';
+    const [extra, setExtra] = useState({
+        joiningDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()),
+        internDuration: '', internDurationUnit: '', bankDetails: emptyBankDetails(),
+    });
+    const [students, setStudents] = useState([]);
+    const [assignedStudents, setAssignedStudents] = useState([]);
     const [scheduledCheckIn, setScheduledCheckIn] = useState('');
     const [scheduledCheckOut, setScheduledCheckOut] = useState('');
     const selectedTitle = titleOf(designationId, designations) || (designationId === designationID ? designationTitle : '');
@@ -101,6 +109,13 @@ const AddTeacher = () => {
             .then(({ data }) => setDesignations(Array.isArray(data) ? data : []))
             .catch((err) => console.error("Designations fetch error:", err.message));
     }, []);
+
+    useEffect(() => {
+        if (!currentUser?._id) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/AllStudents/${currentUser._id}`)
+            .then(({ data }) => setStudents(Array.isArray(data) ? data.filter((st) => st.status !== 'withdrawn') : []))
+            .catch(() => setStudents([]));
+    }, [currentUser?._id]);
 
     useEffect(() => {
         if (!currentUser?._id) return;
@@ -190,7 +205,10 @@ const AddTeacher = () => {
         setCnicError(numericValue.length > 0 && numericValue.length < 13 ? "CNIC must be 13 digits long." : "");
     };
 
-    const ruleError = staffRuleError({ designationTitle: selectedTitle, internType, salary, scheduledCheckIn, scheduledCheckOut });
+    const ruleError = staffRuleError({
+        designationTitle: selectedTitle, internType, salary, scheduledCheckIn, scheduledCheckOut,
+        internDuration: extra.internDuration, internDurationUnit: extra.internDurationUnit,
+    }) || bankDetailsError(extra.bankDetails) || (!extra.joiningDate ? 'Enter the joining date.' : '');
 
     const isFormValid = () => {
         const cnicDigits = cnic.replace(/[^\d]/g, '');
@@ -214,6 +232,11 @@ const AddTeacher = () => {
             designation: designationId,
             internType: isIntern ? internType : '',
             scheduledCheckIn, scheduledCheckOut,
+            joiningDate: extra.joiningDate,
+            internDuration: isIntern ? extra.internDuration : '',
+            internDurationUnit: isIntern ? extra.internDurationUnit : '',
+            bankDetails: extra.bankDetails,
+            assignedStudents,
             school: currentUser?._id,
             teachSclass: classIds[0] || UNASSIGNED_CLASS_ID,
             teachSclasses: classIds,
@@ -283,6 +306,21 @@ const AddTeacher = () => {
                                     required={isTeacher}
                                     error={isTeacher && classIds.length === 0 ? 'Choose at least one class for a teacher.' : ''}
                                 />
+                            </Box>
+
+                            <Box sx={{ mb: 2, gridColumn: '1 / -1' }}>
+                                <PeopleMultiSelect
+                                    options={students}
+                                    value={assignedStudents}
+                                    onChange={setAssignedStudents}
+                                    label="Assigned students (optional)"
+                                    helperText="In the staff app this staff member sees only the students assigned here."
+                                    subtitle={(st) => st.rollNum}
+                                />
+                            </Box>
+
+                            <Box sx={{ gridColumn: '1 / -1' }}>
+                                <StaffExtraFields value={extra} onChange={setExtra} isIntern={isIntern} />
                             </Box>
 
                             <FormControl fullWidth required sx={{ mb: 2 }}>

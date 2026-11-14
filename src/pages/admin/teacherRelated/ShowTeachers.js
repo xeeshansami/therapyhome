@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Button, Chip, Stack, Typography } from '@mui/material';
+import { Avatar, Button, Chip, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import { getAllTeachers } from '../../../redux/teacherRelated/teacherHandle';
@@ -19,6 +19,7 @@ const ShowTeachers = () => {
     const { currentUser } = useSelector((state) => state.user);
     const [toDelete, setToDelete] = useState(null); // { id, name }
     const [message, setMessage] = useState('');
+    const [view, setView] = useState('active'); // active | withdrawn | all
 
     // Signs the staff member out of the app; they sign in again with the shared first-login password.
     const resetAppPassword = async (r) => {
@@ -33,12 +34,14 @@ const ShowTeachers = () => {
 
     useEffect(() => { dispatch(getAllTeachers(currentUser._id)); }, [currentUser._id, dispatch]);
 
-    const rows = useMemo(() => (Array.isArray(teachersList) ? teachersList : []).map((t) => ({
+    const allStaff = useMemo(() => (Array.isArray(teachersList) ? teachersList : []), [teachersList]);
+    const withdrawnCount = allStaff.filter((t) => t.status === 'withdrawn').length;
+    const rows = useMemo(() => allStaff.filter((t) => (view === 'all' ? true : view === 'withdrawn' ? t.status === 'withdrawn' : t.status !== 'withdrawn')).map((t) => ({
         ...t,
         designationText: t.role || '',
         // Non-teaching staff are filed under a placeholder class; it is not their designation.
         classText: ((t.teachSclasses && t.teachSclasses.length) ? t.teachSclasses : (String(t.role || '').toLowerCase() === 'teacher' && t.teachSclass ? [t.teachSclass] : [])).map((c) => c && c.sclassName).filter(Boolean).join(', '),
-    })), [teachersList]);
+    })), [allStaff, view]);
 
     const handleDeleted = (result) => {
         setToDelete(null);
@@ -62,6 +65,7 @@ const ShowTeachers = () => {
                 <Stack direction="row" spacing={1} alignItems="center">
                     <span>{r.role || '—'}</span>
                     {internLabel(r) && <Chip size="small" variant="outlined" color={r.internType === 'unpaid' ? 'default' : 'primary'} label={internLabel(r)} />}
+                    {r.status === 'withdrawn' && <Chip size="small" color="warning" label="Withdrawn" />}
                 </Stack>
             ),
         },
@@ -79,8 +83,17 @@ const ShowTeachers = () => {
             <PageHeader
                 icon={BadgeOutlinedIcon}
                 title="Staff"
-                subtitle={`${rows.length} staff member${rows.length === 1 ? '' : 's'}`}
-                actions={<Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/teachers/chooseclass')}>Add Staff</Button>}
+                subtitle={`${rows.length} staff member${rows.length === 1 ? '' : 's'}${view === 'active' && withdrawnCount ? ` · ${withdrawnCount} withdrawn hidden` : ''}`}
+                actions={(
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <ToggleButtonGroup size="small" exclusive value={view} onChange={(e, v) => v && setView(v)}>
+                            <ToggleButton value="active">Active</ToggleButton>
+                            <ToggleButton value="withdrawn">Withdrawn</ToggleButton>
+                            <ToggleButton value="all">All</ToggleButton>
+                        </ToggleButtonGroup>
+                        <Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/teachers/chooseclass')}>Add Staff</Button>
+                    </Stack>
+                )}
             />
             <DataTable
                 columns={columns}

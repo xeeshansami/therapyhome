@@ -122,8 +122,9 @@ const AdminHomePage = () => {
     };
 
     const figures = useMemo(() => {
-        const students = list(studentsList);
-        const staff = list(teachersList);
+        // Withdrawn students and staff keep their history but are not counted as active.
+        const students = list(studentsList).filter((s) => s.status !== 'withdrawn');
+        const staff = list(teachersList).filter((t) => t.status !== 'withdrawn');
         // Older records may still be consultant students; new consultations are counted separately.
         const legacyConsultations = students.filter((s) => s.isConsultantStudent).length;
         const consultations = legacyConsultations + (pendingConsultations || 0);

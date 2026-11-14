@@ -61,6 +61,7 @@ export const buildStudentForm = (s = {}) => ({
     schoolDetails: s.schoolDetails || '',
     ...Object.fromEntries(STUDENT_BOOLEAN_FIELDS.map((k) => [k, !!s[k]])),
     className: (Array.isArray(s.className) ? s.className : []).map(idOf).filter(Boolean),
+    assignedStaff: (Array.isArray(s.assignedStaff) ? s.assignedStaff : []).map((v) => String(idOf(v))).filter(Boolean),
     feePlan: (Array.isArray(s.feePlan) ? s.feePlan : []).map((l) => ({
         key: feeLineKey(),
         sclassName: idOf(l.sclassName) || '',

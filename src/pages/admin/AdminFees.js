@@ -112,6 +112,10 @@ const AdminFees = () => {
       netAmount: 0,
       balance: 0,
       lineItems: [],
+      // Monthly slips: the month being billed and the late fee the school's policy adds.
+      billingMonth: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()).slice(0, 7),
+      lateFee: 0,
+      dueBy: null,
     },
   });
 
@@ -282,7 +286,8 @@ const AdminFees = () => {
 
   // Recompute net/balance from whatever the fee details now hold.
   const withTotals = (prev, nextFeeDetails, isMonthly) => {
-    const newNetAmount = calculateNetAmount(nextFeeDetails.lineItems, isMonthly, prev.selectedStudent);
+    const newNetAmount = calculateNetAmount(nextFeeDetails.lineItems, isMonthly, prev.selectedStudent)
+      + (isMonthly ? toMoney(nextFeeDetails.lateFee) : 0);
     const paidAmount = toMoney(nextFeeDetails.paid);
     return {
       ...prev,
@@ -296,6 +301,21 @@ const AdminFees = () => {
     const { name, value } = e.target;
     setState(prev => withTotals(prev, { ...prev.feeDetails, [name]: value }, prev.isMonthlyFee));
   };
+
+  // Late fee preview from the school's fee policy (the server applies the same rule when saving).
+  const { date: feeDate, billingMonth: feeBillingMonth } = state.feeDetails;
+  useEffect(() => {
+    if (!state.isMonthlyFee || !feeDate || !feeBillingMonth) return undefined;
+    let cancelled = false;
+    axios.get(`${process.env.REACT_APP_BASE_URL}/fees/late-fee`, { params: { date: feeDate, billingMonth: feeBillingMonth } })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setState(prev => withTotals(prev, { ...prev.feeDetails, lateFee: data.lateFee || 0, dueBy: data.dueBy }, prev.isMonthlyFee));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.isMonthlyFee, feeDate, feeBillingMonth]);
 
   const handleLineItemChange = (key, field, value) => {
     setState(prev => {
@@ -425,6 +445,7 @@ const AdminFees = () => {
       paidFee: feeDetails.paid,
       isConsultancyOrIsRegistrationOrMonthly: isMonthlyFee ? '2' : '1', // 2=Monthly, 1=Admission/Other
       invoiceID: generatedInvoiceNo,
+      ...(isMonthlyFee ? { billingMonth: feeDetails.billingMonth } : {}),
       lineItems: lineItemsPayload,
       classBreakdown: lineItemsPayload, // kept for any existing consumer of this field
     };
@@ -455,7 +476,8 @@ const AdminFees = () => {
   useEffect(() => { fetchStudents(); fetchAllClasses(); }, []);
 
   const { lineItems } = state.feeDetails;
-  const netFee = state.isMonthlyFee ? sumLineItems(lineItems) : state.feeDetails.netAmount;
+  const lateFee = state.isMonthlyFee ? toMoney(state.feeDetails.lateFee) : 0;
+  const netFee = state.isMonthlyFee ? sumLineItems(lineItems) + lateFee : state.feeDetails.netAmount;
 
   // --- Render Method ---
   return (
@@ -615,7 +637,20 @@ const AdminFees = () => {
                   <Typography color="error" variant="body2">{state.errors.lineItems}</Typography>
                 )}
 
-                <Paper variant="outlined" sx={{ p: 2, backgroundColor: '#fafafa' }}>
+                <TextField
+                  label="Billing month" type="month" name="billingMonth" value={state.feeDetails.billingMonth}
+                  onChange={handleFeeDetailChange} InputLabelProps={{ shrink: true }}
+                  helperText={state.feeDetails.dueBy ? `Due by ${state.feeDetails.dueBy}. Paying later adds the late fee set by the super admin.` : ' '}
+                />
+                <Paper variant="outlined" sx={{ p: 2, backgroundColor: 'action.hover' }}>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2">Base fee (sessions)</Typography>
+                    <Typography variant="body2">Rs. {sumLineItems(lineItems).toLocaleString()}</Typography>
+                  </Stack>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" color={lateFee > 0 ? 'error.main' : 'text.secondary'}>Late fee</Typography>
+                    <Typography variant="body2" color={lateFee > 0 ? 'error.main' : 'text.secondary'}>Rs. {lateFee.toLocaleString()}</Typography>
+                  </Stack>
                   <Stack direction="row" justifyContent="space-between" alignItems="baseline">
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', textTransform: 'uppercase' }}>
                       Net Fee

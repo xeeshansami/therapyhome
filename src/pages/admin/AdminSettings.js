@@ -36,6 +36,7 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
 import PhoneIphoneOutlinedIcon from '@mui/icons-material/PhoneIphoneOutlined';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
+import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
 import VerifyAdminDialog from '../../components/VerifyAdminDialog';
 import PageHeader, { PageShell } from '../../components/PageHeader';
 import { useColorMode } from '../../context/ColorModeContext';
@@ -92,6 +93,17 @@ const toDraft = (data) => ({
         halfDayMinHours: String(data.attendancePolicy.halfDayMinHours),
         maxAccuracyMeters: String(data.attendancePolicy.maxAccuracyMeters),
         weekendDays: [...(data.attendancePolicy.weekendDays || [])],
+        lateArrivalTime: data.attendancePolicy.lateArrivalTime || '09:00',
+        lateRule: data.attendancePolicy.lateRule || 'staffSchedule',
+        halfDayAfterTime: data.attendancePolicy.halfDayAfterTime ?? '11:00',
+    },
+    feePolicy: {
+        dueStartDay: String((data.feePolicy && data.feePolicy.dueStartDay) ?? 1),
+        dueEndDay: String((data.feePolicy && data.feePolicy.dueEndDay) ?? 7),
+        lateFeeEnabled: !!(data.feePolicy && data.feePolicy.lateFeeEnabled),
+        lateFeeType: (data.feePolicy && data.feePolicy.lateFeeType) || 'fixed',
+        lateFeeAmount: String((data.feePolicy && data.feePolicy.lateFeeAmount) ?? 0),
+        lateFeeMax: String((data.feePolicy && data.feePolicy.lateFeeMax) ?? 0),
     },
     staffDefaultPassword: '',
 });
@@ -100,6 +112,8 @@ const AdminSettings = () => {
     const { mode, primary, setMode, setPrimary } = useColorMode();
     const { currentUser } = useSelector((state) => state.user);
     const dispatch = useDispatch();
+    // Co-admins can see school settings but only the super admin can change them (enforced by the API too).
+    const isSuper = currentUser?.adminRole !== 'admin';
 
     const [form, setForm] = useState({ name: '', email: '', schoolName: '' });
     const [password, setPassword] = useState('');
@@ -132,6 +146,7 @@ const AdminSettings = () => {
         || Object.keys(draft.payrollPolicy || {}).some((k) => Number(draft.payrollPolicy[k]) !== settings.payrollPolicy[k])
         || JSON.stringify(toDraft(settings).geofence) !== JSON.stringify(draft.geofence)
         || JSON.stringify(toDraft(settings).attendancePolicy) !== JSON.stringify(draft.attendancePolicy)
+        || JSON.stringify(toDraft(settings).feePolicy) !== JSON.stringify(draft.feePolicy)
         || draft.staffDefaultPassword !== ''
     );
     const [locating, setLocating] = useState(false);
@@ -178,15 +193,33 @@ const AdminSettings = () => {
         const attendancePolicy = {
             lateGraceMinutes: Number(ap.lateGraceMinutes), halfDayMinHours: Number(ap.halfDayMinHours),
             maxAccuracyMeters: Number(ap.maxAccuracyMeters), weekendDays: ap.weekendDays,
+            lateArrivalTime: ap.lateArrivalTime, lateRule: ap.lateRule, halfDayAfterTime: ap.halfDayAfterTime,
         };
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(ap.lateArrivalTime || '')) {
+            setSettingsFeedback({ severity: 'error', text: 'Enter the late arrival time.' });
+            return;
+        }
+        const fp = draft.feePolicy;
+        const feePolicy = {
+            dueStartDay: Number(fp.dueStartDay), dueEndDay: Number(fp.dueEndDay), lateFeeEnabled: fp.lateFeeEnabled,
+            lateFeeType: fp.lateFeeType, lateFeeAmount: Number(fp.lateFeeAmount), lateFeeMax: Number(fp.lateFeeMax || 0),
+        };
+        if (!(feePolicy.dueStartDay >= 1 && feePolicy.dueEndDay <= 28 && feePolicy.dueStartDay <= feePolicy.dueEndDay)) {
+            setSettingsFeedback({ severity: 'error', text: 'Fee payment days must be between 1 and 28, and the first day on or before the last.' });
+            return;
+        }
+        if (feePolicy.lateFeeEnabled && !(feePolicy.lateFeeAmount > 0)) {
+            setSettingsFeedback({ severity: 'error', text: 'Enter a late fee amount above zero, or turn the late fee off.' });
+            return;
+        }
         setVerify({
             title: 'Save settings',
             description: 'Settings change how records are protected, so they need your admin password and admin key.',
-            run: async ({ password, adminKey }) => {
+            run: async (secrets) => {
                 const { data } = await axios.put(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}/settings`, {
-                    password, adminKey, consultationFee: fee, requireOtp: draft.requireOtp,
+                    ...secrets, consultationFee: fee, requireOtp: draft.requireOtp,
                     payrollPolicy: Object.fromEntries(Object.entries(draft.payrollPolicy).map(([k, v]) => [k, Number(v)])),
-                    geofence, attendancePolicy,
+                    geofence, attendancePolicy, feePolicy,
                     ...(sp ? { staffDefaultPassword: sp } : {}),
                 });
                 setSettings(data.settings);
@@ -439,6 +472,13 @@ const AdminSettings = () => {
                     </SectionCard>
                 </Grid>
 
+                {!isSuper && (
+                    <Grid item xs={12}>
+                        <Alert severity="info" icon={<LockOutlinedIcon />}>
+                            School settings below (verification, fees and late fee, salary deductions, staff app and attendance times) are managed by the super admin. You can view them, but not change them.
+                        </Alert>
+                    </Grid>
+                )}
                 <Grid item xs={12} md={7}>
                     <SectionCard
                         icon={VerifiedUserOutlinedIcon}
@@ -496,11 +536,63 @@ const AdminSettings = () => {
                         )}
                         <Stack direction="row" spacing={1} sx={{ mt: 3 }} justifyContent="flex-end">
                             <Button onClick={() => settings && setDraft(toDraft(settings))} disabled={!settingsDirty}>Reset</Button>
-                            <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty}>Save settings</Button>
+                            <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty || !isSuper}>Save settings</Button>
                         </Stack>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
                             Saves every setting on this page (verification, fee, salary deductions, staff app). Needs your admin password and admin key.
                         </Typography>
+                    </SectionCard>
+                </Grid>
+
+                <Grid item xs={12}>
+                    <SectionCard
+                        icon={EventOutlinedIcon}
+                        title="Monthly fee and late fee"
+                        description="Monthly fees are due between these days of the billed month. Paying after the last allowed day adds the late fee to the slip. Saved with Save settings."
+                    >
+                        {draft?.feePolicy && (
+                            <Grid container spacing={2} alignItems="center">
+                                <Grid item xs={6} sm={3}>
+                                    <TextField fullWidth type="number" label="Fee payment starts (day)" inputProps={{ min: 1, max: 28 }} value={draft.feePolicy.dueStartDay}
+                                        onChange={(e) => setDraft((d) => ({ ...d, feePolicy: { ...d.feePolicy, dueStartDay: e.target.value } }))} />
+                                </Grid>
+                                <Grid item xs={6} sm={3}>
+                                    <TextField fullWidth type="number" label="Last allowed day" inputProps={{ min: 1, max: 28 }} value={draft.feePolicy.dueEndDay}
+                                        onChange={(e) => setDraft((d) => ({ ...d, feePolicy: { ...d.feePolicy, dueEndDay: e.target.value } }))}
+                                        helperText={`e.g. ${draft.feePolicy.dueStartDay || 1}st to ${draft.feePolicy.dueEndDay || 7}th`} />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <FormControlLabel
+                                        control={<Switch checked={draft.feePolicy.lateFeeEnabled} onChange={(e) => setDraft((d) => ({ ...d, feePolicy: { ...d.feePolicy, lateFeeEnabled: e.target.checked } }))} />}
+                                        label={draft.feePolicy.lateFeeEnabled ? 'Late fee on' : 'Late fee off'}
+                                    />
+                                </Grid>
+                                {draft.feePolicy.lateFeeEnabled && (
+                                    <>
+                                        <Grid item xs={12} sm={4}>
+                                            <TextField select fullWidth label="Late fee rule" SelectProps={{ native: true }} value={draft.feePolicy.lateFeeType}
+                                                onChange={(e) => setDraft((d) => ({ ...d, feePolicy: { ...d.feePolicy, lateFeeType: e.target.value } }))}>
+                                                <option value="fixed">Fixed amount once late</option>
+                                                <option value="perDay">Amount per day late</option>
+                                            </TextField>
+                                        </Grid>
+                                        <Grid item xs={12} sm={4}>
+                                            <TextField fullWidth type="number" label={draft.feePolicy.lateFeeType === 'perDay' ? 'Late fee per day' : 'Late fee amount'}
+                                                value={draft.feePolicy.lateFeeAmount}
+                                                InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment>, inputProps: { min: 0 } }}
+                                                onChange={(e) => setDraft((d) => ({ ...d, feePolicy: { ...d.feePolicy, lateFeeAmount: e.target.value } }))} />
+                                        </Grid>
+                                        {draft.feePolicy.lateFeeType === 'perDay' && (
+                                            <Grid item xs={12} sm={4}>
+                                                <TextField fullWidth type="number" label="Maximum late fee" helperText="0 = no limit" value={draft.feePolicy.lateFeeMax}
+                                                    InputProps={{ startAdornment: <InputAdornment position="start">Rs.</InputAdornment>, inputProps: { min: 0 } }}
+                                                    onChange={(e) => setDraft((d) => ({ ...d, feePolicy: { ...d.feePolicy, lateFeeMax: e.target.value } }))} />
+                                            </Grid>
+                                        )}
+                                    </>
+                                )}
+                            </Grid>
+                        )}
                     </SectionCard>
                 </Grid>
 
@@ -575,8 +667,35 @@ const AdminSettings = () => {
                                         Use my current location
                                     </Button>
                                 </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <TextField
+                                        fullWidth type="time" label="Late arrival time" InputLabelProps={{ shrink: true }}
+                                        value={draft.attendancePolicy.lateArrivalTime}
+                                        onChange={(e) => setDraft((d) => ({ ...d, attendancePolicy: { ...d.attendancePolicy, lateArrivalTime: e.target.value } }))}
+                                        helperText="Checking in after this time (plus the grace minutes) is late."
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <TextField
+                                        select fullWidth label="Late is measured from" SelectProps={{ native: true }}
+                                        value={draft.attendancePolicy.lateRule}
+                                        onChange={(e) => setDraft((d) => ({ ...d, attendancePolicy: { ...d.attendancePolicy, lateRule: e.target.value } }))}
+                                        helperText="Each staff member's scheduled check-in, or one school time for everyone."
+                                    >
+                                        <option value="staffSchedule">Staff schedule (school time if none)</option>
+                                        <option value="schoolTime">School late arrival time for everyone</option>
+                                    </TextField>
+                                </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <TextField
+                                        fullWidth type="time" label="Half day after" InputLabelProps={{ shrink: true }}
+                                        value={draft.attendancePolicy.halfDayAfterTime}
+                                        onChange={(e) => setDraft((d) => ({ ...d, attendancePolicy: { ...d.attendancePolicy, halfDayAfterTime: e.target.value } }))}
+                                        helperText="Checking in after this time counts as a half day. Clear it to turn this off."
+                                    />
+                                </Grid>
                                 {[
-                                    ['lateGraceMinutes', 'Late after (minutes)', 'Minutes after the scheduled check-in before a check-in counts as late.'],
+                                    ['lateGraceMinutes', 'Late after (minutes)', 'Grace minutes after the late arrival / scheduled time before a check-in counts as late.'],
                                     ['halfDayMinHours', 'Half day under (hours)', 'Fewer hours between check-in and check-out count as a half day.'],
                                     ['maxAccuracyMeters', 'Max GPS error (metres)', 'Less accurate locations are refused.'],
                                 ].map(([key, label, help]) => (
@@ -613,7 +732,7 @@ const AdminSettings = () => {
                             </Grid>
                         )}
                         <Stack direction="row" spacing={1} sx={{ mt: 3 }} justifyContent="flex-end">
-                            <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty}>Save settings</Button>
+                            <Button variant="contained" onClick={handleSaveSettings} disabled={!settingsDirty || !isSuper}>Save settings</Button>
                         </Stack>
                     </SectionCard>
                 </Grid>

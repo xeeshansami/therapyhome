@@ -45,10 +45,10 @@ const AdminUsers = () => {
     const submitNew = () => setVerify({
         title: 'Add admin',
         description: 'Confirm with your super admin password and admin key.',
-        run: async ({ password, adminKey }) => {
+        run: async (secrets) => {
             await axios.post(`${API}/admins`, {
                 name: form.name.trim(), email: form.email.trim(), temporaryPassword: form.temporaryPassword, newAdminKey: form.newAdminKey,
-                password, adminKey,
+                ...secrets,
             });
             setMessage({ severity: 'success', text: `${form.name.trim()} was added. Give them the temporary password and their admin key in person; they must choose a new password at first sign-in.` });
             setForm(null);
@@ -59,8 +59,8 @@ const AdminUsers = () => {
     const toggle = (row) => setVerify({
         title: row.active ? `Disable ${row.name}` : `Enable ${row.name}`,
         description: row.active ? 'They are signed out at once and cannot sign in until enabled again.' : 'They can sign in again with their current password.',
-        run: async ({ password, adminKey }) => {
-            await axios.put(`${API}/admins/${row._id}`, { active: !row.active, password, adminKey });
+        run: async (secrets) => {
+            await axios.put(`${API}/admins/${row._id}`, { active: !row.active, ...secrets });
             setMessage({ severity: 'success', text: `${row.name} is now ${row.active ? 'disabled' : 'enabled'}.` });
             load();
         },
@@ -69,8 +69,8 @@ const AdminUsers = () => {
     const submitReset = () => setVerify({
         title: `Reset sign-in for ${reset.row.name}`,
         description: 'They are signed out and must choose a new password at their next sign-in.',
-        run: async ({ password, adminKey }) => {
-            const body = { password, adminKey, temporaryPassword: reset.temporaryPassword };
+        run: async (secrets) => {
+            const body = { ...secrets, temporaryPassword: reset.temporaryPassword };
             if (reset.newAdminKey) body.newAdminKey = reset.newAdminKey;
             await axios.put(`${API}/admins/${reset.row._id}`, body);
             setMessage({ severity: 'success', text: `${reset.row.name}'s sign-in was reset.` });

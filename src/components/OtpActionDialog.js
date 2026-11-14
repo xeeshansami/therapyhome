@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
-    Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText,
-    DialogTitle, TextField, Typography,
+    Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText,
+    DialogTitle, Link, TextField, Typography,
 } from '@mui/material';
+import { clearGrant, currentGrant } from '../utils/verification';
 
 // Two-step verification for sensitive changes:
 //   1. the admin re-enters their password; the server validates the change and
@@ -14,8 +15,9 @@ import {
 // What each kind of record is called, and what a delete keeps.
 const TARGETS = {
     student: { label: 'student', note: 'The student is archived. Fee slips and payment history are kept.' },
-    teacher: { label: 'staff member', note: 'Salary slips already issued are kept.' },
-    sclass: { label: 'class', note: 'A class can only be deleted when no student, staff member or fee slip uses it.' },
+    teacher: { label: 'staff member', note: 'Their student assignments are removed. Salary slips, attendance and session history are kept.' },
+    sclass: { label: 'class', note: 'Students and staff are unlinked from the class and its subjects are removed. Fee slips keep their own copy of the fees.' },
+    fee: { label: 'fee slip', note: 'The slip and its payments are removed from the student\'s balance. An audit copy is kept.' },
     notice: { label: 'notice', note: '' },
     consultation: { label: 'consultation', note: 'Its consultation fee slip is kept as payment history.' },
 };
@@ -31,7 +33,7 @@ const errorText = (error, fallback) => error?.response?.data?.message || (error?
 
 const OtpActionDialog = ({
     open, onClose, onSuccess,
-    adminId, actionType, targetType, targetId, targetName, payload,
+    adminId, actionType, targetType, targetId, targetName, payload, impact,
 }) => {
     const isDelete = actionType === 'delete';
     const [step, setStep] = useState('confirm'); // confirm -> password -> otp
@@ -44,6 +46,8 @@ const OtpActionDialog = ({
     // 'otp' = emailed code; 'credentials' = admin password + admin key (OTP switched off in Settings).
     const [mode, setMode] = useState('otp');
     const [adminKey, setAdminKey] = useState('');
+    // Password + admin key already given in this session (short-lived grant).
+    const [grant, setGrant] = useState(null);
     const target = TARGETS[targetType] || { label: 'record', note: '' };
 
     useEffect(() => {
@@ -57,6 +61,7 @@ const OtpActionDialog = ({
             setResendIn(0);
             setAdminKey('');
             setMode('otp');
+            setGrant(currentGrant());
             axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${adminId}/settings`)
                 .then(({ data }) => {
                     if (data?.requireOtp && data.requireOtp[policyKey(targetType, actionType)] === false) setMode('credentials');
@@ -107,7 +112,8 @@ const OtpActionDialog = ({
 
     const confirmWithCredentials = async () => {
         if (busy) return;
-        if (!password || !adminKey) {
+        const useGrant = !!grant;
+        if (!useGrant && (!password || !adminKey)) {
             setError('Enter your password and admin key.');
             return;
         }
@@ -116,14 +122,17 @@ const OtpActionDialog = ({
         try {
             const { data } = await axios.post(`${process.env.REACT_APP_BASE_URL}/verify-credentials-execute-action`, {
                 adminId,
-                password,
-                adminKey,
+                ...(useGrant ? { verificationToken: grant.token } : { password, adminKey }),
                 action: { ...action, payload: isDelete ? null : payload },
             });
             onSuccess(data);
         } catch (err) {
             // Settings changed to require OTP meanwhile: switch to the OTP route.
             if (err?.response?.data?.code === 'OTP_REQUIRED') setMode('otp');
+            if (useGrant && err?.response?.status === 401) {
+                clearGrant();
+                setGrant(null);
+            }
             setError(errorText(err, 'Verification failed.'));
         } finally {
             setBusy(false);
@@ -171,9 +180,17 @@ const OtpActionDialog = ({
                     <DialogContentText>
                         Delete the {target.label} <strong>{targetName || 'this record'}</strong>? This cannot be undone from the portal.
                         {target.note && <><br /><br />{target.note}</>}
+                        {impact && <><br /><br /><strong>What changes:</strong> {impact}</>}
                     </DialogContentText>
                 )}
-                {step === 'password' && mode === 'credentials' && (
+                {step === 'password' && mode === 'credentials' && grant && (
+                    <Alert severity="success" sx={{ mt: 1 }}>
+                        You already verified with your admin key in this session, so it is not asked again.
+                        {' '}<Link component="button" type="button" onClick={() => { clearGrant(); setGrant(null); }}>Use password instead</Link>
+                        {error && <><br />{error}</>}
+                    </Alert>
+                )}
+                {step === 'password' && mode === 'credentials' && !grant && (
                     <>
                         <DialogContentText sx={{ mb: 1 }}>
                             Enter your admin password and admin key to {isDelete ? 'delete' : 'save'} this {target.label}.

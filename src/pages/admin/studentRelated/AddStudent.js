@@ -9,6 +9,7 @@ import axios from 'axios';
 import { getAllSclasses } from '../../../redux/sclassRelated/sclassHandle';
 import InvoiceDialog from '../../../components/InvoiceDialog';
 import StudentLookup from '../../../components/StudentLookup';
+import PeopleMultiSelect from '../../../components/PeopleMultiSelect';
 import PageHeader from '../../../components/PageHeader';
 import PersonAddAlt1OutlinedIcon from '@mui/icons-material/PersonAddAlt1Outlined';
 import { lineTotal, sumLineItems, toMoney } from '../../../utils/feeCalc';
@@ -58,6 +59,14 @@ const AddStudent = ({ situation }) => {
     const [sclassName, setSclassName] = useState('');
 
     const adminID = currentUser._id;
+    // Staff assigned to this student; only they see the student in the staff app.
+    const [staffList, setStaffList] = useState([]);
+    const [assignedStaff, setAssignedStaff] = useState([]);
+    useEffect(() => {
+        axios.get(`${process.env.REACT_APP_BASE_URL}/Teachers/${adminID}`)
+            .then(({ data }) => setStaffList(Array.isArray(data) ? data.filter((t) => t.status !== 'withdrawn') : []))
+            .catch(() => setStaffList([]));
+    }, [adminID]);
     const role = "Student";
     const attendance = [];
 
@@ -421,6 +430,7 @@ const AddStudent = ({ situation }) => {
         selectedClasses.forEach(id => {
             formDataToSubmit.append('className[]', id);
         });
+        formDataToSubmit.append('assignedStaff', JSON.stringify(assignedStaff));
         formDataToSubmit.append('admissionDate', formattedDateTime);
         formDataToSubmit.append('adminID', adminID);
         formDataToSubmit.append('role', role);
@@ -773,6 +783,17 @@ const AddStudent = ({ situation }) => {
                                             ))}
                                         </FormGroup>
                                         {daySelectionError && <Typography color="error" variant="caption">Please select at least one day.</Typography>}
+                                    </Box>
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Assigned Staff</Typography>
+                                        <PeopleMultiSelect
+                                            options={staffList}
+                                            value={assignedStaff}
+                                            onChange={setAssignedStaff}
+                                            label="Therapists / staff for this student"
+                                            helperText="Only these staff members see this student in the staff app."
+                                            subtitle={(t) => t.role}
+                                        />
                                     </Box>
                                     <Box sx={{ mb: 2 }}>
                                         <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>Upload Student Medical Report (Optional)</Typography>

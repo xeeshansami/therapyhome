@@ -8,6 +8,7 @@ import {
 import styled from 'styled-components';
 import InvoiceDialog from './../../components/InvoiceDialog';
 import SalarySlipDialog from './../../components/SalarySlipDialog';
+import PeriodFilter from './../../components/PeriodFilter';
 
 // Styled-components for the results table (can be kept as is)
 const Table = styled.table`
@@ -53,6 +54,9 @@ class AdminInvoice extends Component {
         teacherCnic: '',
         teacherInvoiceID: '',
 
+        // --- Year / month filter (applies to fee and salary records) ---
+        period: { year: new Date().getFullYear(), month: '' },
+
         // --- General State ---
         records: [],
         loading: false,
@@ -91,6 +95,8 @@ class AdminInvoice extends Component {
             searchBy: studentSearchBy,
             searchValue: searchValue,
             feeTypeFilter: studentFeeTypeFilter,
+            year: this.state.period.year,
+            month: this.state.period.month,
         };
         try {
             const response = await axios.post(apiEndpoint, payload);
@@ -116,7 +122,7 @@ class AdminInvoice extends Component {
             default: break;
         }
         const apiEndpoint = `${process.env.REACT_APP_BASE_URL}/fetchTeacherSalaries/filter`;
-        const payload = { searchBy: teacherSearchBy, searchValue: searchValue };
+        const payload = { searchBy: teacherSearchBy, searchValue: searchValue, year: this.state.period.year, month: this.state.period.month };
         try {
             const response = await axios.post(apiEndpoint, payload);
             if (response.data && response.data.length > 0) {
@@ -456,6 +462,9 @@ class AdminInvoice extends Component {
 
                         <Grid item xs={12}>
                             {searchTarget === 'student' ? this.renderStudentSearch() : this.renderTeacherSearch()}
+                            <div style={{ marginTop: 16 }}>
+                                <PeriodFilter value={this.state.period} onChange={(period) => this.setState({ period })} />
+                            </div>
                         </Grid>
                         
                         <Grid item xs={12}>

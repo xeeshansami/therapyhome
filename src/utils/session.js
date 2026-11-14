@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { saveGrant, clearGrant } from './verification';
 
 // Every API call carries the signed-in admin's session token. When the server
 // says the session is no longer valid (expired, password changed, account
@@ -36,12 +37,21 @@ export const installSession = (onExpired) => {
         return config;
     });
     axios.interceptors.response.use(
-        (res) => res,
+        (res) => {
+            // Remember a verification grant returned after password + admin key.
+            if (res && res.data && res.data.verificationToken) saveGrant(res.data);
+            return res;
+        },
         (error) => {
             const status = error && error.response && error.response.status;
+            const code = error && error.response && error.response.data && error.response.data.code;
             const url = (error && error.config && error.config.url) || '';
             const isLogin = /\/(AdminLogin|app\/login)$/.test(url);
-            if (status === 401 && !isLogin && readUser()) {
+            // Only an invalid session signs the admin out. A wrong password or
+            // admin key in a verification dialog is also a 401 but keeps the session.
+            if (status === 401 && ['INCORRECT_CREDENTIALS', 'INCORRECT_PASSWORD', 'GRANT_EXPIRED'].includes(code)) clearGrant();
+            if (status === 401 && !isLogin && readUser() && (!code || code === 'UNAUTHORIZED')) {
+                clearGrant();
                 try { localStorage.removeItem('user'); } catch (e) { /* ignore */ }
                 if (onExpired) onExpired();
             }

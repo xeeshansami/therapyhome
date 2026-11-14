@@ -5,7 +5,7 @@ import {
     Box, Button, Card, CardContent, CircularProgress, Container, Paper, Typography, Grid,
     Accordion, AccordionSummary, AccordionDetails, TextField, Stack, IconButton,
     FormControl, InputLabel, Select, MenuItem, FormGroup, FormControlLabel, Checkbox,
-    Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Divider,
+    Table, TableBody, TableCell, TableHead, TableRow, TableContainer, Divider, Chip,
 } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -13,6 +13,9 @@ import AddIcon from '@mui/icons-material/Add';
 import Popup from '../../../components/Popup';
 import OtpActionDialog from '../../../components/OtpActionDialog';
 import InvoiceDialog from '../../../components/InvoiceDialog';
+import StudentLifecyclePanel from '../../../components/StudentLifecyclePanel';
+import RecordPaymentDialog from '../../../components/RecordPaymentDialog';
+import PeopleMultiSelect from '../../../components/PeopleMultiSelect';
 import { lineTotal, sumLineItems, toMoney } from '../../../utils/feeCalc';
 import { buildStudentForm as buildForm, studentChanges, feeLineKey, feeStatus, THERAPY_OPTIONS } from '../../../utils/studentForm';
 import axios from 'axios';
@@ -79,6 +82,16 @@ const ViewStudent = () => {
     const [feeHistory, setFeeHistory] = useState([]);
     const [feeHistoryError, setFeeHistoryError] = useState('');
     const [invoiceData, setInvoiceData] = useState(null);
+    const [paySlip, setPaySlip] = useState(null);
+    const [feeDelete, setFeeDelete] = useState(null); // fee slip row being deleted
+    const [staffList, setStaffList] = useState([]);
+    useEffect(() => {
+        if (!currentUser?._id) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/Teachers/${currentUser._id}`)
+            .then(({ data }) => setStaffList(Array.isArray(data) ? data : []))
+            .catch(() => setStaffList([]));
+    }, [currentUser?._id]);
+    const staffName = (id) => (staffList.find((t) => String(t._id) === String(id)) || {}).name;
 
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -251,9 +264,14 @@ const ViewStudent = () => {
                 </div>
                 {!isEditMode && <Button variant="contained" onClick={() => setIsEditMode(true)}>Edit Details</Button>}
             </Paper>
+            <StudentLifecyclePanel
+                student={student}
+                onChanged={() => { loadStudent(); loadFeeHistory(); }}
+                onMessage={(message, success) => setPopup({ open: true, message, success })}
+            />
 
             <form onSubmit={(e) => { e.preventDefault(); handleUpdateClick(); }}>
-                <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Student Profile</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><EditableDetailItem label="Name" name="name" value={formData.name} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Roll Number" value={student.rollNum} /><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Gender</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="gender" value={formData.gender} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Male">Male</MenuItem><MenuItem value="Female">Female</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.gender)}</Typography>)}</Grid><EditableDetailItem label="Age" name="age" value={formData.age} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Date of Birth" name="dob" value={formData.dob} isEditMode={isEditMode} onChange={handleInputChange} type="date" /><EditableDetailItem label="Reference" name="reference" value={formData.reference} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Student Email" name="studentEmail" value={formData.studentEmail} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Session Time" name="sessionTime" value={formData.sessionTime} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Assigned Teacher" name="assignedTeacher" value={formData.assignedTeacher} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Admission Date" value={student.admissionDate} /><DetailItem label="Registered Through" value={student.isConsultantStudent ? 'Consultant (not yet admitted)' : (student.consultancyDate ? 'Consultant, then admitted' : 'Add Student')} /></Grid></AccordionDetails></Accordion>
+                <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Student Profile</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><EditableDetailItem label="Name" name="name" value={formData.name} isEditMode={isEditMode} onChange={handleInputChange} /><DetailItem label="Roll Number" value={student.rollNum} /><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Gender</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="gender" value={formData.gender} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Male">Male</MenuItem><MenuItem value="Female">Female</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.gender)}</Typography>)}</Grid><EditableDetailItem label="Age" name="age" value={formData.age} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Date of Birth" name="dob" value={formData.dob} isEditMode={isEditMode} onChange={handleInputChange} type="date" /><EditableDetailItem label="Reference" name="reference" value={formData.reference} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Student Email" name="studentEmail" value={formData.studentEmail} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Session Time" name="sessionTime" value={formData.sessionTime} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Assigned Teacher (note)" name="assignedTeacher" value={formData.assignedTeacher} isEditMode={isEditMode} onChange={handleInputChange} /><Grid item xs={12} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', mb: 1 }}>Assigned Staff (staff app access)</Typography>{isEditMode ? (<PeopleMultiSelect options={staffList} value={formData.assignedStaff} onChange={(ids) => setFormData((prev) => ({ ...prev, assignedStaff: ids }))} label="Assigned staff" helperText="Only these staff members see this student in the staff app." subtitle={(t) => t.role} />) : (<Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">{formData.assignedStaff.length === 0 ? <Typography color="text.secondary">None assigned</Typography> : formData.assignedStaff.map((id) => <Chip key={id} variant="outlined" color="primary" label={staffName(id) || 'Staff member'} onClick={() => navigate(`/Admin/teachers/teacher/${id}`)} />)}</Stack>)}</Grid><DetailItem label="Admission Date" value={student.admissionDate} /><DetailItem label="Registered Through" value={student.isConsultantStudent ? 'Consultant (not yet admitted)' : (student.consultancyDate ? 'Consultant, then admitted' : 'Add Student')} /></Grid></AccordionDetails></Accordion>
                 <Accordion defaultExpanded><AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Parent & Contact Information</Typography></AccordionSummary><AccordionDetails><Grid container spacing={2}><EditableDetailItem label="Parent's Name" name="parentName" value={formData.parentName} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Parent's Contact" name="parentContact" value={formData.parentContact} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Parent's CNIC" name="parentCNIC" value={formData.parentCNIC} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Parent's Profession" name="parentProfession" value={formData.parentProfession} isEditMode={isEditMode} onChange={handleInputChange} /><EditableDetailItem label="Home Address" name="parentAddress" value={formData.parentAddress} isEditMode={isEditMode} onChange={handleInputChange} /><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Parent's Gender</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="parentGender" value={formData.parentGender} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Male">Male</MenuItem><MenuItem value="Female">Female</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.parentGender)}</Typography>)}</Grid><Grid item xs={12} sm={6} sx={{ mb: 2 }}><Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase' }}>Marital Status</Typography>{isEditMode ? (<FormControl fullWidth size="small"><Select name="parentMaritalStatus" value={formData.parentMaritalStatus} onChange={handleInputChange} displayEmpty><MenuItem value=""><em>Not set</em></MenuItem><MenuItem value="Single">Single</MenuItem><MenuItem value="Married">Married</MenuItem><MenuItem value="Widow">Widow</MenuItem><MenuItem value="Divorced">Divorced</MenuItem><MenuItem value="Other">Other</MenuItem></Select></FormControl>) : (<Typography variant="body1" gutterBottom>{show(formData.parentMaritalStatus)}</Typography>)}</Grid></Grid></AccordionDetails></Accordion>
                 <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}><Typography variant="h6">Medical History</Typography></AccordionSummary>
@@ -364,7 +382,11 @@ const ViewStudent = () => {
                                                 <TableCell align="right">Rs. {toMoney(r.paidFee).toLocaleString()}</TableCell>
                                                 <TableCell sx={{ color: STATUS_COLOR[feeStatus(r).status], fontWeight: 'bold' }}>{feeStatus(r).status}</TableCell>
                                                 <TableCell align="right">Rs. {feeStatus(r).outstanding.toLocaleString()}</TableCell>
-                                                <TableCell><Button size="small" onClick={() => setInvoiceData({ ...student, ...r })}>View / Print</Button></TableCell>
+                                                <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                                    <Button size="small" onClick={() => setInvoiceData({ ...student, ...r })}>View / Print</Button>
+                                                    {feeStatus(r).outstanding > 0 && <Button size="small" color="success" onClick={() => setPaySlip(r)}>Record payment</Button>}
+                                                    <Button size="small" color="error" onClick={() => setFeeDelete(r)}>Delete</Button>
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -404,6 +426,20 @@ const ViewStudent = () => {
                 payload={otpAction?.payload}
             />
             <InvoiceDialog open={!!invoiceData} onClose={() => setInvoiceData(null)} data={invoiceData || {}} />
+            <RecordPaymentDialog
+                open={!!paySlip} slip={paySlip} onClose={() => setPaySlip(null)}
+                onSaved={(data) => { setPaySlip(null); loadFeeHistory(); setPopup({ open: true, message: data.message, success: true }); }}
+            />
+            <OtpActionDialog
+                open={!!feeDelete}
+                onClose={() => setFeeDelete(null)}
+                onSuccess={(result) => { setFeeDelete(null); loadFeeHistory(); setPopup({ open: true, message: result?.message || 'Fee slip deleted.', success: true }); }}
+                adminId={currentUser?._id}
+                actionType="delete"
+                targetType="fee"
+                targetId={feeDelete?._id}
+                targetName={feeDelete ? `${feeDelete.invoiceID} (Rs. ${toMoney(feeDelete.netTotalFee).toLocaleString()})` : ''}
+            />
         </Container>
     );
 };
