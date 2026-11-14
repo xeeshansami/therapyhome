@@ -27,10 +27,22 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage, canEditStatus = 
     const [busy, setBusy] = useState(false);
     const withdrawn = student.status === 'withdrawn';
 
+    // null = loading; a failed load ends in a message instead of a spinner that never stops.
+    const [depositError, setDepositError] = useState('');
     const loadDeposit = useCallback(() => {
+        setDeposit(null);
+        setDepositError('');
         axios.get(`${API}/Student/${student._id}/security-deposit`)
-            .then(({ data }) => setDeposit(data.deposit))
-            .catch(() => setDeposit(null));
+            .then(({ data }) => {
+                if (data && data.deposit) setDeposit(data.deposit);
+                else setDepositError('Security deposit details are not available from the server yet.');
+            })
+            .catch((err) => {
+                const status = err?.response?.status;
+                setDepositError(status === 404
+                    ? 'Security deposit tracking needs the updated TherapyHome server. Ask your administrator to deploy the latest backend.'
+                    : (err?.response?.data?.message || 'Could not load the security deposit.'));
+            });
     }, [student._id]);
     useEffect(() => { if (canViewDeposit) loadDeposit(); }, [loadDeposit, student.status, canViewDeposit]);
 
@@ -45,7 +57,8 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage, canEditStatus = 
             onMessage(data.message, true);
             onChanged();
         } catch (err) {
-            fail(err, 'Could not update the student status.');
+            if (err?.response?.status === 404 && !err?.response?.data?.message) fail(err, 'Withdrawal needs the updated TherapyHome server.');
+            else fail(err, 'Could not update the student status.');
         } finally {
             setBusy(false);
         }
@@ -104,7 +117,9 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage, canEditStatus = 
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Security deposit</Typography>
                 {deposit && <Chip size="small" label={STATUS_LABEL[deposit.status] || deposit.status} color={STATUS_COLOR[deposit.status] || 'default'} variant="outlined" />}
             </Stack>
-            {!deposit ? <CircularProgress size={20} /> : deposit.status === 'none' ? (
+            {depositError ? (
+                <Alert severity="warning" action={<Button color="inherit" size="small" onClick={loadDeposit}>Retry</Button>}>{depositError}</Alert>
+            ) : !deposit ? <CircularProgress size={20} /> : deposit.status === 'none' ? (
                 <Typography variant="body2" color="text.secondary">No security deposit was billed for this student.</Typography>
             ) : (
                 <>

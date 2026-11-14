@@ -103,7 +103,13 @@ const TeacherDetails = () => {
     const [assignedDraft, setAssignedDraft] = useState(null); // ids while editing
     const [lifecycle, setLifecycle] = useState(null); // { action: 'withdraw'|'reactivate', reason }
     const [busy, setBusy] = useState(false);
-    const loadAssigned = () => axios.get(`${API}/Teacher/${teacherID}/students`).then(({ data }) => setAssigned(Array.isArray(data) ? data : [])).catch(() => setAssigned([]));
+    const [assignedError, setAssignedError] = useState('');
+    const loadAssigned = () => axios.get(`${API}/Teacher/${teacherID}/students`)
+        .then(({ data }) => { setAssigned(Array.isArray(data) ? data : []); setAssignedError(''); })
+        .catch((err) => {
+            setAssigned([]);
+            setAssignedError(err?.response?.status === 404 ? 'Assigned students need the updated TherapyHome server.' : (err?.response?.data?.message || 'Could not load assigned students.'));
+        });
     useEffect(() => {
         loadAssigned();
         if (currentUser?._id) {
@@ -504,7 +510,7 @@ const TeacherDetails = () => {
                         ) : (
                             <>
                                 <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                                    {assigned.length === 0 && <Typography color="text.secondary">No students assigned yet.</Typography>}
+                                    {assignedError ? <Alert severity="warning">{assignedError}</Alert> : assigned.length === 0 && <Typography color="text.secondary">No students assigned yet.</Typography>}
                                     {assigned.map((st) => (
                                         <Chip key={st._id} label={`${st.name}${st.rollNum ? ` (${st.rollNum})` : ''}`} variant="outlined"
                                             color={st.status === 'withdrawn' ? 'default' : 'primary'} onClick={() => navigate(`/Admin/students/student/${st._id}`)} />
