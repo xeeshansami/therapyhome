@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { can } from '../../../utils/permissions';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getTeacherDetails } from '../../../redux/teacherRelated/teacherHandle';
@@ -302,7 +303,7 @@ const TeacherDetails = () => {
                         </Stack>
                     </div>
                 </Box>
-                {!isEditMode && (
+                {!isEditMode && can(currentUser, 'staff', 'edit') && (
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                         {teacherDetails?.status === 'withdrawn'
                             ? <Button variant="outlined" color="success" onClick={() => setLifecycle({ action: 'reactivate' })}>Reactivate</Button>
@@ -509,7 +510,7 @@ const TeacherDetails = () => {
                                             color={st.status === 'withdrawn' ? 'default' : 'primary'} onClick={() => navigate(`/Admin/students/student/${st._id}`)} />
                                     ))}
                                 </Stack>
-                                <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setAssignedDraft(assigned.map((st) => String(st._id)))}>Manage assigned students</Button>
+                                {can(currentUser, 'staff', 'edit') && <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setAssignedDraft(assigned.map((st) => String(st._id)))}>Manage assigned students</Button>}
                             </>
                         )}
                     </AccordionDetails>
@@ -523,7 +524,7 @@ const TeacherDetails = () => {
                 )}
             </form>
 
-            {!isEditMode && (
+            {!isEditMode && can(currentUser, 'staff', 'delete') && (
                 <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
                     <Button variant="contained" color="error" onClick={startDelete}>Delete Staff Member</Button>
                 </Box>

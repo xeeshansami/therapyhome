@@ -57,6 +57,7 @@ import StaffAttendance from './attendance/StaffAttendance';
 import TherapySessions from './attendance/TherapySessions';
 import LeaveRequests from './attendance/LeaveRequests';
 import AdminUsers from './AdminUsers';
+import PermissionGate from '../../components/PermissionGate';
 import ChangeTemporaryPassword from './ChangeTemporaryPassword';
 
 export const SIDEBAR_WIDTH = 264;
@@ -139,58 +140,58 @@ const AdminDashboard = () => {
                         <Route path="/dashboard" element={<AdminHomePage />} />
                         <Route path="/profile" element={<AdminProfile />} />
                         <Route path="/settings" element={<AdminSettings />} />
-                        <Route path="/attendance" element={<StaffAttendance />} />
-                        <Route path="/sessions" element={<TherapySessions />} />
-                        <Route path="/leaves" element={<LeaveRequests />} />
+                        <Route path="/attendance" element={<PermissionGate module="attendance" action="view"><StaffAttendance /></PermissionGate>} />
+                        <Route path="/sessions" element={<PermissionGate module="attendance" action="view"><TherapySessions /></PermissionGate>} />
+                        <Route path="/leaves" element={<PermissionGate module="leaves" action="view"><LeaveRequests /></PermissionGate>} />
                         {isSuper && <Route path="/admins" element={<AdminUsers />} />}
-                        <Route path="/complains" element={<SeeComplains />} />
+                        <Route path="/complains" element={<PermissionGate module="notices" action="view"><SeeComplains /></PermissionGate>} />
 
                         {/* Notice */}
-                        <Route path="/addnotice" element={<AddNotice />} />
-                        <Route path="/notices" element={<ShowNotices />} />
+                        <Route path="/addnotice" element={<PermissionGate module="notices" action="add"><AddNotice /></PermissionGate>} />
+                        <Route path="/notices" element={<PermissionGate module="notices" action="view"><ShowNotices /></PermissionGate>} />
 
                         {/* AdminInvoice */}
-                        <Route path="/Invoice" element={<AdminInvoice />} />
+                        <Route path="/Invoice" element={<PermissionGate module="salary" action="view"><AdminInvoice /></PermissionGate>} />
 
                         {/* AdminFees */}
-                        <Route path="/Fees" element={<AdminFees />} />
-                        <Route path="/FeeRecords" element={<FeeRecords />} />
+                        <Route path="/Fees" element={<PermissionGate module="fees" action="add"><AdminFees /></PermissionGate>} />
+                        <Route path="/FeeRecords" element={<PermissionGate module="fees" action="view"><FeeRecords /></PermissionGate>} />
 
                         {/* TeachersSalary */}
-                        <Route path="/TeachersSalary" element={<TeachersSalary />} />
+                        <Route path="/TeachersSalary" element={<PermissionGate module="salary" action="add"><TeachersSalary /></PermissionGate>} />
                         <Route path="/terms" element={<TermsPage />} />
                         
                         {/* Subject */}
-                        <Route path="/subjects" element={<ShowSubjects />} />
-                        <Route path="/subjects/subject/:classID/:subjectID" element={<ViewSubject />} />
-                        <Route path="/subjects/chooseclass" element={<ChooseClass situation="Subject" />} />
-                        <Route path="/addsubject/:id" element={<SubjectForm />} />
-                        <Route path="/class/subject/:classID/:subjectID" element={<ViewSubject />} />
-                        <Route path="/subject/student/attendance/:studentID/:subjectID" element={<StudentAttendance situation="Subject" />} />
-                        <Route path="/subject/student/marks/:studentID/:subjectID" element={<StudentExamMarks situation="Subject" />} />
+                        <Route path="/subjects" element={<PermissionGate module="classes" action="view"><ShowSubjects /></PermissionGate>} />
+                        <Route path="/subjects/subject/:classID/:subjectID" element={<PermissionGate module="classes" action="view"><ViewSubject /></PermissionGate>} />
+                        <Route path="/subjects/chooseclass" element={<PermissionGate module="classes" action="add"><ChooseClass situation="Subject" /></PermissionGate>} />
+                        <Route path="/addsubject/:id" element={<PermissionGate module="classes" action="add"><SubjectForm /></PermissionGate>} />
+                        <Route path="/class/subject/:classID/:subjectID" element={<PermissionGate module="classes" action="view"><ViewSubject /></PermissionGate>} />
+                        <Route path="/subject/student/attendance/:studentID/:subjectID" element={<PermissionGate module="students" action="edit"><StudentAttendance situation="Subject" /></PermissionGate>} />
+                        <Route path="/subject/student/marks/:studentID/:subjectID" element={<PermissionGate module="students" action="edit"><StudentExamMarks situation="Subject" /></PermissionGate>} />
 
                         {/* Class */}
-                        <Route path="/addclass" element={<AddClass />} />
-                        <Route path="/classes" element={<ShowClasses />} />
-                        <Route path="/classes/class/:id" element={<ClassDetails />} />
-                        <Route path="/class/addstudents/:id" element={<AddStudent situation="Class" />} />
+                        <Route path="/addclass" element={<PermissionGate module="classes" action="add"><AddClass /></PermissionGate>} />
+                        <Route path="/classes" element={<PermissionGate module="classes" action="view"><ShowClasses /></PermissionGate>} />
+                        <Route path="/classes/class/:id" element={<PermissionGate module="classes" action="view"><ClassDetails /></PermissionGate>} />
+                        <Route path="/class/addstudents/:id" element={<PermissionGate module="students" action="add"><AddStudent situation="Class" /></PermissionGate>} />
 
                         {/* Student */}
-                        <Route path="/addstudents" element={<AddStudent situation="Student" />} />
-                        <Route path="/students" element={<ShowStudents />} />
-                        <Route path="/addConsultancy" element={<AddConsultancy />} />
-                        <Route path="/consultations" element={<ShowConsultations />} />
-                        <Route path="/students/student/:id" element={<ViewStudent />} />
-                        <Route path="/students/student/attendance/:id" element={<StudentAttendance situation="Student" />} />
-                        <Route path="/students/student/marks/:id" element={<StudentExamMarks situation="Student" />} />
+                        <Route path="/addstudents" element={<PermissionGate module="students" action="add"><AddStudent situation="Student" /></PermissionGate>} />
+                        <Route path="/students" element={<PermissionGate module="students" action="view"><ShowStudents /></PermissionGate>} />
+                        <Route path="/addConsultancy" element={<PermissionGate module="consultations" action="add"><AddConsultancy /></PermissionGate>} />
+                        <Route path="/consultations" element={<PermissionGate module="consultations" action="view"><ShowConsultations /></PermissionGate>} />
+                        <Route path="/students/student/:id" element={<PermissionGate module="students" action="view"><ViewStudent /></PermissionGate>} />
+                        <Route path="/students/student/attendance/:id" element={<PermissionGate module="students" action="edit"><StudentAttendance situation="Student" /></PermissionGate>} />
+                        <Route path="/students/student/marks/:id" element={<PermissionGate module="students" action="edit"><StudentExamMarks situation="Student" /></PermissionGate>} />
 
                         {/* Teacher */}
-                        <Route path="/teachers" element={<ShowTeachers />} />
-                        <Route path="/teachers/teacher/:id" element={<TeacherDetails />} />
-                        <Route path="/teachers/chooseclass" element={<ChooseClass situation="Teacher" />} />
-                        <Route path="/teachers/choosesubject/:id" element={<ChooseSubject situation="Norm" />} />
-                        <Route path="/teachers/choosesubject/:classID/:teacherID" element={<ChooseSubject situation="Teacher" />} />
-                        <Route path="/teachers/addteacher/:id" element={<AddTeacher />} />
+                        <Route path="/teachers" element={<PermissionGate module="staff" action="view"><ShowTeachers /></PermissionGate>} />
+                        <Route path="/teachers/teacher/:id" element={<PermissionGate module="staff" action="view"><TeacherDetails /></PermissionGate>} />
+                        <Route path="/teachers/chooseclass" element={<PermissionGate module="staff" action="add"><ChooseClass situation="Teacher" /></PermissionGate>} />
+                        <Route path="/teachers/choosesubject/:id" element={<PermissionGate module="staff" action="edit"><ChooseSubject situation="Norm" /></PermissionGate>} />
+                        <Route path="/teachers/choosesubject/:classID/:teacherID" element={<PermissionGate module="staff" action="edit"><ChooseSubject situation="Teacher" /></PermissionGate>} />
+                        <Route path="/teachers/addteacher/:id" element={<PermissionGate module="staff" action="add"><AddTeacher /></PermissionGate>} />
 
                         <Route path="/logout" element={<Logout />} />
                         

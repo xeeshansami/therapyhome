@@ -138,7 +138,8 @@ const AdminSettings = () => {
         }
     }, [currentUser._id]);
 
-    useEffect(() => { loadSettings(); }, [loadSettings]);
+    // Limited Admins have no access to system settings, so they are not loaded at all.
+    useEffect(() => { if (isSuper) loadSettings(); }, [loadSettings, isSuper]);
 
     const settingsDirty = !!settings && !!draft && (
         Number(draft.consultationFee) !== settings.consultationFee
@@ -475,10 +476,11 @@ const AdminSettings = () => {
                 {!isSuper && (
                     <Grid item xs={12}>
                         <Alert severity="info" icon={<LockOutlinedIcon />}>
-                            School settings below (verification, fees and late fee, salary deductions, staff app and attendance times) are managed by the super admin. You can view them, but not change them.
+                            You are a Limited Admin. System settings (verification, fees and late fee, salary deductions, staff app and attendance rules) are managed only by the super admin.
                         </Alert>
                     </Grid>
                 )}
+                {isSuper && (<>
                 <Grid item xs={12} md={7}>
                     <SectionCard
                         icon={VerifiedUserOutlinedIcon}
@@ -736,6 +738,7 @@ const AdminSettings = () => {
                         </Stack>
                     </SectionCard>
                 </Grid>
+                </>)}
             </Grid>
 
             <Dialog open={!!otpStep} onClose={() => !saving && setOtpStep(null)} fullWidth maxWidth="xs">

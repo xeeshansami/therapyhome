@@ -13,6 +13,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
+import { can } from '../../utils/permissions';
 import SeeNotice from '../../components/SeeNotice';
 import FinanceOverview from '../../components/FinanceOverview';
 import AttendanceToday from '../../components/AttendanceToday';
@@ -101,16 +102,21 @@ const AdminHomePage = () => {
         setTodayTotal(daily.status === 'fulfilled' ? daily.value.data.totalFee || 0 : 0);
     }, []);
 
+    // A Limited Admin only loads the figures they are allowed to see.
     const refresh = useCallback(() => {
-        dispatch(getAllStudents(adminID));
-        dispatch(getAllSclasses(adminID, 'Sclass'));
-        dispatch(getAllTeachers(adminID));
-        loadFees(selectedMonth);
-        axios.get(`${process.env.REACT_APP_BASE_URL}/consultations/${adminID}`, { params: { status: 'pending' } })
-            .then(({ data }) => setPendingConsultations(Array.isArray(data) ? data.length : 0))
-            .catch(() => setPendingConsultations(0));
+        if (can(currentUser, 'students', 'view')) dispatch(getAllStudents(adminID));
+        if (can(currentUser, 'classes', 'view')) dispatch(getAllSclasses(adminID, 'Sclass'));
+        if (can(currentUser, 'staff', 'view')) dispatch(getAllTeachers(adminID));
+        if (can(currentUser, 'fees', 'view')) loadFees(selectedMonth);
+        if (can(currentUser, 'consultations', 'view')) {
+            axios.get(`${process.env.REACT_APP_BASE_URL}/consultations/${adminID}`, { params: { status: 'pending' } })
+                .then(({ data }) => setPendingConsultations(Array.isArray(data) ? data.length : 0))
+                .catch(() => setPendingConsultations(0));
+        } else {
+            setPendingConsultations(0);
+        }
         setUpdatedAt(new Date());
-    }, [adminID, dispatch, loadFees, selectedMonth]);
+    }, [adminID, currentUser, dispatch, loadFees, selectedMonth]);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => { refresh(); }, [adminID]);

@@ -7,14 +7,22 @@ import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettin
 import DataTable, { RowButton } from '../../components/DataTable';
 import PageHeader, { PageShell } from '../../components/PageHeader';
 import VerifyAdminDialog from '../../components/VerifyAdminDialog';
+import PermissionMatrix from '../../components/PermissionMatrix';
+import { DEFAULT_MODULES, presetPermissions } from '../../utils/permissions';
 
 const API = process.env.REACT_APP_BASE_URL;
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const passwordProblem = (p) => (p.length < 8 || !/[A-Za-z]/.test(p) || !/\d/.test(p) ? 'At least 8 characters, with letters and numbers.' : '');
 
-/** Super admin only: add admins who manage the same school, disable them, or reset their sign-in. */
+const countGranted = (p) => Object.values(p || {}).reduce((n, row) => n + Object.values(row || {}).filter(Boolean).length, 0);
+
+/**
+ * Super admin only: add Limited Admins (co-admins), choose what each may do,
+ * disable them, or reset their sign-in. A new admin is never a super admin.
+ */
 const AdminUsers = () => {
-    const [data, setData] = useState({ superAdmin: null, admins: [] });
+    const [data, setData] = useState({ superAdmin: null, admins: [], modules: DEFAULT_MODULES });
+    const [perms, setPerms] = useState(null); // { row, value }
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
     const [form, setForm] = useState(null);
@@ -25,7 +33,7 @@ const AdminUsers = () => {
         setLoading(true);
         try {
             const res = await axios.get(`${API}/admins`);
-            setData(res.data);
+            setData({ ...res.data, modules: res.data.modules || DEFAULT_MODULES });
         } catch (e) {
             setMessage({ severity: 'error', text: e.response?.data?.message || 'Could not load admins.' });
         } finally {
@@ -48,6 +56,7 @@ const AdminUsers = () => {
         run: async (secrets) => {
             await axios.post(`${API}/admins`, {
                 name: form.name.trim(), email: form.email.trim(), temporaryPassword: form.temporaryPassword, newAdminKey: form.newAdminKey,
+                permissions: form.permissions,
                 ...secrets,
             });
             setMessage({ severity: 'success', text: `${form.name.trim()} was added. Give them the temporary password and their admin key in person; they must choose a new password at first sign-in.` });
@@ -62,6 +71,17 @@ const AdminUsers = () => {
         run: async (secrets) => {
             await axios.put(`${API}/admins/${row._id}`, { active: !row.active, ...secrets });
             setMessage({ severity: 'success', text: `${row.name} is now ${row.active ? 'disabled' : 'enabled'}.` });
+            load();
+        },
+    });
+
+    const submitPermissions = () => setVerify({
+        title: `Permissions for ${perms.row.name}`,
+        description: 'They are signed out so the new permissions apply on their next sign-in.',
+        run: async (secrets) => {
+            await axios.put(`${API}/admins/${perms.row._id}`, { ...secrets, permissions: perms.value });
+            setMessage({ severity: 'success', text: `${perms.row.name}'s permissions were saved.` });
+            setPerms(null);
             load();
         },
     });
@@ -84,8 +104,8 @@ const AdminUsers = () => {
             <PageHeader
                 icon={AdminPanelSettingsOutlinedIcon}
                 title="Admins"
-                subtitle="People who manage TherapyHome with you. Admins can do everything except manage other admins."
-                actions={<Button variant="contained" onClick={() => setForm({ name: '', email: '', temporaryPassword: '', newAdminKey: '' })}>Add admin</Button>}
+                subtitle="Limited Admins (co-admins) work only in the areas you grant. System settings and admin management stay with you, the super admin."
+                actions={<Button variant="contained" onClick={() => setForm({ name: '', email: '', temporaryPassword: '', newAdminKey: '', permissions: presetPermissions(data.modules, 'view') })}>Add admin</Button>}
             />
             {message && <Alert severity={message.severity} sx={{ mb: 2 }} onClose={() => setMessage(null)}>{message.text}</Alert>}
             {data.superAdmin && (
@@ -108,11 +128,20 @@ const AdminUsers = () => {
                             {r.mustChangePassword && <Chip size="small" variant="outlined" color="warning" label="Temporary password" />}
                         </Stack>
                     ) },
+                    { id: 'permissions', label: 'Access', render: (r) => (
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Chip size="small" variant="outlined" label="Limited Admin" />
+                            <Typography variant="caption" color="text.secondary">
+                                {r.legacyFullAccess ? 'All operations (older account)' : `${countGranted(r.permissions)} permission${countGranted(r.permissions) === 1 ? '' : 's'}`}
+                            </Typography>
+                        </Stack>
+                    ) },
                     { id: 'lastLoginAt', label: 'Last sign-in', render: (r) => (r.lastLoginAt ? new Date(r.lastLoginAt).toLocaleString('en-PK') : 'Never') },
                     { id: 'createdAt', label: 'Added', render: (r) => new Date(r.createdAt).toLocaleDateString('en-PK') },
                 ]}
                 actions={(r) => (
                     <>
+                        <RowButton onClick={() => setPerms({ row: r, value: JSON.parse(JSON.stringify(r.permissions || presetPermissions(data.modules, 'view'))) })}>Permissions</RowButton>
                         <RowButton onClick={() => setReset({ row: r, temporaryPassword: '', newAdminKey: '' })}>Reset sign-in</RowButton>
                         <RowButton color={r.active ? 'error' : 'primary'} onClick={() => toggle(r)}>{r.active ? 'Disable' : 'Enable'}</RowButton>
                     </>
@@ -128,12 +157,30 @@ const AdminUsers = () => {
                             <TextField label="Email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} error={!!form.email && !!formErrors.email} helperText={form.email && formErrors.email} />
                             <TextField label="Temporary password" type="password" autoComplete="new-password" value={form.temporaryPassword} onChange={(e) => setForm((f) => ({ ...f, temporaryPassword: e.target.value }))} error={!!form.temporaryPassword && !!formErrors.temporaryPassword} helperText={formErrors.temporaryPassword || 'They must replace it at first sign-in.'} />
                             <TextField label="Their admin key" type="password" autoComplete="new-password" value={form.newAdminKey} onChange={(e) => setForm((f) => ({ ...f, newAdminKey: e.target.value }))} error={!!form.newAdminKey && !!formErrors.newAdminKey} helperText={formErrors.newAdminKey || 'Used with their password to confirm sensitive changes. Stored encrypted; keep a note of it.'} />
+                            <Alert severity="info">This person becomes a <b>Limited Admin</b>, never a super admin. They can only use the areas you tick below.</Alert>
+                            <PermissionMatrix modules={data.modules} value={form.permissions} onChange={(permissions) => setForm((f) => ({ ...f, permissions }))} />
                         </Stack>
                     )}
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setForm(null)}>Cancel</Button>
                     <Button variant="contained" disabled={!formValid} onClick={submitNew}>Add</Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={!!perms} onClose={() => setPerms(null)} fullWidth maxWidth="sm">
+                <DialogTitle>Permissions{perms ? ` for ${perms.row.name}` : ''}</DialogTitle>
+                <DialogContent>
+                    {perms && (
+                        <Stack spacing={2} sx={{ mt: 1 }}>
+                            {perms.row.legacyFullAccess && <Alert severity="warning">This older account currently has every operational permission. Saving here replaces that with exactly what you tick.</Alert>}
+                            <PermissionMatrix modules={data.modules} value={perms.value} onChange={(value) => setPerms((p) => ({ ...p, value }))} />
+                        </Stack>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPerms(null)}>Cancel</Button>
+                    <Button variant="contained" onClick={submitPermissions}>Save permissions</Button>
                 </DialogActions>
             </Dialog>
 

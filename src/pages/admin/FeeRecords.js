@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { can } from '../../utils/permissions';
 import axios from 'axios';
 import CountUp from 'react-countup';
 import {
@@ -134,6 +135,7 @@ const PAYMENT_STATUS = [
 ];
 
 const RecordRow = ({ record, onView, onPay, onDelete }) => {
+    // onPay / onDelete are null when the admin lacks fees.edit / fees.delete.
     const [open, setOpen] = useState(false);
     const items = Array.isArray(record.lineItems) ? record.lineItems : [];
     const paid = num(record.paidFee);
@@ -170,14 +172,16 @@ const RecordRow = ({ record, onView, onPay, onDelete }) => {
                     <Button size="small" variant="outlined" startIcon={<ReceiptLongIcon />} onClick={() => onView(record)}>
                         Slip
                     </Button>
-                    {balance > 0 && (
+                    {balance > 0 && onPay && (
                         <IconButton size="small" color="success" onClick={() => onPay(record)} aria-label="Record payment" title="Record payment">
                             <AddCardIcon fontSize="small" />
                         </IconButton>
                     )}
-                    <IconButton size="small" color="error" onClick={() => onDelete(record)} aria-label="Delete invoice" title="Delete invoice">
-                        <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                    {onDelete && (
+                        <IconButton size="small" color="error" onClick={() => onDelete(record)} aria-label="Delete invoice" title="Delete invoice">
+                            <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                    )}
                 </TableCell>
             </TableRow>
 
@@ -499,7 +503,7 @@ const FeeRecords = () => {
                                 </TableHead>
                                 <TableBody>
                                     {visible.map((record) => (
-                                        <RecordRow key={record._id || record.invoiceID} record={record} onView={handleView} onPay={setPaySlip} onDelete={setDeleteSlip} />
+                                        <RecordRow key={record._id || record.invoiceID} record={record} onView={handleView} onPay={can(currentUser, 'fees', 'edit') ? setPaySlip : null} onDelete={can(currentUser, 'fees', 'delete') ? setDeleteSlip : null} />
                                     ))}
                                 </TableBody>
                             </Table>

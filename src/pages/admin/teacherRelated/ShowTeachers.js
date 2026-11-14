@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { can } from '../../../utils/permissions';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -91,7 +92,7 @@ const ShowTeachers = () => {
                             <ToggleButton value="withdrawn">Withdrawn</ToggleButton>
                             <ToggleButton value="all">All</ToggleButton>
                         </ToggleButtonGroup>
-                        <Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/teachers/chooseclass')}>Add Staff</Button>
+                        {can(currentUser, 'staff', 'add') && <Button variant="contained" startIcon={<PersonAddAlt1Icon />} onClick={() => navigate('/Admin/teachers/chooseclass')}>Add Staff</Button>}
                     </Stack>
                 )}
             />
@@ -105,8 +106,8 @@ const ShowTeachers = () => {
                 actions={(r) => (
                     <>
                         <RowButton onClick={() => navigate(`/Admin/teachers/teacher/${r._id}`)}>View</RowButton>
-                        <RowButton onClick={() => resetAppPassword(r)}>Reset app password</RowButton>
-                        <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: r.name })}>Delete</RowButton>
+                        {can(currentUser, 'staff', 'edit') && <RowButton onClick={() => resetAppPassword(r)}>Reset app password</RowButton>}
+                        {can(currentUser, 'staff', 'delete') && <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: r.name })}>Delete</RowButton>}
                     </>
                 )}
             />

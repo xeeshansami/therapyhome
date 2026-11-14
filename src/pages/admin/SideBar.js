@@ -24,27 +24,28 @@ import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';
 import EventBusyOutlinedIcon from '@mui/icons-material/EventBusyOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import { useSelector } from 'react-redux';
+import { can } from '../../utils/permissions';
 
 import logo from '../../assets/logo.png';
 
 // Each entry: label, route, icon, and how to decide it is the current page.
 const MAIN_LINKS = [
     { label: 'Dashboard', to: '/Admin/dashboard', icon: SpaceDashboardOutlinedIcon, match: (p) => p === '/' || p === '/Admin' || p === '/Admin/' || p.startsWith('/Admin/dashboard') },
-    { label: 'Classes', to: '/Admin/classes', icon: ClassOutlinedIcon },
-    { label: 'Staff', to: '/Admin/teachers', icon: BadgeOutlinedIcon },
-    { label: 'Staff Attendance', to: '/Admin/attendance', icon: EventAvailableOutlinedIcon },
-    { label: 'Leave Requests', to: '/Admin/leaves', icon: EventBusyOutlinedIcon },
-    { label: 'Students', to: '/Admin/students', icon: SchoolOutlinedIcon },
-    { label: 'New Consultancy', to: '/Admin/AddConsultancy', icon: NoteAddOutlinedIcon },
-    { label: 'Consultations', to: '/Admin/consultations', icon: AssignmentIndOutlinedIcon },
-    { label: 'Add Student', to: '/Admin/addstudents', icon: PersonAddAlt1OutlinedIcon },
-    { label: 'Therapy Sessions', to: '/Admin/sessions', icon: EventNoteOutlinedIcon },
-    { label: 'Collect Fee', to: '/Admin/Fees', icon: PaymentsOutlinedIcon },
-    { label: 'Fee Records', to: '/Admin/FeeRecords', icon: ReceiptLongOutlinedIcon },
-    { label: 'Pay Salary', to: '/Admin/TeachersSalary', icon: AccountBalanceWalletOutlinedIcon },
-    { label: 'Salary Records', to: '/Admin/Invoice', icon: RequestQuoteOutlinedIcon },
-    { label: 'Complaints', to: '/Admin/complains', icon: ReportProblemOutlinedIcon },
-    { label: 'Notices', to: '/Admin/notices', icon: CampaignOutlinedIcon },
+    { label: 'Classes', to: '/Admin/classes', icon: ClassOutlinedIcon, perm: ['classes', 'view'] },
+    { label: 'Staff', to: '/Admin/teachers', icon: BadgeOutlinedIcon, perm: ['staff', 'view'] },
+    { label: 'Staff Attendance', to: '/Admin/attendance', icon: EventAvailableOutlinedIcon, perm: ['attendance', 'view'] },
+    { label: 'Leave Requests', to: '/Admin/leaves', icon: EventBusyOutlinedIcon, perm: ['leaves', 'view'] },
+    { label: 'Students', to: '/Admin/students', icon: SchoolOutlinedIcon, perm: ['students', 'view'] },
+    { label: 'New Consultancy', to: '/Admin/AddConsultancy', icon: NoteAddOutlinedIcon, perm: ['consultations', 'add'] },
+    { label: 'Consultations', to: '/Admin/consultations', icon: AssignmentIndOutlinedIcon, perm: ['consultations', 'view'] },
+    { label: 'Add Student', to: '/Admin/addstudents', icon: PersonAddAlt1OutlinedIcon, perm: ['students', 'add'] },
+    { label: 'Therapy Sessions', to: '/Admin/sessions', icon: EventNoteOutlinedIcon, perm: ['attendance', 'view'] },
+    { label: 'Collect Fee', to: '/Admin/Fees', icon: PaymentsOutlinedIcon, perm: ['fees', 'add'] },
+    { label: 'Fee Records', to: '/Admin/FeeRecords', icon: ReceiptLongOutlinedIcon, perm: ['fees', 'view'] },
+    { label: 'Pay Salary', to: '/Admin/TeachersSalary', icon: AccountBalanceWalletOutlinedIcon, perm: ['salary', 'add'] },
+    { label: 'Salary Records', to: '/Admin/Invoice', icon: RequestQuoteOutlinedIcon, perm: ['salary', 'view'] },
+    { label: 'Complaints', to: '/Admin/complains', icon: ReportProblemOutlinedIcon, perm: ['notices', 'view'] },
+    { label: 'Notices', to: '/Admin/notices', icon: CampaignOutlinedIcon, perm: ['notices', 'view'] },
 ];
 
 const ACCOUNT_LINKS = [
@@ -101,8 +102,9 @@ const NavItem = ({ link, active, onNavigate }) => {
 const SideBar = ({ onNavigate }) => {
     const { pathname } = useLocation();
     const { currentUser } = useSelector((s) => s.user);
+    // Limited Admins: no Settings link (only their own account) and no admin management.
     const accountLinks = currentUser && currentUser.adminRole === 'admin'
-        ? ACCOUNT_LINKS
+        ? [ACCOUNT_LINKS[0], { label: 'My account', to: '/Admin/settings', icon: SettingsOutlinedIcon }]
         : [...ACCOUNT_LINKS, { label: 'Admins', to: '/Admin/admins', icon: AdminPanelSettingsOutlinedIcon }];
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#ffffff' }}>
@@ -129,7 +131,7 @@ const SideBar = ({ onNavigate }) => {
 
             <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', pb: 1 }}>
                 <List component="nav" aria-label="Main" disablePadding>
-                    {MAIN_LINKS.map((link) => (
+                    {MAIN_LINKS.filter((link) => !link.perm || can(currentUser, link.perm[0], link.perm[1])).map((link) => (
                         <NavItem key={link.to} link={link} active={isActive(link, pathname)} onNavigate={onNavigate} />
                     ))}
                 </List>

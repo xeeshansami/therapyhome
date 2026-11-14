@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { can } from '../../../utils/permissions';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -262,9 +263,12 @@ const ViewStudent = () => {
                     <Typography variant="h4" gutterBottom>{student.name || 'Student Details'}</Typography>
                     <Typography variant="h6" color="text.secondary">Roll No: {student.rollNum}</Typography>
                 </div>
-                {!isEditMode && <Button variant="contained" onClick={() => setIsEditMode(true)}>Edit Details</Button>}
+                {!isEditMode && can(currentUser, 'students', 'edit') && <Button variant="contained" onClick={() => setIsEditMode(true)}>Edit Details</Button>}
             </Paper>
             <StudentLifecyclePanel
+                canEditStatus={can(currentUser, 'students', 'edit')}
+                canViewDeposit={can(currentUser, 'fees', 'view')}
+                canEditDeposit={can(currentUser, 'fees', 'edit')}
                 student={student}
                 onChanged={() => { loadStudent(); loadFeeHistory(); }}
                 onMessage={(message, success) => setPopup({ open: true, message, success })}
@@ -384,8 +388,8 @@ const ViewStudent = () => {
                                                 <TableCell align="right">Rs. {feeStatus(r).outstanding.toLocaleString()}</TableCell>
                                                 <TableCell sx={{ whiteSpace: 'nowrap' }}>
                                                     <Button size="small" onClick={() => setInvoiceData({ ...student, ...r })}>View / Print</Button>
-                                                    {feeStatus(r).outstanding > 0 && <Button size="small" color="success" onClick={() => setPaySlip(r)}>Record payment</Button>}
-                                                    <Button size="small" color="error" onClick={() => setFeeDelete(r)}>Delete</Button>
+                                                    {feeStatus(r).outstanding > 0 && can(currentUser, 'fees', 'edit') && <Button size="small" color="success" onClick={() => setPaySlip(r)}>Record payment</Button>}
+                                                    {can(currentUser, 'fees', 'delete') && <Button size="small" color="error" onClick={() => setFeeDelete(r)}>Delete</Button>}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -404,7 +408,7 @@ const ViewStudent = () => {
                 )}
             </form>
 
-            {!isEditMode && (
+            {!isEditMode && can(currentUser, 'students', 'delete') && (
                 <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
                     <Button variant="contained" color="error" onClick={() => setOtpAction({ type: 'delete', payload: null })}>
                         Delete Student

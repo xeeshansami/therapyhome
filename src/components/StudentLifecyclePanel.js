@@ -20,7 +20,7 @@ const STATUS_COLOR = { none: 'default', pending: 'warning', received: 'success',
  * security deposit return journey: received -> withdrawn -> return initiated -> returned.
  * Every step is enforced by the API; this only guides the admin through it.
  */
-const StudentLifecyclePanel = ({ student, onChanged, onMessage }) => {
+const StudentLifecyclePanel = ({ student, onChanged, onMessage, canEditStatus = true, canViewDeposit = true, canEditDeposit = true }) => {
     const [deposit, setDeposit] = useState(null);
     const [dialog, setDialog] = useState(null); // { kind: 'withdraw'|'reactivate'|'initiate'|'complete'|'cancel', ... }
     const [verify, setVerify] = useState(null);
@@ -32,7 +32,7 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage }) => {
             .then(({ data }) => setDeposit(data.deposit))
             .catch(() => setDeposit(null));
     }, [student._id]);
-    useEffect(() => { loadDeposit(); }, [loadDeposit, student.status]);
+    useEffect(() => { if (canViewDeposit) loadDeposit(); }, [loadDeposit, student.status, canViewDeposit]);
 
     const fail = (err, fallback) => onMessage(err?.response?.data?.message || fallback, false);
 
@@ -87,9 +87,9 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage }) => {
                         </Typography>
                     )}
                 </Stack>
-                {withdrawn
+                {canEditStatus && (withdrawn
                     ? <Button variant="outlined" color="success" onClick={() => setDialog({ kind: 'reactivate' })}>Reactivate student</Button>
-                    : <Button variant="outlined" color="warning" onClick={() => setDialog({ kind: 'withdraw', reason: '', date: today() })}>Withdraw student</Button>}
+                    : <Button variant="outlined" color="warning" onClick={() => setDialog({ kind: 'withdraw', reason: '', date: today() })}>Withdraw student</Button>)}
             </Stack>
             {withdrawn && (
                 <Alert severity="info" sx={{ mt: 1.5 }}>
@@ -97,6 +97,7 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage }) => {
                 </Alert>
             )}
 
+            {canViewDeposit && (<>
             <Divider sx={{ my: 2 }} />
             <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                 <SavingsOutlinedIcon color="primary" fontSize="small" />
@@ -115,7 +116,7 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage }) => {
                     <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 2, display: { xs: 'none', sm: 'flex' } }}>
                         {DEPOSIT_STEPS.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
                     </Stepper>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ display: canEditDeposit ? 'flex' : 'none' }}>
                         {deposit.status === 'received' && (
                             <Button variant="contained" disabled={!withdrawn} onClick={() => setDialog({ kind: 'initiate', amount: String(deposit.amount), note: '' })}>
                                 Initiate return
@@ -147,6 +148,8 @@ const StudentLifecyclePanel = ({ student, onChanged, onMessage }) => {
                     )}
                 </>
             )}
+
+            </>)}
 
             <Dialog open={!!dialog} onClose={() => !busy && setDialog(null)} fullWidth maxWidth="xs">
                 <DialogTitle>
