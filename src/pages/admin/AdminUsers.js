@@ -33,7 +33,8 @@ const AdminUsers = () => {
         setLoading(true);
         try {
             const res = await axios.get(`${API}/admins`);
-            setData({ ...res.data, modules: res.data.modules || DEFAULT_MODULES });
+            // An older backend returns no permission modules and cannot save permissions.
+            setData({ ...res.data, modules: res.data.modules || DEFAULT_MODULES, permissionsSupported: Array.isArray(res.data.modules) });
         } catch (e) {
             setMessage({ severity: 'error', text: e.response?.data?.message || 'Could not load admins.' });
         } finally {
@@ -108,6 +109,12 @@ const AdminUsers = () => {
                 actions={<Button variant="contained" onClick={() => setForm({ name: '', email: '', temporaryPassword: '', newAdminKey: '', permissions: presetPermissions(data.modules, 'view') })}>Add admin</Button>}
             />
             {message && <Alert severity={message.severity} sx={{ mb: 2 }} onClose={() => setMessage(null)}>{message.text}</Alert>}
+            {!loading && data.permissionsSupported === false && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    The TherapyHome server you are connected to has not been updated yet, so admin permissions cannot be saved
+                    and every co-admin still has full operational access. Deploy the latest backend (branch dev_zeeshan) to enable permissions.
+                </Alert>
+            )}
             {data.superAdmin && (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     Super admin: <b>{data.superAdmin.name}</b> ({data.superAdmin.email})
@@ -128,20 +135,20 @@ const AdminUsers = () => {
                             {r.mustChangePassword && <Chip size="small" variant="outlined" color="warning" label="Temporary password" />}
                         </Stack>
                     ) },
-                    { id: 'permissions', label: 'Access', render: (r) => (
+                    { id: 'permissions', label: 'Access', render: (r) => (data.permissionsSupported === false ? <Chip size="small" variant="outlined" label="Full (server not updated)" /> : (
                         <Stack direction="row" spacing={0.5} alignItems="center">
                             <Chip size="small" variant="outlined" label="Limited Admin" />
                             <Typography variant="caption" color="text.secondary">
                                 {r.legacyFullAccess ? 'View only (older account)' : `${countGranted(r.permissions)} permission${countGranted(r.permissions) === 1 ? '' : 's'}`}
                             </Typography>
                         </Stack>
-                    ) },
+                    )) },
                     { id: 'lastLoginAt', label: 'Last sign-in', render: (r) => (r.lastLoginAt ? new Date(r.lastLoginAt).toLocaleString('en-PK') : 'Never') },
                     { id: 'createdAt', label: 'Added', render: (r) => new Date(r.createdAt).toLocaleDateString('en-PK') },
                 ]}
                 actions={(r) => (
                     <>
-                        <RowButton onClick={() => setPerms({ row: r, value: JSON.parse(JSON.stringify(r.permissions || presetPermissions(data.modules, 'view'))) })}>Permissions</RowButton>
+                        {data.permissionsSupported !== false && <RowButton onClick={() => setPerms({ row: r, value: JSON.parse(JSON.stringify(r.permissions || presetPermissions(data.modules, 'view'))) })}>Permissions</RowButton>}
                         <RowButton onClick={() => setReset({ row: r, temporaryPassword: '', newAdminKey: '' })}>Reset sign-in</RowButton>
                         <RowButton color={r.active ? 'error' : 'primary'} onClick={() => toggle(r)}>{r.active ? 'Disable' : 'Enable'}</RowButton>
                     </>
@@ -158,7 +165,7 @@ const AdminUsers = () => {
                             <TextField label="Temporary password" type="password" autoComplete="new-password" value={form.temporaryPassword} onChange={(e) => setForm((f) => ({ ...f, temporaryPassword: e.target.value }))} error={!!form.temporaryPassword && !!formErrors.temporaryPassword} helperText={formErrors.temporaryPassword || 'They must replace it at first sign-in.'} />
                             <TextField label="Their admin key" type="password" autoComplete="new-password" value={form.newAdminKey} onChange={(e) => setForm((f) => ({ ...f, newAdminKey: e.target.value }))} error={!!form.newAdminKey && !!formErrors.newAdminKey} helperText={formErrors.newAdminKey || 'Used with their password to confirm sensitive changes. Stored encrypted; keep a note of it.'} />
                             <Alert severity="info">This person becomes a <b>Limited Admin</b>, never a super admin. They can only use the areas you tick below.</Alert>
-                            <PermissionMatrix modules={data.modules} value={form.permissions} onChange={(permissions) => setForm((f) => ({ ...f, permissions }))} />
+                            {data.permissionsSupported !== false && <PermissionMatrix modules={data.modules} value={form.permissions} onChange={(permissions) => setForm((f) => ({ ...f, permissions }))} />}
                         </Stack>
                     )}
                 </DialogContent>

@@ -53,9 +53,12 @@ const userSlice = createSlice({
         },
         // ✅ END OF FIX
         // Fresh permissions for a Limited Admin from the server (GET /Admin/:id).
+        // payload null = the server has no permission support yet (older backend).
         permissionsRefreshed: (state, action) => {
             if (!state.currentUser) return;
-            state.currentUser = { ...state.currentUser, permissions: action.payload || {} };
+            state.currentUser = action.payload === null
+                ? { ...state.currentUser, permissions: undefined, permissionsSupported: false }
+                : { ...state.currentUser, permissions: action.payload || {}, permissionsSupported: true };
             try { localStorage.setItem('user', JSON.stringify(state.currentUser)); } catch (e) { /* ignore */ }
         },
 

@@ -31,12 +31,15 @@ const roles = [
     icon: ShieldCheck,
     gradient: 'linear-gradient(135deg, #4d44e0, #7b2ff7)',
   },
+  // Staff: shown for guidance only. Staff sign in with the TherapyHome mobile
+  // app; the web portal is for the super admin and co-admins.
   {
     key: 'Teacher',
     title: 'Staff',
-    desc: 'Login as staff to create courses, sessions, and track student records.',
+    desc: 'Staff sign in with the TherapyHome mobile app (Android / iPhone), not the web portal.',
     icon: Users,
     gradient: 'linear-gradient(135deg, #11b3a4, #2f6fed)',
+    appOnly: true,
   },
 ];
 
@@ -58,7 +61,7 @@ const ChooseUser = ({ visitor }) => {
     } else if (user === 'Student') {
       navigate('/Studentlogin');
     } else if (user === 'Teacher') {
-      navigate('/Teacherlogin');
+      // Staff use the mobile app only.
     }
   };
 
@@ -128,13 +131,13 @@ const ChooseUser = ({ visitor }) => {
                   className={`th-fade-up${i > 0 ? ` th-fade-up-${Math.min(i, 4)}` : ''}`}
                   whileHover={{ y: -8 }}
                   transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ flex: 1, maxWidth: 340, cursor: 'pointer' }}
-                  onClick={() => navigateHandler(r.key)}
+                  style={{ flex: 1, maxWidth: 340, cursor: r.appOnly ? 'default' : 'pointer', opacity: r.appOnly ? 0.85 : 1 }}
+                  onClick={() => !r.appOnly && navigateHandler(r.key)}
                 >
                   <Box
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigateHandler(r.key)}
+                    role={r.appOnly ? undefined : 'button'}
+                    tabIndex={r.appOnly ? -1 : 0}
+                    onKeyDown={(e) => !r.appOnly && (e.key === 'Enter' || e.key === ' ') && navigateHandler(r.key)}
                     sx={{
                       height: '100%',
                       borderRadius: 5,
@@ -172,12 +175,18 @@ const ChooseUser = ({ visitor }) => {
                     <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2.5 }}>
                       {r.desc}
                     </Typography>
-                    <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" sx={{ color: 'primary.main' }}>
-                      <Typography variant="button" sx={{ fontWeight: 700 }}>
-                        Continue
+                    {r.appOnly ? (
+                      <Typography variant="button" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                        Use the mobile app
                       </Typography>
-                      <ArrowRight size={17} />
-                    </Stack>
+                    ) : (
+                      <Stack direction="row" spacing={0.5} justifyContent="center" alignItems="center" sx={{ color: 'primary.main' }}>
+                        <Typography variant="button" sx={{ fontWeight: 700 }}>
+                          Continue
+                        </Typography>
+                        <ArrowRight size={17} />
+                      </Stack>
+                    )}
                   </Box>
                 </MotionDiv>
               );

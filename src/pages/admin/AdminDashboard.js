@@ -73,7 +73,9 @@ const AdminDashboard = () => {
     useEffect(() => {
         if (!currentUser || currentUser.adminRole !== 'admin' || currentUser.mustChangePassword) return;
         axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}`)
-            .then(({ data }) => permDispatch(permissionsRefreshed(data.permissions || {})))
+            .then(({ data }) => permDispatch(permissionsRefreshed(
+                data && Object.prototype.hasOwnProperty.call(data, 'permissions') ? (data.permissions || {}) : null,
+            )))
             .catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?._id, currentUser?.userId]);

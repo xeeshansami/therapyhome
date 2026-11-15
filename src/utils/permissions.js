@@ -9,6 +9,9 @@ export const can = (user, module, action = 'view') => {
     if (isSuperAdmin(user)) return true;
     // A Limited Admin may only do what the super admin granted. Until their
     // permissions have been loaded, nothing is offered (the server refuses anyway).
+    // An older backend without permission support: it allows co-admins everything
+    // operational, so the portal does the same (the server is what enforces).
+    if (user.permissionsSupported === false) return true;
     const p = user.permissions;
     if (!p) return false;
     return Boolean(p[module] && p[module][action]);

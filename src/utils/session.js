@@ -20,8 +20,9 @@ let installed = false;
 export const installSession = (onExpired) => {
     if (installed) return;
     installed = true;
-    // Sessions saved before sign-in tokens existed cannot call the API: sign in again.
-    if (readUser() && !sessionToken()) {
+    // Sessions saved before sign-in tokens existed cannot call the API, and staff
+    // sessions are not valid in the portal (staff use the mobile app): sign in again.
+    if (readUser() && (!sessionToken() || readUser().role === 'Teacher')) {
         try { localStorage.removeItem('user'); } catch (e) { /* ignore */ }
         if (onExpired) onExpired();
     }
