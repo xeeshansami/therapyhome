@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { permissionsRefreshed } from '../../redux/userRelated/userSlice';
+import axios from 'axios';
 import {
     CssBaseline,
     Box,
@@ -52,7 +54,7 @@ import AddClass from './classRelated/AddClass';
 import ClassDetails from './classRelated/ClassDetails';
 import ShowClasses from './classRelated/ShowClasses';
 import AccountMenu from '../../components/AccountMenu';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import StaffAttendance from './attendance/StaffAttendance';
 import TherapySessions from './attendance/TherapySessions';
 import LeaveRequests from './attendance/LeaveRequests';
@@ -65,6 +67,16 @@ export const SIDEBAR_WIDTH = 264;
 const AdminDashboard = () => {
     const { currentUser } = useSelector((s) => s.user);
     const isSuper = !currentUser || currentUser.adminRole !== 'admin';
+    // Limited Admins: always load their current permissions from the server, so a
+    // session saved earlier (or before a change by the super admin) is never stale.
+    const permDispatch = useDispatch();
+    useEffect(() => {
+        if (!currentUser || currentUser.adminRole !== 'admin' || currentUser.mustChangePassword) return;
+        axios.get(`${process.env.REACT_APP_BASE_URL}/Admin/${currentUser._id}`)
+            .then(({ data }) => permDispatch(permissionsRefreshed(data.permissions || {})))
+            .catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?._id, currentUser?.userId]);
     // Desktop: the sidebar opens and closes completely and the page reflows.
     // Phones/tablets: it slides over the page and closes after choosing a link.
     const isNarrow = useMediaQuery((t) => t.breakpoints.down('md'));

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
 import {
@@ -19,6 +20,7 @@ const ShowNotices = () => {
     const dispatch = useDispatch();
     const { noticesList, loading, error, response } = useSelector((state) => state.notice);
     const { currentUser } = useSelector(state => state.user)
+    const allowed = useCan();
 
     useEffect(() => {
         dispatch(getAllNotices(currentUser._id, "Notice"));
@@ -57,9 +59,11 @@ const ShowNotices = () => {
     const NoticeButtonHaver = ({ row }) => {
         return (
             <>
-                <IconButton aria-label={`Delete ${row.title}`} onClick={() => setToDelete({ id: row.id, name: row.title })}>
-                    <DeleteIcon color="error" />
-                </IconButton>
+                {allowed('notices', 'delete') && (
+                    <IconButton aria-label={`Delete ${row.title}`} onClick={() => setToDelete({ id: row.id, name: row.title })}>
+                        <DeleteIcon color="error" />
+                    </IconButton>
+                )}
             </>
         );
     };
@@ -78,7 +82,7 @@ const ShowNotices = () => {
                 :
                 <>
                     {response ?
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                        allowed('notices', 'add') && <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
                             <GreenButton variant="contained"
                                 onClick={() => navigate("/Admin/addnotice")}>
                                 Add Notice
@@ -89,7 +93,7 @@ const ShowNotices = () => {
                             {Array.isArray(noticesList) && noticesList.length > 0 &&
                                 <TableTemplate buttonHaver={NoticeButtonHaver} columns={noticeColumns} rows={noticeRows} />
                             }
-                            <SpeedDialTemplate actions={actions} />
+                            {allowed('notices', 'add') && <SpeedDialTemplate actions={actions} />}
                         </Paper>
                     }
                 </>

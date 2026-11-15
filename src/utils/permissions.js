@@ -7,9 +7,10 @@ export const isSuperAdmin = (user) => !!user && user.role === 'Admin' && user.ad
 export const can = (user, module, action = 'view') => {
     if (!user) return false;
     if (isSuperAdmin(user)) return true;
+    // A Limited Admin may only do what the super admin granted. Until their
+    // permissions have been loaded, nothing is offered (the server refuses anyway).
     const p = user.permissions;
-    // Sessions saved before permissions existed: the server still decides.
-    if (!p) return true;
+    if (!p) return false;
     return Boolean(p[module] && p[module][action]);
 };
 

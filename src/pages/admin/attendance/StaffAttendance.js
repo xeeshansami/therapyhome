@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import axios from 'axios';
 import {
     Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, MenuItem,
@@ -32,6 +33,7 @@ export const statusChip = (record) => {
 };
 
 const DayView = () => {
+    const allowed = useCan();
     const [date, setDate] = useState(clinicToday());
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -100,7 +102,7 @@ const DayView = () => {
                 toolbar={(
                     <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
                         <TextField size="small" type="date" label="Date" value={date} onChange={(e) => setDate(e.target.value)} InputLabelProps={{ shrink: true }} inputProps={{ max: clinicToday() }} />
-                        <Button variant="outlined" onClick={closeDay}>Mark unmarked absent</Button>
+                        {allowed('attendance', 'edit') && <Button variant="outlined" onClick={closeDay}>Mark unmarked absent</Button>}
                     </Stack>
                 )}
                 columns={[
@@ -112,7 +114,7 @@ const DayView = () => {
                     { id: 'status', label: 'Status', highlight: true, render: (r) => statusChip(r.record) },
                     { id: 'source', label: 'Marked by', render: (r) => (r.record ? (r.record.source === 'admin' ? 'Admin' : 'App') : '—') },
                 ]}
-                actions={(r) => (
+                actions={(r) => allowed('attendance', 'edit') && (
                     <RowButton onClick={() => setEditing({
                         teacher: r.teacher,
                         status: r.record ? r.record.status : 'present',

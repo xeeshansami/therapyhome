@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useCan } from '../../../utils/useCan';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -26,6 +27,7 @@ const ClassDetails = () => {
     const dispatch = useDispatch();
 
     const { sclassDetails, loading, error } = useSelector((state) => state.sclass);
+    const allowed = useCan();
     const classID = params.id;
 
     const [isEditMode, setIsEditMode] = useState(false);
@@ -172,7 +174,7 @@ const ClassDetails = () => {
                     <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                         <Typography variant="h5">Class Details</Typography>
                         {!isEditMode ? (
-                            <Button variant="contained" onClick={() => setIsEditMode(true)}>
+                            allowed('classes', 'edit') && <Button variant="contained" onClick={() => setIsEditMode(true)}>
                                 Edit
                             </Button>
                         ) : (

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@mui/material';
@@ -17,6 +18,7 @@ const ShowClasses = () => {
     const dispatch = useDispatch();
     const { sclassesList, loading } = useSelector((state) => state.sclass);
     const { currentUser } = useSelector((state) => state.user);
+    const allowed = useCan();
     const adminID = currentUser._id;
     const [toDelete, setToDelete] = useState(null); // { id, name }
     const [message, setMessage] = useState('');
@@ -46,7 +48,7 @@ const ShowClasses = () => {
                 icon={ClassOutlinedIcon}
                 title="Classes"
                 subtitle="Therapy programmes, their timings and fee per session"
-                actions={<Button variant="contained" startIcon={<AddCardIcon />} onClick={() => navigate('/Admin/addclass')}>Add Class</Button>}
+                actions={allowed('classes', 'add') ? <Button variant="contained" startIcon={<AddCardIcon />} onClick={() => navigate('/Admin/addclass')}>Add Class</Button> : null}
             />
             <DataTable
                 columns={columns}
@@ -58,7 +60,7 @@ const ShowClasses = () => {
                 actions={(r) => (
                     <>
                         <RowButton onClick={() => navigate(`/Admin/classes/class/${r._id}`)}>View</RowButton>
-                        <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: r.sclassName })}>Delete</RowButton>
+                        {allowed('classes', 'delete') && <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: r.sclassName })}>Delete</RowButton>}
                     </>
                 )}
             />

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from "react-router-dom";
 import { getSubjectList } from '../../../redux/sclassRelated/sclassHandle';
@@ -18,6 +19,7 @@ const ShowSubjects = () => {
     const dispatch = useDispatch();
     const { subjectsList, loading, error, response } = useSelector((state) => state.sclass);
     const { currentUser } = useSelector(state => state.user)
+    const allowed = useCan();
 
     useEffect(() => {
         dispatch(getSubjectList(currentUser._id, "AllSubjects"));
@@ -61,7 +63,7 @@ const ShowSubjects = () => {
     const SubjectsButtonHaver = ({ row }) => {
         return (
             <>
-                <IconButton onClick={() => deleteHandler(row.id, "Subject")}>
+                <IconButton sx={{ display: allowed('classes', 'delete') ? undefined : 'none' }} onClick={() => deleteHandler(row.id, "Subject")}>
                     <DeleteIcon color="error" />
                 </IconButton>
                 <BlueButton variant="contained"
@@ -101,7 +103,7 @@ const ShowSubjects = () => {
                             {Array.isArray(subjectsList) && subjectsList.length > 0 &&
                                 <TableTemplate buttonHaver={SubjectsButtonHaver} columns={subjectColumns} rows={subjectRows} />
                             }
-                            <SpeedDialTemplate actions={actions} />
+                            {allowed('classes', 'add') && <SpeedDialTemplate actions={actions} />}
                         </Paper>
                     }
                 </>

@@ -132,7 +132,7 @@ const AdminUsers = () => {
                         <Stack direction="row" spacing={0.5} alignItems="center">
                             <Chip size="small" variant="outlined" label="Limited Admin" />
                             <Typography variant="caption" color="text.secondary">
-                                {r.legacyFullAccess ? 'All operations (older account)' : `${countGranted(r.permissions)} permission${countGranted(r.permissions) === 1 ? '' : 's'}`}
+                                {r.legacyFullAccess ? 'View only (older account)' : `${countGranted(r.permissions)} permission${countGranted(r.permissions) === 1 ? '' : 's'}`}
                             </Typography>
                         </Stack>
                     ) },
@@ -173,7 +173,7 @@ const AdminUsers = () => {
                 <DialogContent>
                     {perms && (
                         <Stack spacing={2} sx={{ mt: 1 }}>
-                            {perms.row.legacyFullAccess && <Alert severity="warning">This older account currently has every operational permission. Saving here replaces that with exactly what you tick.</Alert>}
+                            {perms.row.legacyFullAccess && <Alert severity="warning">This older account is view-only until you grant more. Saving here sets exactly what you tick.</Alert>}
                             <PermissionMatrix modules={data.modules} value={perms.value} onChange={(value) => setPerms((p) => ({ ...p, value }))} />
                         </Stack>
                     )}

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import {
@@ -13,6 +14,7 @@ const API = process.env.REACT_APP_BASE_URL;
 const STATUS_COLOR = { attended: 'success', absent: 'error', cancelled: 'default' };
 
 const TherapySessions = () => {
+    const allowed = useCan();
     const { currentUser } = useSelector((s) => s.user);
     const [date, setDate] = useState(clinicToday());
     const [rows, setRows] = useState([]);
@@ -86,7 +88,7 @@ const TherapySessions = () => {
                 icon={EventNoteOutlinedIcon}
                 title="Therapy Sessions"
                 subtitle="Sessions marked by therapists in the app (or here). Attended sessions are used when generating monthly fees."
-                actions={<Button variant="contained" onClick={openForm}>Mark a session</Button>}
+                actions={allowed('attendance', 'edit') ? <Button variant="contained" onClick={openForm}>Mark a session</Button> : null}
             />
             {message && <Alert severity={message.severity} sx={{ mb: 2 }} onClose={() => setMessage(null)}>{message.text}</Alert>}
             <Stack direction="row" spacing={1} sx={{ mb: 2 }}>

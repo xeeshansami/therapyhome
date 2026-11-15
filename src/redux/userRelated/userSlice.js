@@ -52,6 +52,12 @@ const userSlice = createSlice({
             }
         },
         // ✅ END OF FIX
+        // Fresh permissions for a Limited Admin from the server (GET /Admin/:id).
+        permissionsRefreshed: (state, action) => {
+            if (!state.currentUser) return;
+            state.currentUser = { ...state.currentUser, permissions: action.payload || {} };
+            try { localStorage.setItem('user', JSON.stringify(state.currentUser)); } catch (e) { /* ignore */ }
+        },
 
         authFailed: (state, action) => {
             state.status = 'failed';
@@ -102,6 +108,7 @@ export const {
     underControl,
     stuffAdded,
     authSuccess,
+    permissionsRefreshed,
     authFailed,
     authError,
     authLogout,

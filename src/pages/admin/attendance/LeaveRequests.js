@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import axios from 'axios';
 import {
     Alert, Avatar, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Tab, Tabs, TextField, Typography,
@@ -15,6 +16,7 @@ const niceDate = (ymd) => new Date(`${ymd}T00:00:00`).toLocaleDateString('en-GB'
 
 /** Leave requested by staff from the app. Approving marks the working days as leave in Staff Attendance. */
 const LeaveRequests = () => {
+    const allowed = useCan();
     const [tab, setTab] = useState(0);
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -82,7 +84,7 @@ const LeaveRequests = () => {
                         </Stack>
                     ) },
                 ]}
-                actions={(r) => (r.status === 'pending' ? (
+                actions={(r) => (r.status === 'pending' && allowed('leaves', 'edit') ? (
                     <>
                         <RowButton color="primary" onClick={() => setDeciding({ row: r, status: 'approved', note: '', busy: false, error: '' })}>Approve</RowButton>
                         <RowButton color="error" onClick={() => setDeciding({ row: r, status: 'rejected', note: '', busy: false, error: '' })}>Reject</RowButton>

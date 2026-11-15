@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCan } from '../../../utils/useCan';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -39,6 +40,7 @@ const StatusChip = ({ row }) => (row.status === 'admitted'
 const ShowConsultations = () => {
     const navigate = useNavigate();
     const { currentUser } = useSelector((state) => state.user);
+    const allowed = useCan();
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState('pending');
@@ -85,7 +87,7 @@ const ShowConsultations = () => {
                 icon={AssignmentIndOutlinedIcon}
                 title="Consultations"
                 subtitle="Children seen for consultation. Admit one to give them a roll number and make them a student."
-                actions={<Button variant="contained" startIcon={<NoteAddOutlinedIcon />} onClick={() => navigate('/Admin/AddConsultancy')}>New Consultation</Button>}
+                actions={allowed('consultations', 'add') ? <Button variant="contained" startIcon={<NoteAddOutlinedIcon />} onClick={() => navigate('/Admin/AddConsultancy')}>New Consultation</Button> : null}
             />
             <DataTable
                 columns={columns}
@@ -104,8 +106,8 @@ const ShowConsultations = () => {
                 actions={(r) => (
                     <>
                         <RowButton onClick={() => setViewing(r)}>View</RowButton>
-                        {r.status === 'pending' && <RowButton color="primary" onClick={() => admit(r)}>Admit</RowButton>}
-                        {r.status === 'pending' && <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: `${r.name} (${r.consultationNo})` })}>Delete</RowButton>}
+                        {r.status === 'pending' && allowed('students', 'add') && <RowButton color="primary" onClick={() => admit(r)}>Admit</RowButton>}
+                        {r.status === 'pending' && allowed('consultations', 'delete') && <RowButton color="error" onClick={() => setToDelete({ id: r._id, name: `${r.name} (${r.consultationNo})` })}>Delete</RowButton>}
                         {r.status === 'admitted' && r.student?._id && <RowButton onClick={() => navigate(`/Admin/students/student/${r.student._id}`)}>Student</RowButton>}
                     </>
                 )}
@@ -165,7 +167,7 @@ const ShowConsultations = () => {
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setViewing(null)}>Close</Button>
-                            {viewing.status === 'pending' && <Button variant="contained" onClick={() => admit(viewing)}>Admit as Student</Button>}
+                            {viewing.status === 'pending' && allowed('students', 'add') && <Button variant="contained" onClick={() => admit(viewing)}>Admit as Student</Button>}
                         </DialogActions>
                     </>
                 )}
